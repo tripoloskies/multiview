@@ -6,6 +6,7 @@
     import Multiview from '$lib/layouts/Multiview.svelte';
     import { resolve } from '$app/paths';
     import { onDestroy, onMount } from 'svelte';
+    import Controls from '$lib/layouts/Controls.svelte';
 	let { data, children } = $props();
 
 	let serverMessage = $state("");
@@ -48,53 +49,49 @@
 	</div>
 	
 	{#snippet controls()}
-		{#if online === true}
-		<div class="controls">
-			<div class="controls-items">
-				<span>Controls</span>
-				<span>
-					<Button
-						onclick={async () => {
-							if (data.isCurrentPagePlay) {
-								await goto(resolve("/(view)/(multiview)"));
-							}
-							else {
-								await goto(resolve("/(view)/(singleview)/player/play/[...path]", { path: data?.path }));
-							}
-						}}>Back</Button
-					>
-					<Button
-						onclick={async () => {
-							await goto(resolve("/(view)/(singleview)/player/inspect/[...path]", { path: data?.path }));
-						}}>Inspect</Button
-					>
-					<form onsubmit={async (event) => {
-						event.preventDefault()
-						if (!(event.target instanceof HTMLFormElement)) {
-							return
-						}
-						const form = event.target;
-						const formData = new FormData(form);
-						const data = {...Object.fromEntries(formData.entries())}
-						serverMessage = "Deleting stream..."
-						const response = await sendCommand("deleteStream", data)
-
-						if (!response.success) {
-							serverMessage = response.message
-							return
-						}
+		<Controls>
+			<Button
+				onclick={async () => {
+					if (data.isCurrentPagePlay) {
 						await goto(resolve("/(view)/(multiview)"));
-					}}>
-						<input type="hidden" name="path" value={data?.path} />
-						<Button type="submit">Delete</Button>
-					</form>
-				</span>
-			</div>
-			<span class="status">
-				<b>{serverMessage}</b>
-			</span>
-		</div>
-		{/if}
+					}
+					else {
+						await goto(resolve("/(view)/(singleview)/player/play/[...path]", { path: data?.path }));
+					}
+				}}>Back</Button
+			>
+			<Button
+				onclick={async () => {
+					await goto(resolve("/(view)/(singleview)/player/inspect/[...path]", { path: data?.path }));
+				}}>Inspect</Button
+			>
+			<form onsubmit={async (event) => {
+				event.preventDefault()
+				if (!(event.target instanceof HTMLFormElement)) {
+					return
+				}
+				const form = event.target;
+				const formData = new FormData(form);
+				const data = {...Object.fromEntries(formData.entries())}
+				serverMessage = "Deleting stream..."
+				const response = await sendCommand("deleteStream", data)
+
+				if (!response.success) {
+					serverMessage = response.message
+					return
+				}
+				await goto(resolve("/(view)/(multiview)"));
+			}}>
+				<input type="hidden" name="path" value={data?.path} />
+				<Button type="submit">Delete</Button>
+			</form>
+			{#snippet footer()}
+				<div>
+					<b>Message: </b>
+					<b>{serverMessage}</b>
+				</div>
+			{/snippet}
+		</Controls>
 	{/snippet}
 
 </Multiview>
@@ -103,21 +100,7 @@
 	@reference "tailwindcss";
 
 	.contain {
-		@apply flex-1 flex ;
-	}
-	.controls {
-		@apply flex flex-row justify-between items-center text-white;
+		@apply flex-1 flex flex-col md:flex-row;
 	}
 
-	.controls-items {
-		@apply flex flex-row items-center space-x-2;
-	}
-
-	.controls-items > span {
-		@apply flex flex-row;
-	}
-
-	.status {
-		@apply flex flex-row items-center;
-	}
 </style>

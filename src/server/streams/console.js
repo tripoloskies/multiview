@@ -214,7 +214,9 @@ async function destroyStoppedPM2Instance() {
  * @returns
  */
 export async function isStreamExists(path) {
-  const pathRequest = await fetch(`http:/127.0.0.1:9997/v3/paths/get/${path}`);
+  const pathRequest = await fetch(
+    `http:/${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/get/${path}`,
+  );
   switch (pathRequest.status) {
     case 200:
       return true;

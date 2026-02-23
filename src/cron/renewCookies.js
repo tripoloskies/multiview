@@ -26,8 +26,7 @@ async function parseNetscapeCookies(filePath) {
     const parts = trimmed.split("\t");
     if (parts.length < 7) continue;
 
-    const [domain, includeSubdomains, path, secure, expires, name, value] =
-      parts;
+    const [domain, path, secure, expires, name, value] = parts;
 
     cookies.push({
       name,

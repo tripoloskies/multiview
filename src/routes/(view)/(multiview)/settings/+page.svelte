@@ -10,7 +10,7 @@
 	<title>Settings - Multiview</title>
 </svelte:head>
 <Container full={true}>
-	<Subcontainer>
+	<Subcontainer front={true}>
 		<Prompt returnUrl={resolve("/(view)/(multiview)")}>
 			{#snippet header()}
 				<h2>Settings</h2>

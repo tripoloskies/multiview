@@ -1,6 +1,5 @@
 import { error } from "@sveltejs/kit";
-import { randomUUIDv7 } from "bun";
-
+import { v7 as randomUUIDv7 } from "uuid";
 /**
  * @type {import('@sveltejs/kit').Handle}
  */
@@ -9,7 +8,7 @@ export const handle = async ({ event, resolve }) => {
   const isHttps = event.url.protocol === "https:";
 
   // Check all .env configs
-  if (!process.env?.HOST) {
+  if (!Bun.env?.HOST) {
     error(500, "Missing environment configuration.");
   }
 
@@ -24,7 +23,7 @@ export const handle = async ({ event, resolve }) => {
   }
 
   event.locals.sessionId = sessionId;
-  event.locals.host = process.env.HOST;
+  event.locals.host = Bun.env.HOST;
 
   return resolve(event);
 };

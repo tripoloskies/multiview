@@ -3,11 +3,18 @@
     import { sendCommand } from '$lib/bun/wsApi.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import ConsoleLog from '$lib/components/ConsoleLog.svelte';
+    import Container from '$lib/components/Container.svelte';
 	import Prompt from '$lib/components/Prompt.svelte';
 	import Subcontainer from '$lib/components/Subcontainer.svelte';
 	import { onDestroy, onMount } from 'svelte';
 
 	let isStreamCreated = $state(false);
+
+
+	/**
+	 * @type {HTMLInputElement | undefined}
+	 */
+	let targetInput = $state();
 	/**
 	 * @type {EventSource}
 	 */
@@ -58,8 +65,10 @@
 		logs = [...logs, log];
 	}
 
-	onMount(async() => {
-
+	onMount(() => {
+		if (targetInput) {
+			targetInput.focus();
+		}
 		injectLogs('Ready');
 	});
 </script>
@@ -67,7 +76,9 @@
 <svelte:head>
 	<title>Add Stream - Multiview</title>
 </svelte:head>
-<Subcontainer>
+
+<Container>
+	<Subcontainer front={true}>
 	<Prompt returnUrl={resolve("/(view)/(multiview)")}>
 		{#snippet header()}
 			<h2>Add Stream</h2>
@@ -102,7 +113,7 @@
 					<div class="controls-input">
 						<span>
 							<label for="url">Stream URL</label>
-							<input name="url" placeholder="Stream URL" />
+							<input bind:this={targetInput} name="url" placeholder="Stream URL" />
 						</span>
 						<span>
 							<label for="path">Path</label>
@@ -116,6 +127,7 @@
 		<ConsoleLog {logs} />
 	</Prompt>
 </Subcontainer>
+</Container>
 
 <style lang="postcss">
 	@reference "tailwindcss";

@@ -1,7 +1,7 @@
 import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ fetch, params }) {
+export async function load({ fetch, params, locals }) {
   let page = Number(params.page);
   const VISIBLE_PAGE_LIMIT = 5;
 
@@ -25,7 +25,7 @@ export async function load({ fetch, params }) {
      */
     let searchData = await (
       await fetch(
-        `http://127.0.0.1:9997/v3/recordings/list?itemsPerPage=10&page=${page - 1}`,
+        `http://${locals.host}:9997/v3/recordings/list?itemsPerPage=10&page=${page - 1}`,
       )
     ).json();
     let items = searchData.items.map((item) => {

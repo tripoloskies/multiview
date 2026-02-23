@@ -1,7 +1,7 @@
 import { redirect } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ url }) {
+export async function load({ url, locals }) {
   const path = decodeURIComponent(url.searchParams.get("path") ?? "");
   const dateTimeUrl = decodeURIComponent(url.searchParams.get("date") ?? "");
   const specificDate = decodeURIComponent(
@@ -44,7 +44,7 @@ export async function load({ url }) {
   try {
     timelineDataThisDate = await (
       await fetch(
-        `http://127.0.0.1:9996/list?path=${path}&start=${beginTime}&end=${endTime}&format=mp4`,
+        `http://${locals.host}:9996/list?path=${path}&start=${beginTime}&end=${endTime}&format=mp4`,
       )
     ).json();
     // eslint-disable-next-line no-unused-vars
@@ -78,7 +78,7 @@ export async function load({ url }) {
       redirect(307, "/recordings");
     }
 
-    let segmentMediaUrl = `http://${process.env.HOST}:9996/get?duration=${targetSegmentData?.duration}&path=${path}&start=${encodeURIComponent(targetSegmentData.start)}&format=mp4`;
+    let segmentMediaUrl = `http://${locals.host}:9996/get?duration=${targetSegmentData?.duration}&path=${path}&start=${encodeURIComponent(targetSegmentData.start)}&format=mp4`;
 
     return {
       message: "Success",

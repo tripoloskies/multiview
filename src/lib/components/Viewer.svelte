@@ -190,7 +190,7 @@
 	}
 </script>
 
-<button onclick={async (e) => {
+<button onclick={async () => {
 	if (muted) {
 		await goto(resolve(`/(view)/(singleview)/player/play/[...path]`, { path: path }))
 		return

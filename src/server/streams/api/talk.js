@@ -5,7 +5,7 @@
 // eslint-disable-next-line no-unused-vars
 export const actions = async (data) => {
   try {
-    let request = await fetch("http://127.0.0.1:9997/v3/info");
+    let request = await fetch(`http://${Bun.env.MEDIAMTX_HOST}:9997/v3/info`);
     if (request.status !== 200) {
       return {
         success: false,

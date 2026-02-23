@@ -9,6 +9,13 @@
     import { info } from '$lib/stores/info.svelte.js';
 	import { onDestroy, onMount } from 'svelte';
 	
+	let { data } = $props();
+	onMount(() => {
+		if (data.path.length) {
+			execute(data.path);
+		}
+		injectLogs('Ready');
+	});
 	let isReady = $state(false);
 	/**
 	 * @type {string[]}
@@ -79,41 +86,48 @@
 		}
 	});
 
+
+	/**
+	 * @param {string} pathName
+	 */
+	async function execute(pathName) {
+		const response = await sendCommand("inspectStream", {
+			path: pathName
+		})
+		const eventUrl = response.data?.eventUrl
+		injectLogs(response.message)
+		if (!response.success) {
+			return;
+		}
+
+		if (!eventUrl?.length) {
+			injectLogs("No event URL? There's something wrong with the server.");
+			return;
+		}
+		connectToLogs(eventUrl);
+	}
+
 </script>
 
 <svelte:head>
 	<title>Inspect Stream - Multiview</title>
 </svelte:head>
 <Container full={true}>
-	<Subcontainer>
+	<Subcontainer front={true}>
 		<Prompt returnUrl={resolve("/(view)/(multiview)")}>
 			{#snippet header()}
 				<h2>Inspector</h2>
 			{/snippet}
 			{#if info.instances.length}
 				<form onsubmit={async (event) => {
-					event.preventDefault()
+					event.preventDefault();
 					if (!(event.target instanceof HTMLFormElement)) {
 						return
 					}
 					const form = event.target;
 					const formData = new FormData(form);
-					const data = {...Object.fromEntries(formData.entries())}
-					
-					const response = await sendCommand("inspectStream", data)
-					const eventUrl = response.data?.eventUrl
-					injectLogs(response.message)
-					if (!response.success) {
-						return;
-					}
-
-					if (!eventUrl?.length) {
-						injectLogs("No event URL? There's something wrong with the server.");
-						return;
-					}
-					
-					connectToLogs(eventUrl);
-					
+					const data = Object.fromEntries(formData.entries())
+					execute(data.path)
 				}}>
 					<div id="inspect-field">
 						<label for="path">Path Name</label>

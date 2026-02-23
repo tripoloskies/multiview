@@ -27,7 +27,7 @@ export const actions = async (data) => {
   try {
     let newData = await schema.parseAsync(data);
     let instance = await getStreamInstance(newData.path);
-    let mediaUrl = `http://${process.env.HOST}:8888/${newData.path}/index.m3u8`;
+    let mediaUrl = `http://${Bun.env.HOST}:8888/${newData.path}/index.m3u8`;
     if (!instance.length) {
       return {
         success: false,
