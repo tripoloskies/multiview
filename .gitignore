@@ -1,0 +1,12 @@
+node_modules/
+.svelte-kit/
+build/
+.env
+.pm2/
+config/*
+!config/README.md
+db/*
+!db/README.md
+core
+backups/*
+backups/
