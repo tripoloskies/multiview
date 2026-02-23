@@ -20,7 +20,6 @@ if [[ -z "$SOURCE_URL" ]]; then
     exit 1
 fi
 
-
 while true; do
     curl -s -X POST http://$HOST:$BUN_SERVER_PORT/api/inform -F "id=$STREAM_PATH" -F "status=Checking" -F "action=Update"
     echo "Checking status..."

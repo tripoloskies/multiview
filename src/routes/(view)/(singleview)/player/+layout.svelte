@@ -43,7 +43,7 @@
 					{@render children()}
 				</div>	
 			{/if}
-			<Viewer path={data.path} online={online || false} status={status}></Viewer>
+			<Viewer path={data.path} online={online || false} status={status} muted={false}></Viewer>
 		{/if}
 	</div>
 	
