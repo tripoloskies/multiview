@@ -1,6 +1,6 @@
 import { isStreamExists, addStreamInstance } from "$server/streams/console";
 import z from "zod";
-import { db } from "$server/database";
+import { prisma } from "$server/prisma";
 
 /**
  * @param {{}} data
@@ -36,10 +36,35 @@ export const actions = async (data) => {
     await addStreamInstance(newData.url, newData.path);
 
     newPath = newData.path;
-    db.query("DELETE from streams WHERE id=$id").run({ $id: newPath });
-    db.prepare(`INSERT INTO streams VALUES ($id, $status)`).run({
-      $id: newPath,
-      $status: "Added",
+
+    let creatorData = await prisma.creator.findFirst({
+      select: {
+        name: true,
+      },
+      where: {
+        name: newData.path,
+      },
+    });
+
+    if (!creatorData) {
+      creatorData = await prisma.creator.create({
+        data: {
+          name: newData.path,
+        },
+      });
+    }
+
+    await prisma.activeStreams.upsert({
+      where: {
+        creatorName: creatorData.name,
+      },
+      update: {
+        status: "Added",
+      },
+      create: {
+        creatorName: creatorData.name,
+        status: "Added",
+      },
     });
   } catch (e) {
     if (e instanceof z.ZodError) {

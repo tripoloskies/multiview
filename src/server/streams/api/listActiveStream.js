@@ -2,7 +2,7 @@ import {
   deleteStoppedInstances,
   listStreamInstance,
 } from "$server/streams/console";
-import { db } from "$server/database";
+import { prisma } from "$server/prisma";
 
 /**
  * @param {{}} data
@@ -39,20 +39,23 @@ export const actions = async (data) => {
     let pm2InstanceLists = await listStreamInstance();
     await deleteStoppedInstances();
 
-    let instanceLists = pm2InstanceLists.list.map((instance) => {
-      const statusQuery = db
-        .query("SELECT status from streams WHERE id=$id")
-        .values({ $id: instance.name });
-      let status = "No Report";
-      if (statusQuery.length) {
-        status = String(statusQuery[0]);
-      }
+    let instanceLists = [];
 
-      return {
-        ...instance,
-        status: status,
-      };
-    });
+    for (const list of pm2InstanceLists.list) {
+      const activeStreamsData = await prisma.activeStreams.findFirst({
+        select: {
+          status: true,
+        },
+        where: {
+          creatorName: list.name,
+        },
+      });
+
+      instanceLists.push({
+        ...list,
+        status: activeStreamsData ? activeStreamsData?.status : "No Report",
+      });
+    }
     return {
       success: true,
       message: "OK",

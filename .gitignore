@@ -10,3 +10,4 @@ db/*
 core
 backups/*
 backups/
+/generated/prisma

@@ -1,6 +1,6 @@
 import { getStreamInstance } from "$server/streams/console";
 import z from "zod";
-import { db } from "$server/database";
+import { prisma } from "$server/prisma";
 
 /**
  *
@@ -35,11 +35,16 @@ export const actions = async (data) => {
       };
     }
 
-    const status = db
-      .query("SELECT status FROM streams WHERE id=$id")
-      ?.values({ $id: newData.path });
+    const activeStreamsData = await prisma.activeStreams.findFirst({
+      select: {
+        status: true,
+      },
+      where: {
+        creatorName: newData.path,
+      },
+    });
 
-    if (!status.length) {
+    if (!activeStreamsData) {
       return {
         success: false,
         message: "No status for this?",
@@ -49,7 +54,7 @@ export const actions = async (data) => {
       success: true,
       message: `OK`,
       data: {
-        status: status[0],
+        status: activeStreamsData.status,
         url: mediaUrl,
         online: await urlTest(mediaUrl),
         instance: instance,

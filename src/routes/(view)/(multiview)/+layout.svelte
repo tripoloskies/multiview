@@ -53,7 +53,7 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 	#multiview-container {
-		@apply grid h-full w-full grow grid-rows-6 grid-cols-2 md:grid-rows-4 md:grid-cols-3 xl:grid-rows-3 xl:grid-cols-4;
+		@apply grid h-full w-full grow grid-rows-8 grid-cols-2 md:grid-rows-4 md:grid-cols-4 xl:grid-rows-4 xl:grid-cols-4;
 	}
 
 	.item {
@@ -61,6 +61,6 @@
 	}
 
 	.item-overlay {
-		@apply absolute w-full h-full z-10 flex items-center justify-center;
+		@apply absolute w-full h-full z-20 flex items-center justify-center;
 	}
 </style>

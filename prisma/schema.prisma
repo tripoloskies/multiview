@@ -1,0 +1,32 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+
+model ActiveStreams {
+  status String
+  creator Creator @relation(fields: [creatorName], references: [name]) 
+  creatorName String @id
+}
+
+model Creator {
+  name String @id
+  vodProps VodProps[]
+  activeStreams ActiveStreams[]
+}
+
+model VodProps {
+  id String @id
+  creator Creator @relation(fields: [creatorName], references: [name]) 
+  creatorName String
+  manifestPath String
+  datePublished DateTime
+}

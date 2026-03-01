@@ -26,7 +26,9 @@ async function parseNetscapeCookies(filePath) {
     const parts = trimmed.split("\t");
     if (parts.length < 7) continue;
 
-    const [domain, path, secure, expires, name, value] = parts;
+    // eslint-disable-next-line no-unused-vars
+    const [domain, includeSubdomains, path, secure, expires, name, value] =
+      parts;
 
     cookies.push({
       name,

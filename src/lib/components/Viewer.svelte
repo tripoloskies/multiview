@@ -29,6 +29,17 @@
 	let player;
 
 	/**
+	 * @type {HTMLDivElement}
+	 */
+	let margin;
+
+	
+	/**
+	 * @type {HTMLDivElement}
+	 */
+	let marginAction;
+
+	/**
 	 * @type {import("hls.js").ErrorTypes | null}
 	 */
 	let errorType = $state(null)
@@ -39,6 +50,10 @@
 	let meterLabel = $state(-40)
 	let meterColorIndicator = $state("")
 
+	let playerWidth = $state(0)
+	let playerHeight = $state(0)
+	let videoHeight = $state(0)
+	let videoWidth = $state(0)
 
 	onMount(() => {
 		player.muted = true;
@@ -73,6 +88,46 @@
 		destroyView();
 	})
 
+	$effect(() => {
+
+		if (!margin) {
+			return;
+		}
+
+		
+		const videoRatio = videoWidth / videoHeight;
+		const elementRatio = playerWidth / playerHeight;
+
+		let realWidth, realHeight;
+		let offsetX = 0;
+		let offsetY = 0;
+		if (elementRatio > videoRatio) {
+		// element is wider → black bars left/right
+		realHeight = playerHeight;
+		realWidth = realHeight * videoRatio;
+		offsetX = (playerWidth - realWidth) / 2;
+		} else {
+		// element is taller → black bars top/bottom
+		realWidth = playerWidth;
+		realHeight = realWidth / videoRatio;
+		offsetY = (playerHeight - realHeight) / 2;
+		}
+
+		margin.style.width = `${realWidth}px`;
+		margin.style.height = `${realHeight}px`;
+		margin.style.top = `${offsetY}px`;
+		margin.style.left = `${offsetX}px`;
+		margin.style.paddingLeft = `${(realWidth * 0.035)}px`;
+		margin.style.paddingRight = `${(realWidth * 0.035)}px`;
+		margin.style.paddingTop = `${(realHeight * 0.035)}px`;
+		margin.style.paddingBottom = `${(realHeight * 0.035)}px`;
+
+		marginAction.style.paddingLeft = `${(realWidth * 0.015)}px`;
+		marginAction.style.paddingRight = `${(realWidth * 0.015)}px`;
+		marginAction.style.paddingTop = `${(realHeight * 0.015)}px`;
+		marginAction.style.paddingBottom = `${(realHeight * 0.015)}px`;
+
+	})
 	async function loadMeter() {
 
 		if (audioContext) {
@@ -170,6 +225,10 @@
 				return;
 			}
 			player.currentTime = instance.liveSyncPosition;
+
+			if (player.paused) {
+
+			}
 		}
 
 		instance.on(Hls.Events.ERROR, (event, data) => {
@@ -209,8 +268,12 @@
 				<b>Online</b>
 			{/if}
 			</div>
-
-			<video class={!visible ? "hidden" : ""} bind:this={player} autoplay>
+			<div bind:this={margin} class={`safe-margin ${videoHeight > 0 ? "" : "hidden"}`}>
+				<div bind:this={marginAction} class="safe-margin-action">
+					<div class="safe-margin-title"></div>
+				</div>
+			</div>
+			<video bind:clientHeight={playerHeight} bind:videoHeight={videoHeight} bind:videoWidth={videoWidth} bind:clientWidth={playerWidth} class={!visible ? "hidden" : ""} bind:this={player} autoplay>
 				<b>Dog</b>
 			</video>
 		</div>
@@ -232,6 +295,13 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
+
+	.safe-margin-action, .safe-margin-title {
+		@apply border-2 w-full h-full border-white;
+	}
+	.safe-margin {
+		@apply absolute z-10;
+	}
 	button {
 		@apply flex flex-1 h-full w-full cursor-pointer;
 	}

@@ -1,8 +1,11 @@
 import { error } from "@sveltejs/kit";
+import { prisma } from "$lib/prisma.js";
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ fetch, params, locals }) {
+export async function load({ params, locals }) {
   let page = Number(params.page);
+  let visiblePages = [];
+  const ITEMS_PER_PAGE = 9;
   const VISIBLE_PAGE_LIMIT = 5;
 
   if (isNaN(page)) {
@@ -10,66 +13,58 @@ export async function load({ fetch, params, locals }) {
   } else if (page <= 0) {
     error(400, "Bad Request. There's no page 0 below!");
   }
-  try {
-    /**
-     * @type {{
-     *  pageCount: number,
-     *  itemCount: number,
-     *  items: [{
-     *      name: string,
-     *      segments: [{
-     *          "start": "string"
-     *      }]
-     *  }]
-     * }}
-     */
-    let searchData = await (
-      await fetch(
-        `http://${locals.host}:9997/v3/recordings/list?itemsPerPage=10&page=${page - 1}`,
-      )
-    ).json();
-    let items = searchData.items.map((item) => {
-      /**
-       * @type {Set<number>}
-       */
-      let publishedDate = new Set();
-      for (const segment of item.segments) {
-        let segmentStart = new Date(segment.start);
-        segmentStart.setHours(0, 0, 0, 0);
-        let date = segmentStart.getTime();
-        publishedDate.add(date);
-      }
-      return {
-        name: item.name,
-        publishedDate: [...publishedDate],
-      };
-    });
 
-    let visiblePages = [];
+  let itemCount = await prisma.vodProps.count();
+  let data = await prisma.vodProps.findMany({
+    select: {
+      id: true,
+      datePublished: true,
+      creator: {
+        select: {
+          name: true,
+        },
+      },
+    },
+    orderBy: {
+      datePublished: "desc",
+    },
+    take: ITEMS_PER_PAGE,
+    skip: ITEMS_PER_PAGE * page - ITEMS_PER_PAGE,
+  });
 
-    if (page <= VISIBLE_PAGE_LIMIT - 2) {
-      for (let x = 1; x <= VISIBLE_PAGE_LIMIT; x++) {
-        if (x > searchData.pageCount) {
-          break;
-        }
-        visiblePages.push(x);
+  const pageCount = Math.ceil(itemCount / ITEMS_PER_PAGE);
+
+  if (page <= VISIBLE_PAGE_LIMIT - 2) {
+    for (let x = 1; x <= VISIBLE_PAGE_LIMIT; x++) {
+      if (x > pageCount) {
+        break;
       }
-    } else {
-      for (let x = page - 2; x <= page + 2; x++) {
-        if (x > searchData.pageCount) {
-          break;
-        }
-        visiblePages.push(x);
-      }
+      visiblePages.push(x);
     }
-    return {
-      visiblePages: visiblePages,
-      currentPage: page,
-      pageCount: searchData.pageCount,
-      itemCount: searchData.itemCount,
-      latestRecordingsList: items,
-    };
-  } catch (e) {
-    console.log(e);
+  } else {
+    for (let x = page - 2; x <= page + 2; x++) {
+      if (x > pageCount) {
+        break;
+      }
+      visiblePages.push(x);
+    }
   }
+
+  let list = data.map((list) => {
+    const date = new Date(list.datePublished).toDateString();
+    return {
+      id: list.id,
+      title: date,
+      author: list.creator.name,
+      thumbnail: `${locals.host}:3000/api/vod/fetch=${list.id}&type=thumbnail`,
+      link: `/recordings/play?id=${list.id}`,
+    };
+  });
+  return {
+    visiblePages: visiblePages,
+    currentPage: page,
+    pageCount: pageCount,
+    itemCount: itemCount,
+    lists: list,
+  };
 }

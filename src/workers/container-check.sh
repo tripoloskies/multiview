@@ -1,3 +1,4 @@
+# DEPRECATED. DON'T USE.
 #!/bin/bash
 
 URL=$1
