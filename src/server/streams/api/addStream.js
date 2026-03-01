@@ -37,32 +37,24 @@ export const actions = async (data) => {
 
     newPath = newData.path;
 
-    let creatorData = await prisma.creator.findFirst({
-      select: {
-        name: true,
-      },
-      where: {
-        name: newData.path,
-      },
-    });
-
-    if (!creatorData) {
-      creatorData = await prisma.creator.create({
-        data: {
-          name: newData.path,
-        },
-      });
-    }
-
     await prisma.activeStreams.upsert({
       where: {
-        creatorName: creatorData.name,
+        creatorName: newData.path,
       },
       update: {
         status: "Added",
       },
       create: {
-        creatorName: creatorData.name,
+        creator: {
+          connectOrCreate: {
+            where: {
+              name: newData.path
+            },
+            create: {
+              name: newData.path
+            }
+          }
+        },
         status: "Added",
       },
     });

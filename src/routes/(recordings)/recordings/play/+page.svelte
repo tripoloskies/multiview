@@ -8,9 +8,7 @@ let { data } = $props()
 </svelte:head>
 <div class="playback-container">
 	<div class="playback-container-header">
-		<div>
-			<h2>Playback</h2>
-		</div>
+		<h1>{data.title}</h1>
 	</div>
 	<div class="playback-container-body">
 		{#if data.mediaUrl}
@@ -26,7 +24,7 @@ let { data } = $props()
 <style lang="postcss">
 	@reference "tailwindcss";
 	.playback-container-header {
-		@apply flex justify-between bg-neutral-800 flex-col md:flex-row space-y-4 md:space-y-0;
+		@apply flex justify-between bg-neutral-800 py-2;
 	}
 	.error {
 		@apply flex items-center justify-center pt-4;

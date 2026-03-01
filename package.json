@@ -4,9 +4,9 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "cross-env PM2_HOME=./.pm2 pm2 delete 'internal:svelte' 'internal:renew-cookies' 'internal:bun-server' ; cross-env PM2_HOME=./.pm2 pm2 start ./ecosystem.dev.config.cjs",
+    "dev": "cross-env PM2_HOME=./.pm2 pm2 delete 'internal:svelte' 'internal:renew-cookies' 'internal:vod-cleaner' 'internal:bun-server' ; cross-env PM2_HOME=./.pm2 pm2 start ./ecosystem.dev.config.cjs",
     "build": "vite build",
-    "preview": "cross-env PM2_HOME=./.pm2 pm2 delete 'internal:svelte' 'internal:renew-cookies' 'internal:bun-server'; cross-env PM2_HOME=./.pm2 pm2 start ./ecosystem.prod.config.cjs",
+    "preview": "cross-env PM2_HOME=./.pm2 pm2 delete 'internal:svelte' 'internal:renew-cookies' 'internal:vod-cleaner' 'internal:bun-server'; cross-env PM2_HOME=./.pm2 pm2 start ./ecosystem.prod.config.cjs",
     "pm2": "cross-env PM2_HOME=./.pm2 pm2",
     "kill": "cross-env PM2_HOME=./.pm2 pm2 kill",
     "clean-dev": "cross-env PM2_HOME=./.pm2 pm2 delete all; cross-env PM2_HOME=./.pm2 pm2 start ./ecosystem.dev.config.cjs",

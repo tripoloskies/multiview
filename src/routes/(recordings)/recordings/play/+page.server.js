@@ -25,7 +25,7 @@ export async function load({ url, locals }) {
 
     return {
       id: data.id,
-      title: new Date(data.datePublished).toTimeString(),
+      title: new Date(data.datePublished).toUTCString(),
       mediaUrl: `http://${locals.host}:3000/api/vod/fetch?id=${data.id}`,
     };
   } catch (e) {

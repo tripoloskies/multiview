@@ -8,7 +8,7 @@ export const handle = async ({ event, resolve }) => {
   const isHttps = event.url.protocol === "https:";
 
   // Check all .env configs
-  if (!Bun.env?.HOST) {
+  if (!Bun.env?.HOST || !Bun.env?.RECORD_PATH) {
     error(500, "Missing environment configuration.");
   }
 
@@ -22,6 +22,7 @@ export const handle = async ({ event, resolve }) => {
     });
   }
 
+  event.locals.recordPath = Bun.env.RECORD_PATH;
   event.locals.sessionId = sessionId;
   event.locals.host = Bun.env.HOST;
 

@@ -176,42 +176,34 @@ export const routes = {
       try {
         let newData = await schema.parseAsync(data);
 
-        let creatorData = await prisma.creator.findFirst({
-          select: {
-            name: true,
-          },
-          where: {
-            name: newData.id,
-          },
-        });
-
-        if (!creatorData) {
-          creatorData = await prisma.creator.create({
-            data: {
-              name: newData.id,
-            },
-          });
-        }
-
         switch (newData.action) {
           case "Update":
             await prisma.activeStreams.upsert({
               where: {
-                creatorName: creatorData.name,
+                creatorName: newData.id,
               },
               update: {
                 status: newData.status,
               },
               create: {
-                creatorName: newData.id,
+                creator: {
+                  connectOrCreate: {
+                    where: {
+                      name: newData.id
+                    },
+                    create: {
+                      name: newData.id
+                    }
+                  }
+                },
                 status: newData.status,
               },
             });
             break;
           case "Delete":
-            await prisma.activeStreams.delete({
+            await prisma.activeStreams.deleteMany({
               where: {
-                creatorName: creatorData.name,
+                creatorName: newData.id
               },
             });
             break;

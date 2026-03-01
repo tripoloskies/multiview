@@ -9,6 +9,6 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 	div {
-		@apply container mx-auto flex flex-col space-y-2 pt-8;
+		@apply container mx-auto flex flex-col space-y-2 pt-8 px-4;
 	}
 </style>

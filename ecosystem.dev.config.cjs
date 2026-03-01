@@ -22,6 +22,9 @@ module.exports = {
         "build",
         "db",
         "config",
+        "backup",
+        "generated",
+        "prisma"
       ],
       env: {
         NODE_ENV: "development",
@@ -31,6 +34,12 @@ module.exports = {
       name: "internal:renew-cookies",
       script: "bun",
       args: "--bun ./src/cron/renewCookies.js",
+      watch: false,
+    },
+    {
+      name: "internal:vod-cleaner",
+      script: "bun",
+      args: "--bun ./src/cron/vodCleaner.js",
       watch: false,
     },
   ],

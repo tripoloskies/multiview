@@ -13,24 +13,18 @@ module.exports = {
       name: "internal:bun-server",
       script: "./src/server/bun.js",
       interpreter: "bun",
-      watch: true,
-      ignore_watch: [
-        "node_modules",
-        ".pm2",
-        ".svelte-kit",
-        "build",
-        "db",
-        "config",
-      ],
-      env: {
-        NODE_ENV: "production",
-      },
+      watch: false,
     },
     {
       name: "internal:renew-cookies",
       script: "bun",
-
       args: "--bun ./src/cron/renewCookies.js",
+      watch: false,
+    },
+    {
+      name: "internal:vod-cleaner",
+      script: "bun",
+      args: "--bun ./src/cron/vodCleaner.js",
       watch: false,
     },
   ],

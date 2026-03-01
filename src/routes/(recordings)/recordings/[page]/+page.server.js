@@ -51,7 +51,7 @@ export async function load({ params, locals }) {
   }
 
   let list = data.map((list) => {
-    const date = new Date(list.datePublished).toDateString();
+    const date = new Date(list.datePublished).toUTCString();
     return {
       id: list.id,
       title: date,

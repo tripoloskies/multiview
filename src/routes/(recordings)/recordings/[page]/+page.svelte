@@ -68,13 +68,16 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 	.front {
-		@apply grid grid-cols-3 gap-4;
+		@apply grid grid-cols-1 lg:grid-cols-3 gap-4;
 	}
 
 	.list-box {
 		@apply bg-neutral-700 overflow-hidden;
 	}
 
+	.list-image {
+		@apply aspect-video flex items-center justify-center;
+	}
 	.list-bottom {
 		@apply p-4 flex space-x-4;
 	}
@@ -83,7 +86,7 @@
 		@apply flex items-center justify-center;
 	}
 	#page-header {
-		@apply flex justify-between items-center;
+		@apply flex justify-between items-center px-2;
 	}
 
 	#page-selectors {

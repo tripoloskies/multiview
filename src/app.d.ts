@@ -7,8 +7,9 @@ declare global {
       request: Request;
     }
     interface Locals {
-      sessionId: String;
-      host: String;
+      sessionId: string;
+      host: string;
+      recordPath: string;
     }
   }
 }

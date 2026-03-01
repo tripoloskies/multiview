@@ -45,17 +45,11 @@ export const actions = async (data) => {
       setTimeout(() => resolve(true), 500);
     });
 
-    try {
-      await prisma.activeStreams.delete({
-        where: {
-          creatorName: creatorData.name,
-        },
-      });
-      // eslint-disable-next-line no-unused-vars
-    } catch (e) {
-      // There's a race condition between deleting activeStreams here and deleting streams from "stream-create.sh" while on exit or force exit.
-      // Ignore the errors and move forward.
-    }
+    await prisma.activeStreams.deleteMany({
+      where: {
+        creatorName: creatorData.name,
+      },
+    });
     return {
       success: true,
       message: `Instance ${newData.path} deleted successfully.`,
