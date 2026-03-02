@@ -1,10 +1,12 @@
 
 #!/bin/bash
 
-
-# Params
-SOURCE_URL="$1"
-STREAM_PATH="$2"
+#---------------------------------------------#
+#--------- CONFIGURATION VARIABLES -----------#
+#---------------------------------------------#
+#----------Change those variables ------------#
+#----------depending on your setup------------#
+#---------------------------------------------#
 
 # Environment Path Variables
 RECORDING_PATH="/mnt/record-storage"
@@ -15,6 +17,12 @@ PW_DIR=$(pwd)
 HOST="127.0.0.1"
 BUN_SERVER_PORT="3000"
 
+#------ END OF CONFIGURATION VARIABLES -------#
+
+
+# Params
+SOURCE_URL="$1"
+STREAM_PATH="$2"
 
 # Background PID's to close in case of nasty moments while this script was running.
 PUBLISHER_PID=""
@@ -94,7 +102,7 @@ publish() {
     -muxdelay 0.5 \
     -f tee " \
         [f=mpegts:onfail=abort]srt://$HOST:8890?streamid=publish:$STREAM_PATH&latency=500000&pkt_size=1316| \
-        [f=hls:onfail=abort:hls_time=2:hls_segment_filename=$A_DIR/segments/segment%d.ts:hls_playlist_type=event]$A_DIR/index.m3u8" &
+        [f=hls:onfail=abort:hls_time=5:hls_segment_filename=$A_DIR/segments/segment%d.ts:hls_playlist_type=event]$A_DIR/index.m3u8" &
 
     PUBLISHER_PID=$!
     
@@ -206,7 +214,7 @@ while true; do
         echo "Unknown URL."
         break
     else
-        inform_update $STATUS
+        inform_update "$STATUS"
         echo "Unknown ($STATUS). Retrying in 15s..."
         sleep 15
         continue
