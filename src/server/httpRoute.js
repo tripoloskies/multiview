@@ -1,5 +1,6 @@
 import z from "zod";
 import { prisma } from "$server/prisma";
+import { rm } from "node:fs/promises";
 
 function randomStringGenerator() {
   const chars =
@@ -92,6 +93,59 @@ export const routes = {
       }
     },
   },
+  "/api/vod/verify": {
+    /**
+     *
+     * @param {import("bun").BunRequest} request
+     * @returns
+     */
+    POST: async(request) => {
+      const data = Object.fromEntries((await request.formData()).entries());
+      const schema = z.object({
+        id: z.string().min(1),
+      });
+
+      try {
+        const newData = await schema.parseAsync(data);
+        const vodData = await prisma.vodProps.findFirst({
+          select: {
+            id: true,
+            manifestPath: true
+          },
+          where: {
+            id: newData.id,
+          },
+        });
+
+        if (!vodData) {
+          return new Response("-1");
+        }
+
+        const path = `${Bun.env.RECORD_PATH}/${vodData.manifestPath}`;
+        const videoPath = `${path}/index.mp4`;
+        const imagePath = `${path}/thumbnail.jpg`;
+
+        if (!await Bun.file(videoPath).exists() || !await Bun.file(imagePath).exists()) {
+          await prisma.vodProps.deleteMany({
+            where: {
+              id: vodData.id
+            }
+          })
+          await rm(path, { force: true, recursive: true });
+        }
+
+
+        return new Response("0");
+      } catch (error) {
+        console.error(error);
+        if (error instanceof z.ZodError) {
+          return new Response("-2");
+        } else {
+          return new Response("-3");
+        }
+      }
+  }
+  },
   "/api/vod/publish": {
     /**
      *
@@ -99,7 +153,7 @@ export const routes = {
      * @returns
      */
     POST: async (request) => {
-      let stremVodId = "";
+      let streamVodId = "";
       const data = Object.fromEntries((await request.formData()).entries());
       const schema = z.object({
         id: z.string().min(1),
@@ -122,13 +176,13 @@ export const routes = {
         }
 
         while (true) {
-          stremVodId = randomStringGenerator();
+          streamVodId = randomStringGenerator();
           let existingStream = await prisma.vodProps.findFirst({
             select: {
               id: true,
             },
             where: {
-              id: stremVodId,
+              id: streamVodId,
             },
           });
 
@@ -138,16 +192,16 @@ export const routes = {
           break;
         }
 
-        let manifestPath = `${creatorData.name}/${stremVodId}`;
+        let manifestPath = `${creatorData.name}/${streamVodId}`;
         await prisma.vodProps.create({
           data: {
-            id: stremVodId,
+            id: streamVodId,
             creatorName: creatorData.name,
             manifestPath: manifestPath,
             datePublished: new Date().toISOString(),
           },
         });
-        return new Response(manifestPath);
+        return new Response(streamVodId);
       } catch (error) {
         console.error(error);
         if (error instanceof z.ZodError) {
@@ -189,12 +243,12 @@ export const routes = {
                 creator: {
                   connectOrCreate: {
                     where: {
-                      name: newData.id
+                      name: newData.id,
                     },
                     create: {
-                      name: newData.id
-                    }
-                  }
+                      name: newData.id,
+                    },
+                  },
                 },
                 status: newData.status,
               },
@@ -203,7 +257,7 @@ export const routes = {
           case "Delete":
             await prisma.activeStreams.deleteMany({
               where: {
-                creatorName: newData.id
+                creatorName: newData.id,
               },
             });
             break;
