@@ -1,6 +1,28 @@
 <script>
-
+    import Hls from 'hls.js';
+    import { onMount } from 'svelte';
 let { data } = $props()
+
+/**
+ * @type {HTMLVideoElement | undefined}
+ */
+let player = $state()
+
+let hls = new Hls()
+
+
+onMount(() => {
+	if (!player || !Hls.isSupported()) {
+		return;
+	}
+
+	hls.attachMedia(player)
+
+	hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+		hls.loadSource(data.mediaUrl)
+	})
+
+})
 
 </script>
 <svelte:head>
@@ -12,7 +34,7 @@ let { data } = $props()
 	</div>
 	<div class="playback-container-body">
 		{#if data.mediaUrl}
-		<video src={data.mediaUrl} autoplay muted controls></video>
+		<video bind:this={player} autoplay muted controls></video>
 		{:else}
 		<div class="error">
 			<h1>Timeline not found.</h1>

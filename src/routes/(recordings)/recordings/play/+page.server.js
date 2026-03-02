@@ -26,7 +26,7 @@ export async function load({ url, locals }) {
     return {
       id: data.id,
       title: new Date(data.datePublished).toUTCString(),
-      mediaUrl: `http://${locals.host}:3000/api/vod/fetch?id=${data.id}`,
+      mediaUrl: `http://${locals.host}:3000/api/vod/fetch/${data.id}/index.m3u8`,
     };
   } catch (e) {
     if (e instanceof z.ZodError) {

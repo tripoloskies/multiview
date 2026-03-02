@@ -73,7 +73,7 @@ publish() {
 
     local A_DIR="$RECORDING_PATH/$STREAM_PATH/$VOD_ID"
     mkdir -p "$A_DIR"
-
+    mkdir -p "$A_DIR/segments"
     ffmpeg -stats \
     -thread_queue_size 8192 -fflags +genpts -re \
     -i $TMPDIR/filter1 \
@@ -94,7 +94,7 @@ publish() {
     -muxdelay 0.5 \
     -f tee " \
         [f=mpegts:onfail=abort]srt://$HOST:8890?streamid=publish:$STREAM_PATH&latency=500000&pkt_size=1316| \
-        [f=mp4:onfail=abort:movflags=+frag_keyframe+empty_moov+default_base_moof]$A_DIR/index.mp4" &
+        [f=hls:onfail=abort:hls_time=2:hls_segment_filename=$A_DIR/segments/segment%d.ts:hls_playlist_type=event]$A_DIR/index.m3u8" &
 
     PUBLISHER_PID=$!
     
@@ -104,7 +104,7 @@ publish() {
             echo "The publisher was dead. Skipping..."
             break
         fi
-        ffmpeg -loglevel quiet -i $A_DIR/index.mp4 -frames:v 1 -update true -y $A_DIR/thumbnail.jpg
+        ffmpeg -loglevel quiet -i $A_DIR/segments/segment1.ts -frames:v 1 -update true -y $A_DIR/thumbnail.jpg
         if [ -f "$A_DIR/thumbnail.jpg" ]; then
             echo "Thumbnail successfully created."
             break

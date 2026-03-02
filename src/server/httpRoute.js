@@ -1,6 +1,10 @@
 import z from "zod";
 import { prisma } from "$server/prisma";
 import { rm } from "node:fs/promises";
+import { Glob } from "bun";
+import { dirname } from "node:path";
+
+const SEGMENT_REGEX = /^segment\d+\.ts$/;
 
 function randomStringGenerator() {
   const chars =
@@ -20,7 +24,7 @@ function getCORSValues() {
 }
 
 export const routes = {
-  "/api/vod/fetch": {
+  "/api/vod/fetch/:id/:filename": {
     /**
      *
      * @param {import("bun").BunRequest} request
@@ -33,64 +37,44 @@ export const routes = {
       let fp;
 
       const responseHeaders = new Headers();
-      let data = Object.fromEntries(
-        new URL(request.url).searchParams.entries(),
+      let data = { ...request.params };
+
+      let fileLists = new Glob(
+        `${Bun.env.RECORD_PATH}/**/${data.id}/index.m3u8`,
       );
-      const schema = z.object({
-        id: z.string().min(1),
-        type: z.string().optional(),
-      });
-
-      try {
-        let newData = await schema.parseAsync(data);
-
-        let vodProps = await prisma.vodProps.findFirst({
-          select: {
-            manifestPath: true,
-          },
-          where: {
-            id: newData.id,
-          },
-        });
-
-        if (!vodProps) {
-          return new Response(null, { status: 404 });
-        }
-
-        switch (newData?.type) {
-          case "thumbnail":
-            fp = Bun.file(
-              `/mnt/record-storage/${vodProps.manifestPath}/thumbnail.jpg`,
-            );
-            responseHeaders.set("Content-Type", "image/jpg");
-            // imageHeaders.set("Content-Length", fp.size.toString());
-            responseHeaders.set("Access-Control-Allow-Origin", getCORSValues());
-            break;
-          default:
-            fp = Bun.file(
-              `/mnt/record-storage/${vodProps.manifestPath}/index.mp4`,
-            );
-            responseHeaders.set("Content-Type", "video/mp4");
-            // videoHeaders.set("Content-Length", fpv.size.toString());
-            responseHeaders.set("Access-Control-Allow-Origin", getCORSValues());
-        }
-
-        return new Response(fp, {
-          headers: responseHeaders,
-        });
-      } catch (error) {
-        console.error(error);
-        if (error instanceof z.ZodError) {
-          return Response.json(
-            { success: false },
-            {
-              status: 400,
-            },
-          );
-        } else {
-          return new Response("null");
-        }
+      let path = "";
+      for await (const file of fileLists.scan(".")) {
+        path = dirname(file);
+        break;
       }
+
+      if (SEGMENT_REGEX.test(data.filename)) {
+        fp = Bun.file(`${path}/segments/${data.filename}`);
+        responseHeaders.set("Content-Type", "video/m2ts");
+        // videoHeaders.set("Content-Length", fpv.size.toString());
+        responseHeaders.set("Access-Control-Allow-Origin", getCORSValues());
+      } else if (data.filename === "index.m3u8") {
+        await new Promise((resolve) => setTimeout(() => resolve(true), 100));
+        fp = Bun.file(`${path}/${data.filename}`);
+        responseHeaders.set("Content-Type", "application/vnd.apple.mpegurl");
+        // videoHeaders.set("Content-Length", fpv.size.toString());
+        responseHeaders.set("Access-Control-Allow-Origin", getCORSValues());
+      } else if (data.filename === "thumbnail.jpg") {
+        fp = Bun.file(`${path}/${data.filename}`);
+        responseHeaders.set("Content-Type", "image/jpg");
+        // videoHeaders.set("Content-Length", fpv.size.toString());
+        responseHeaders.set("Access-Control-Allow-Origin", getCORSValues());
+      } else {
+        return new Response(null, { status: 404 });
+      }
+
+      if (!(await fp.exists())) {
+        return new Response(null, { status: 404 });
+      }
+
+      return new Response(fp, {
+        headers: responseHeaders,
+      });
     },
   },
   "/api/vod/verify": {
@@ -122,7 +106,7 @@ export const routes = {
         }
 
         const path = `${Bun.env.RECORD_PATH}/${vodData.manifestPath}`;
-        const videoPath = `${path}/index.mp4`;
+        const videoPath = `${path}/index.m3u8`;
         const imagePath = `${path}/thumbnail.jpg`;
 
         if (

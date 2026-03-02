@@ -225,10 +225,6 @@
 				return;
 			}
 			player.currentTime = instance.liveSyncPosition;
-
-			if (player.paused) {
-
-			}
 		}
 
 		instance.on(Hls.Events.ERROR, (event, data) => {

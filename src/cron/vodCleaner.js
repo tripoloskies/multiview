@@ -5,7 +5,7 @@ import { dirname } from "node:path";
 
 async function execute() {
   while (true) {
-    let fileLists = new Glob(`${Bun.env.RECORD_PATH}/**/*.mp4`);
+    let fileLists = new Glob(`${Bun.env.RECORD_PATH}/**/*.m3u8`);
     /**
      * @type {{ id: string, fullPath: string }[]}
      */
@@ -18,6 +18,7 @@ async function execute() {
     let vodDbLists = await prisma.vodProps.findMany({
       select: {
         id: true,
+        manifestPath: true,
       },
     });
 
@@ -44,8 +45,8 @@ async function execute() {
       },
     });
 
-    for (const path of paths) {
-      await rm(dirname(path.fullPath), {
+    for (const { fullPath } of paths) {
+      await rm(dirname(fullPath), {
         force: true,
         recursive: true,
       });

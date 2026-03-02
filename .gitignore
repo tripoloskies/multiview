@@ -11,3 +11,5 @@ core
 backups/*
 backups/
 /generated/prisma
+src/routes/test/+page.server.js
+src/routes/test/+page.svelte
