@@ -99,7 +99,7 @@ export const routes = {
      * @param {import("bun").BunRequest} request
      * @returns
      */
-    POST: async(request) => {
+    POST: async (request) => {
       const data = Object.fromEntries((await request.formData()).entries());
       const schema = z.object({
         id: z.string().min(1),
@@ -110,7 +110,7 @@ export const routes = {
         const vodData = await prisma.vodProps.findFirst({
           select: {
             id: true,
-            manifestPath: true
+            manifestPath: true,
           },
           where: {
             id: newData.id,
@@ -125,15 +125,17 @@ export const routes = {
         const videoPath = `${path}/index.mp4`;
         const imagePath = `${path}/thumbnail.jpg`;
 
-        if (!await Bun.file(videoPath).exists() || !await Bun.file(imagePath).exists()) {
+        if (
+          !(await Bun.file(videoPath).exists()) ||
+          !(await Bun.file(imagePath).exists())
+        ) {
           await prisma.vodProps.deleteMany({
             where: {
-              id: vodData.id
-            }
-          })
+              id: vodData.id,
+            },
+          });
           await rm(path, { force: true, recursive: true });
         }
-
 
         return new Response("0");
       } catch (error) {
@@ -144,7 +146,7 @@ export const routes = {
           return new Response("-3");
         }
       }
-  }
+    },
   },
   "/api/vod/publish": {
     /**
