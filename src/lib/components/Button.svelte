@@ -12,14 +12,13 @@
 
 	/**
 	 *
-	 * @param {Event} e
+	 * @param {Event} event
 	 */
-	function submitClick(e) {
+	function submitClick(event) {
 		if (!submitButton) {
 			return;
 		}
-
-		e.preventDefault();
+		event.preventDefault();
 		submitButton.click();
 	}
 </script>

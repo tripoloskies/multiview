@@ -1,13 +1,7 @@
 <script>
-	import Accordion from '$lib/components/Accordion.svelte';
     import Button from '$lib/components/Button.svelte';
 
 	let { data } = $props();
-
-	let latestItems = $derived(data.lists);
-	let visiblePages = $derived(data.visiblePages);
-	let currentPage = $derived(data?.currentPage || 0);
-	let totalPage = $derived(data?.pageCount || 0);
 
 </script>
 
@@ -18,25 +12,25 @@
 			Go to Page
 		</div>
 		<div id="page-selectors">
-			{#if currentPage > 3}
+			{#if data.currentPage > 3}
 			<Button type="link" link="1">1</Button>
 			{/if}
-			{#each visiblePages as page (page)}
+			{#each data?.visiblePages as page (page)}
 				{#if page == data.currentPage}
 				<div id="page-selected">{page}</div>
 				{:else}
 				<Button type="link" link={String(page)}>{page}</Button>
 				{/if}
 			{/each}
-			{#if currentPage < totalPage - 2}
-				<Button type="link" link={String(totalPage)}>{String(totalPage)}</Button>
+			{#if data.currentPage < data.pageCount - 2}
+				<Button type="link" link={String(data.pageCount)}>{String(data.pageCount)}</Button>
 			{/if}
 		</div>
 	</div>
 </div>
 
 <div class="front">
-	{#each latestItems as item (item.id)}
+	{#each data.lists as item (item.id)}
 		<a class="list-box" href={`${item.link}`} title={item.title.toString()}>
 			<div class="list-image">
 				<img src={`http://${data.host}:3000/api/vod/fetch?id=${item.id}&type=thumbnail`} alt={item.title.toString()}>
@@ -55,15 +49,6 @@
 		</a>
 	{/each}
 </div>
-
-<Accordion>
-	{#snippet header()}
-		<h2>Raw</h2>
-	{/snippet}
-	<code>
-		{JSON.stringify(latestItems)}
-	</code>
-</Accordion>
 
 <style lang="postcss">
 	@reference "tailwindcss";

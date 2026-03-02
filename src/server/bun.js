@@ -1,7 +1,6 @@
 import { routes } from "./httpRoute";
 import { sockets } from "./websocket";
 
-
 const _server = Bun.serve({
   fetch(req, server) {
     const cookies = req.headers.get("cookie");

@@ -21,6 +21,8 @@ PUBLISHER_PID=""
 MBUFFER_PID=""
 
 
+VOD_ID=""
+
 
 
 if [[ -z "$SOURCE_URL" ]]; then
@@ -34,12 +36,17 @@ getVodId() {
 }
 
 
+checkStreamIfBroken() {
+    curl -s -X POST http://$HOST:$BUN_SERVER_PORT/api/vod/verify -F "id=$VOD_ID" 2>&1
+}
+
+
 publish() {
     local URL=$1
     local BUFFER_SIZE=$2
     local ARGS=$3
 
-    local VOD_ID=$(getVodId)
+    VOD_ID=$(getVodId)
 
     if [[ "$VOD_ID" == "null" ]]; then
         echo "Check if the Bun Server is active and running."
@@ -54,7 +61,7 @@ publish() {
     mbuffer -q -m $BUFFER_SIZE -P 60 > $TMPDIR/filter1 &
     MBUFFER_PID=$!
 
-    local VCODEC=$(ffprobe -loglevel quiet -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 -analyzeduration 2k -probesize 2k -i "$URL" | head -n 1)
+    local VCODEC=$(streamlink --stdout "$URL" best | ffprobe -loglevel quiet -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 -analyzeduration 2k -probesize 2k -i - | head -n 1)
 
     if [[ "$VCODEC" == "h264" ]]; then
         TAG="avc1"
@@ -64,8 +71,8 @@ publish() {
         TAG="$VCODEC"
     fi
 
-    local A_DIR="$RECORDING_PATH/$VOD_ID"
-    mkdir -p $A_DIR
+    local A_DIR="$RECORDING_PATH/$STREAM_PATH/$VOD_ID"
+    mkdir -p "$A_DIR"
 
     ffmpeg -stats \
     -thread_queue_size 8192 -fflags +genpts -re \
@@ -73,7 +80,7 @@ publish() {
     -c:v copy \
     -c:a aac \
     -b:a 192k \
-    -af aresample=async=1 -profile:a aac_low -ar 44100 \
+    -af "aresample=async=1:first_pts=0" -profile:a aac_low \
     -aac_coder fast \
     -flags +global_header \
     -map 0:v -map 0:a \
@@ -86,8 +93,8 @@ publish() {
     -avoid_negative_ts make_zero \
     -muxdelay 0.5 \
     -f tee " \
-        [f=mpegts]srt://$HOST:8890?streamid=publish:$STREAM_PATH&latency=500000&pkt_size=1316| \
-        [f=mp4:movflags=+frag_keyframe+empty_moov+default_base_moof]$A_DIR/index.mp4" &
+        [f=mpegts:onfail=abort]srt://$HOST:8890?streamid=publish:$STREAM_PATH&latency=500000&pkt_size=1316| \
+        [f=mp4:onfail=abort:movflags=+frag_keyframe+empty_moov+default_base_moof]$A_DIR/index.mp4" &
 
     PUBLISHER_PID=$!
     
@@ -108,6 +115,7 @@ publish() {
     done
 
     wait $PUBLISHER_PID
+    checkStreamIfBroken
 }
 
 inform_update() {
@@ -121,10 +129,11 @@ inform_delete() {
 }
 
 close() {
-    inform_delete "Closing" ; \
-    [ -n "$PUBLISHER_PID" ] && kill -9 "$PUBLISHER_PID" 2>/dev/null; \
-    [ -n "$MBUFFER_PID" ] && kill -9 "$MBUFFER_PID" 2>/dev/null; \
-    rm -rf "$TMPDIR" ; \
+    checkStreamIfBroken
+    inform_delete "Closing"
+    [ -n "$PUBLISHER_PID" ] && kill -9 "$PUBLISHER_PID" 2>/dev/null
+    [ -n "$MBUFFER_PID" ] && kill -9 "$MBUFFER_PID" 2>/dev/null
+    rm -rf "$TMPDIR"
     exit 1
 }
 

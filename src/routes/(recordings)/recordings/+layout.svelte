@@ -4,8 +4,8 @@
 	import Container from '$lib/components/Container.svelte';
     import { resolve } from '$app/paths';
 
-
 	let { children } = $props();
+	
 </script>
 
 <svelte:head>

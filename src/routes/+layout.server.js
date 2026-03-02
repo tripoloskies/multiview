@@ -2,6 +2,6 @@
 export async function load({ locals }) {
   return {
     host: locals.host,
-    recordPath: locals.recordPath
+    recordPath: locals.recordPath,
   };
 }

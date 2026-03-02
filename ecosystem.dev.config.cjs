@@ -24,7 +24,7 @@ module.exports = {
         "config",
         "backup",
         "generated",
-        "prisma"
+        "prisma",
       ],
       env: {
         NODE_ENV: "development",

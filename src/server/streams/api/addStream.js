@@ -48,12 +48,12 @@ export const actions = async (data) => {
         creator: {
           connectOrCreate: {
             where: {
-              name: newData.path
+              name: newData.path,
             },
             create: {
-              name: newData.path
-            }
-          }
+              name: newData.path,
+            },
+          },
         },
         status: "Added",
       },
