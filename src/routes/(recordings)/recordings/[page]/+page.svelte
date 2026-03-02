@@ -12,8 +12,8 @@
 			Go to Page
 		</div>
 		<div id="page-selectors">
-			{#if data.currentPage > 3}
-			<Button type="link" link="1">1</Button>
+			{#if data.currentPage > 3 && (data.pageCount >= data.pageLimit)}
+			<Button type="link" link="1">First</Button>
 			{/if}
 			{#each data?.visiblePages as page (page)}
 				{#if page == data.currentPage}
@@ -22,8 +22,8 @@
 				<Button type="link" link={String(page)}>{page}</Button>
 				{/if}
 			{/each}
-			{#if data.currentPage < data.pageCount - 2}
-				<Button type="link" link={String(data.pageCount)}>{String(data.pageCount)}</Button>
+			{#if (data.currentPage < data.pageCount - 2) && (data.pageCount >= data.pageLimit)}
+				<Button type="link" link={String(data.pageCount)}>Last</Button>
 			{/if}
 		</div>
 	</div>
@@ -33,7 +33,7 @@
 	{#each data.lists as item (item.id)}
 		<a class="list-box" href={`${item.link}`} title={item.title.toString()}>
 			<div class="list-image">
-				<img src={`http://${data.host}:3000/api/vod/fetch?id=${item.id}&type=thumbnail`} alt={item.title.toString()}>
+				<img src={item.thumbnail} alt={item.title.toString()}>
 			</div>
 			<div class="list-bottom">
 				<div class="list-icon-movie">

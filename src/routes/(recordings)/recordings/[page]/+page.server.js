@@ -6,7 +6,7 @@ export async function load({ params, locals }) {
   let page = Number(params.page);
   let visiblePages = [];
   const ITEMS_PER_PAGE = 9;
-  const VISIBLE_PAGE_LIMIT = 5;
+  const VISIBLE_PAGE_LIMIT = 4;
 
   if (isNaN(page)) {
     error(400, "Bad Request. Please check if the page number is valid or not.");
@@ -42,11 +42,17 @@ export async function load({ params, locals }) {
       visiblePages.push(x);
     }
   } else {
-    for (let x = page - 2; x <= page + 2; x++) {
-      if (x > pageCount) {
-        break;
+    if (pageCount - page < 2) {
+      for (let x = pageCount - VISIBLE_PAGE_LIMIT; x <= pageCount; x++) {
+        visiblePages.push(x);
       }
-      visiblePages.push(x);
+    } else {
+      for (let x = page - 2; x <= page + 2; x++) {
+        if (x > pageCount) {
+          break;
+        }
+        visiblePages.push(x);
+      }
     }
   }
 
@@ -56,7 +62,7 @@ export async function load({ params, locals }) {
       id: list.id,
       title: date,
       author: list.creator.name,
-      thumbnail: `${locals.host}:3000/api/vod/fetch=${list.id}&type=thumbnail`,
+      thumbnail: `http://${locals.host}:3000/api/vod/fetch/${list.id}/thumbnail.jpg`,
       link: `/recordings/play?id=${list.id}`,
     };
   });
@@ -64,6 +70,7 @@ export async function load({ params, locals }) {
     visiblePages: visiblePages,
     currentPage: page,
     pageCount: pageCount,
+    pageLimit: VISIBLE_PAGE_LIMIT,
     itemCount: itemCount,
     lists: list,
   };
