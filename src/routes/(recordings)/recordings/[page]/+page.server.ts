@@ -44,6 +44,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   } else {
     if (pageCount - page < 2) {
       for (let x = pageCount - VISIBLE_PAGE_LIMIT; x <= pageCount; x++) {
+        if (x <= 0) continue;
         visiblePages.push(x);
       }
     } else {
