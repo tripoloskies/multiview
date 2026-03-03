@@ -1,13 +1,11 @@
-import { error } from "@sveltejs/kit";
+import { error, type Handle } from "@sveltejs/kit";
 import { v7 as randomUUIDv7 } from "uuid";
-/**
- * @type {import('@sveltejs/kit').Handle}
- */
-export const handle = async ({ event, resolve }) => {
-  let sessionId = event.cookies.get("sessionId");
-  const isHttps = event.url.protocol === "https:";
 
-  // Check all .env configs
+export const handle: Handle = async ({ event, resolve }) => {
+  let sessionId: string | undefined = event.cookies.get("sessionId");
+  const isHttps: boolean = event.url.protocol === "https:";
+
+  // Check critical .env configs
   if (!Bun.env?.HOST || !Bun.env?.RECORD_PATH) {
     error(500, "Missing environment configuration.");
   }
