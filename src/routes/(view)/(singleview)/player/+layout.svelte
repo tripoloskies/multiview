@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import { goto } from '$app/navigation';
     import { removePersistCommand, sendCommand, sendPersistCommand } from '$lib/bun/wsApi.svelte.js';
     import Button from '$lib/components/Button.svelte';
@@ -7,25 +7,31 @@
     import { resolve } from '$app/paths';
     import { onDestroy, onMount } from 'svelte';
     import Controls from '$lib/layouts/Controls.svelte';
+	
 	let { data, children } = $props();
 
-	let serverMessage = $state("");
-	let url = $state("");
-	let online = $state(null);
-	let status = $state("")
+	let serverMessage: string = $state("");
+	let url: string = $state("");
+	let online: boolean | null = $state(null);
+	let status: string = $state("")
+	let transactionId: string = $state("")
 
-	let transactionId = $state("")
 	onMount(async () => {
-		transactionId = await sendPersistCommand("getStream", { path: data.path }, ({success, data}) => {
+		transactionId = await sendPersistCommand({
+			cmdName: "getStream",
+			data: { path: data.path },
+			callback: ({success, data}) => {
 			if (!success) {
-				removePersistCommand(transactionId)
-				goto(resolve("/(view)/(multiview)"))
+				removePersistCommand(transactionId);
+				goto(resolve("/(view)/(multiview)"));
 				return
 			}
-			const streamData = data
-			url = streamData?.url
-			online = streamData?.online
-			status = streamData?.status
+			const streamData = data;
+			
+			url = streamData?.url as string;
+			online = streamData?.online as boolean;
+			status = streamData?.status as string;
+		}
 		})
 	})
 

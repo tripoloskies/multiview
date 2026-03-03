@@ -1,28 +1,22 @@
-<script>
+<script lang="ts">
     import Hls from 'hls.js';
     import { onMount } from 'svelte';
-let { data } = $props()
-
-/**
- * @type {HTMLVideoElement | undefined}
- */
-let player = $state()
-
-let hls = new Hls()
+	let { data } = $props()
 
 
-onMount(() => {
-	if (!player || !Hls.isSupported()) {
-		return;
-	}
+	let player: HTMLVideoElement | undefined = $state();
+	let hls = new Hls();
 
-	hls.attachMedia(player)
 
-	hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-		hls.loadSource(data.mediaUrl)
+	onMount(() => {
+		if (!player || !Hls.isSupported()) {
+			return;
+		}
+		hls.attachMedia(player);
+		hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+			hls.loadSource(data.mediaUrl);
+		})
 	})
-
-})
 
 </script>
 <svelte:head>

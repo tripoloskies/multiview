@@ -1,8 +1,8 @@
-<script>
+<script lang="ts">
 	let { open = false, header, children } = $props();
 
-	let isOpen = $derived(open);
-	function toggle() {
+	let isOpen: boolean = $derived(open);
+	function toggle(): void {
 		isOpen = !isOpen;
 	}
 </script>

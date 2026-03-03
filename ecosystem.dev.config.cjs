@@ -12,7 +12,7 @@ module.exports = {
     },
     {
       name: "internal:bun-server",
-      script: "./src/server/bun.js",
+      script: "./src/server/bun.ts",
       interpreter: "bun",
       watch: true,
       ignore_watch: [
@@ -33,13 +33,13 @@ module.exports = {
     {
       name: "internal:renew-cookies",
       script: "bun",
-      args: "--bun ./src/cron/renewCookies.js",
+      args: "--bun ./src/cron/renewCookies.ts",
       watch: false,
     },
     {
       name: "internal:vod-cleaner",
       script: "bun",
-      args: "--bun ./src/cron/vodCleaner.js",
+      args: "--bun ./src/cron/vodCleaner.ts",
       watch: false,
     },
   ],

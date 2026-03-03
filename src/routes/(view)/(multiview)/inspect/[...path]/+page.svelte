@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import { resolve } from '$app/paths';
     import { sendCommand } from '$lib/bun/wsApi.svelte.js';
 	import Button from '$lib/components/Button.svelte';
@@ -11,27 +11,16 @@
 	
 	let { data } = $props();
 	onMount(() => {
+		isReady = true;
 		if (data.path.length) {
 			execute(data.path);
 		}
 		injectLogs('Ready');
 	});
 	let isReady = $state(false);
-	/**
-	 * @type {string[]}
-	 */
-	let logs = $state([]);
-
-	/**
-	 * @type {EventSource}
-	 */
-	let eventSource;
-
-	/**
-	 * connectToLogs
-	 * @param {string} eventUrl
-	 */
-	async function connectToLogs(eventUrl) {
+	let logs: string[] = $state([]);
+	let eventSource: EventSource;
+	async function connectToLogs(eventUrl: string) {
 		if (!isReady) {
 			return;
 		}
@@ -61,23 +50,12 @@
 		};
 	}
 
-	/**
-	 * injectLogs
-	 * @param {string} log
-	 */
-	function injectLogs(log) {
+	function injectLogs(log: string) {
 		if (logs.length > 60) {
 			logs = [];
 		}
 		logs = [...logs, log];
 	}
-	$effect(() => {
-		info
-	});
-
-	onMount(() => {
-		isReady = true;
-	});
 
 	onDestroy(() => {
 		if (eventSource) {
@@ -86,15 +64,11 @@
 		}
 	});
 
-
-	/**
-	 * @param {string} pathName
-	 */
-	async function execute(pathName) {
+	async function execute(pathName: string) {
 		const response = await sendCommand("inspectStream", {
 			path: pathName
 		})
-		const eventUrl = response.data?.eventUrl
+		const eventUrl = response.data?.eventUrl as string; 
 		injectLogs(response.message)
 		if (!response.success) {
 			return;

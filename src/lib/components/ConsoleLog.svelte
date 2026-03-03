@@ -1,14 +1,10 @@
-<script>
+<script lang="ts">
 	let { logs = [] } = $props();
 
-	/**
-	 * @type {HTMLElement | undefined}
-	 */
-	let component = $state();
+	let component: HTMLElement | undefined = $state();
 
 	$effect(() => {
-		logs;
-		if (component) {
+		if (component && logs) {
 			component.scrollTop = component.scrollHeight;
 		}
 	});

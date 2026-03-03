@@ -1,5 +1,5 @@
-<script>
-    import { sendCommand } from '$lib/bun/wsApi.svelte.js';
+<script lang="ts">
+    import { sendCommand, type wsApiResult } from '$lib/bun/wsApi.svelte.js';
 	import Button from '$lib/components/Button.svelte';
 	import ConsoleLog from '$lib/components/ConsoleLog.svelte';
 	import Container from '$lib/components/Container.svelte';
@@ -12,16 +12,9 @@
 
 
 	let { data } = $props();
-	/**
-	 * @type {string[]}
-	 */
-	let logs = $state([]);
+	let logs: string[] = $state([]);
 
-	/**
-	 * injectLogs
-	 * @param {string} log
-	 */
-	function injectLogs(log) {
+	function injectLogs(log: string) {
 		logs = [...logs, log];
 	}
 
@@ -32,21 +25,15 @@
 		}
 	});
 
-
-	/**
-
-	 * @param {string} pathName
-	 */
-	async function execute(pathName) {
+	async function execute(pathName: string) {
 		injectLogs("Please wait...")
-		const response = await sendCommand("deleteStream", {
+		const response: wsApiResult = await sendCommand("deleteStream", {
 			path: pathName
 		})
-		injectLogs(response.message)
+		injectLogs(response.message);
 		if (!response.success) {
 			return;	
 		}
-
 		if (data.path.length) {
 			await goto(resolve("/(view)/(multiview)"));
 		}
@@ -66,13 +53,13 @@
 			{#if info.instances.length}
 				{#if !data.path.length}
 				<form onsubmit={async (event) => {
-					event.preventDefault()
+					event.preventDefault();
 					if (!(event.target instanceof HTMLFormElement)) {
 						return
 					}
 					const form = event.target;
 					const formData = new FormData(form);
-					const data = {...Object.fromEntries(formData.entries())}
+					const data = Object.fromEntries(formData.entries());
 
 					execute(data.path)
 					

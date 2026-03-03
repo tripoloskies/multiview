@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	let { name, status = false } = $props();
 </script>
 
@@ -17,9 +17,5 @@
 	}
 	.livetag-container > *:first-child {
 		@apply grow;
-	}
-	.livetag-name {
-	}
-	.livetag-status {
 	}
 </style>

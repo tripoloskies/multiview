@@ -1,6 +1,6 @@
-<script>
+<script lang="ts">
     import { resolve } from '$app/paths';
-    import { sendCommand } from '$lib/bun/wsApi.svelte';
+    import { sendCommand, type wsApiResult } from '$lib/bun/wsApi.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import ConsoleLog from '$lib/components/ConsoleLog.svelte';
     import Container from '$lib/components/Container.svelte';
@@ -8,21 +8,10 @@
 	import Subcontainer from '$lib/components/Subcontainer.svelte';
 	import { onDestroy, onMount } from 'svelte';
 
-	let isStreamCreated = $state(false);
-
-
-	/**
-	 * @type {HTMLInputElement | undefined}
-	 */
-	let targetInput = $state();
-	/**
-	 * @type {EventSource}
-	 */
-	let eventSource;
-	/**
-	 * @type {string[]}
-	 */
-	let logs = $state([]);
+	let isStreamCreated: boolean = $state(false);
+	let targetInput: HTMLInputElement | undefined = $state();
+	let eventSource: EventSource;
+	let logs: string[] = $state([]);
 
 	onDestroy(() => {
 		if (eventSource) {
@@ -30,11 +19,8 @@
 			logs = [];
 		}
 	});
-	/**
-	 * connectToLogs
-	 * @param {string} eventUrl
-	 */
-	async function connectToLogs(eventUrl) {
+
+	async function connectToLogs(eventUrl: string) {
 		if (eventSource) {
 			return;
 		}
@@ -54,11 +40,7 @@
 		};
 	}
 
-	/**
-	 * injectLogs
-	 * @param {string} log
-	 */
-	function injectLogs(log) {
+	function injectLogs(log: string) {
 		if (logs.length > 60) {
 			logs = [];
 		}
@@ -89,18 +71,20 @@
 				if (!(event.target instanceof HTMLFormElement)) {
 					return
 				}
-				const form = event.target;
-				const formData = new FormData(form);
-				const data = {...Object.fromEntries(formData.entries())}
+				const form: HTMLFormElement = event.target;
+				const formData: FormData = new FormData(form);
+				const data = Object.fromEntries(formData.entries());
 				
-				const response = await sendCommand("addStream", data)
-				const eventUrl = response.data?.eventUrl
-				injectLogs(response.message)
+				const response: wsApiResult = await sendCommand("addStream", data);
+				const eventUrl = response.data?.eventUrl as string; 
+
+
+				injectLogs(response.message);
 				if (!response.success) {
 					return;
 				}
 				isStreamCreated = true;
-				if (!eventUrl?.length) {
+				if (!eventUrl) {
 					injectLogs("No event URL? There's something wrong with the server.");
 					isStreamCreated = false;
 					return;

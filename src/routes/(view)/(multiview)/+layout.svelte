@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { selectToAction, viewState } from '$lib/stores/multiview.svelte';
     import { removePersistCommand } from '$lib/bun/wsApi.svelte';
 	import Viewer from '$lib/components/Viewer.svelte';
@@ -7,10 +7,9 @@
     import { info, infoStart } from '$lib/stores/info.svelte.js';
     import { onDestroy, onMount } from 'svelte';
     import Button from '$lib/components/Button.svelte';
-
-	let transactionId = $state("");
-
+	
 	let { children } = $props();
+	let transactionId: string = $state("");
 	
 	onMount(async () => {
 		transactionId = infoStart();

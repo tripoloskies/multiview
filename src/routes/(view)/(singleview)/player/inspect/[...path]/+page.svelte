@@ -1,22 +1,12 @@
-<script>
+<script lang="ts">
     import { onMount, onDestroy } from "svelte";
     import ConsoleLog from '$lib/components/ConsoleLog.svelte';
     import SidePlayerContainer from "$lib/components/SidePlayerContainer.svelte";
 
-	let { data } = $props()
-
-	/**
-	 * @type {string[]}
-	 */
-	let logs = $state([]);
-
-
-		/**
-	 * @type {EventSource}
-	 */
-	let eventSource;
-
-	let isReady = false;
+	let { data } = $props();
+	let logs: string[] = $state([]);
+	let eventSource: EventSource;
+	let isReady: boolean = $state(false);
 
 	onMount(() => {
 		isReady = true;
@@ -28,11 +18,8 @@
 			logs = [];
 		}
 	});
-	/**
-	 * connectToLogs
-	 * @param {string} eventUrl
-	 */
-	async function connectToLogs(eventUrl) {
+
+	async function connectToLogs(eventUrl: string) {
 		if (!isReady) {
 			return;
 		}
@@ -62,16 +49,13 @@
 		};
 	}
 
-/**
- * injectLogs
- * @param {string} log
- */
-function injectLogs(log) {
-	if (logs.length > 60) {
-		logs = [];
+
+	function injectLogs(log: string) {
+		if (logs.length > 60) {
+			logs = [];
+		}
+		logs = [...logs, log];
 	}
-	logs = [...logs, log];
-}
 </script>
 <svelte:head>
 	<title>{data.path ?? "Untitled"} - Inspector</title>

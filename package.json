@@ -12,8 +12,8 @@
     "clean-dev": "cross-env PM2_HOME=./.pm2 pm2 delete all; cross-env PM2_HOME=./.pm2 pm2 start ./ecosystem.dev.config.cjs",
     "clean-preview": "cross-env PM2_HOME=./.pm2 pm2 delete all; cross-env PM2_HOME=./.pm2 pm2 start ./ecosystem.prod.config.cjs",
     "prepare": "svelte-kit sync || echo ''",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write ."
   },
@@ -46,6 +46,7 @@
     "svelte-check": "^4.3.5",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
     "vite": "^7.3.1"
   },
   "dependencies": {

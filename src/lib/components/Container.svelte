@@ -1,8 +1,10 @@
-<script>
+<script lang="ts">
 	let { full = false, children } = $props();
+
+	let isFull: string = $derived(full ? 'full': '')
 </script>
 
-<div class={full ? 'full' : ''}>
+<div class={isFull}>
 	{@render children?.()}
 </div>
 
