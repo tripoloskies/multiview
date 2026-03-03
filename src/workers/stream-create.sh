@@ -65,7 +65,11 @@ publish() {
 
     mkfifo $TMPDIR/filter1
 
-    streamlink --stream-segment-threads 3 $ARGS --ringbuffer-size 64M --stdout "$URL" best | \
+    local A_DIR="$RECORDING_PATH/$STREAM_PATH/$VOD_ID"
+    mkdir -p "$A_DIR"
+    mkdir -p "$A_DIR/segments"
+
+    streamlink --http-cookies-file "$PW_DIR/config/cookies.txt" --logfile "$A_DIR/logs.txt" --loglevel "all" --stream-segment-threads 3 $ARGS --ringbuffer-size 64M --stdout "$URL" best | \
     mbuffer -q -m $BUFFER_SIZE -P 60 > $TMPDIR/filter1 &
     MBUFFER_PID=$!
 
@@ -79,9 +83,7 @@ publish() {
         TAG="$VCODEC"
     fi
 
-    local A_DIR="$RECORDING_PATH/$STREAM_PATH/$VOD_ID"
-    mkdir -p "$A_DIR"
-    mkdir -p "$A_DIR/segments"
+
     ffmpeg -stats \
     -thread_queue_size 8192 -fflags +genpts -re \
     -i $TMPDIR/filter1 \
@@ -149,7 +151,7 @@ close() {
 while true; do
     inform_update "Checking"
     echo "Checking status..."
-    STATUS=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
+    STATUS=$(yt-dlp --js-runtimes bun:$(which bun) --extractor-args "youtube:player-client=web_creator" --cookies "$PW_DIR/config/cookies.txt" --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
 
     if [[ "$STATUS" == "is_live" ]]; then
 
@@ -169,7 +171,7 @@ while true; do
             echo "Get Manifest URL using proxy."
             MANIFEST=$(yt-dlp -f "b" --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 2>&1)
             BUFFER="12M"
-            ADD_ARGS="--hls-playlist-reload-time segment --hls-live-edge 10 --stream-segment-timeout 1 --stream-segment-attempts 20"
+            ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
 
         # Youtube
         elif [[ "$SOURCE_URL" =~ ^(https?://)?([a-z0-9]+\.)?(youtube\.com|youtu\.be) ]]; then
@@ -178,7 +180,7 @@ while true; do
             echo "Get Manifest URL."
             MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" --no-warnings --print "url" "$SOURCE_URL" 2>&1)
             BUFFER="12M"
-            ADD_ARGS="--hls-playlist-reload-time segment --hls-live-edge 10 --stream-segment-timeout 1 --stream-segment-attempts 20"
+            ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
 
         # Others
         else
