@@ -222,7 +222,7 @@ export async function addStreamInstance(
 ): Promise<void> {
   await createPM2Instance({
     name: streamPath,
-    script: `bash ./src/workers/stream-create.sh ${url} ${streamPath}`,
+    script: `bash ./src/workers/stream-create.sh ${url} ${streamPath} ${Bun.env.RECORD_PATH || ""}`,
     autorestart: false,
     namespace: "stream", // This property is not working. If this property didn't exist in PM2 API docs, why this property still exist in npm's PM2 api?
   });

@@ -9,7 +9,6 @@
 #---------------------------------------------#
 
 # Environment Path Variables
-RECORDING_PATH="/mnt/record-storage"
 CURRENT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 PW_DIR=$(pwd)
 
@@ -19,10 +18,11 @@ BUN_SERVER_PORT="3000"
 
 #------ END OF CONFIGURATION VARIABLES -------#
 
-
 # Params
 SOURCE_URL="$1"
 STREAM_PATH="$2"
+RECORDING_PATH="$3"
+
 
 # Background PID's to close in case of nasty moments while this script was running.
 PUBLISHER_PID=""
@@ -32,6 +32,19 @@ MBUFFER_PID=""
 VOD_ID=""
 
 
+
+if [[ "$RECORDING_PATH" == "/" ]]; then
+    echo "Save the VOD to the root directory is not allowed!"
+    exit 1
+elif [[ "$RECORDING_PATH" == "" ]]; then
+    echo "VOD path is blank."
+    exit 1
+fi
+
+if [ ! -d "$RECORDING_PATH" ]; then
+    echo "Invalid VOD Path"
+    exit 1
+fi
 
 if [[ -z "$SOURCE_URL" ]]; then
     echo "Error: Stream URL is required."
