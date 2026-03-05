@@ -14,7 +14,6 @@ PW_DIR=$(pwd)
 
 # Network/Hostname Variables
 HOST="127.0.0.1"
-BUN_SERVER_PORT="3000"
 
 #------ END OF CONFIGURATION VARIABLES -------#
 
@@ -53,12 +52,12 @@ if [[ -z "$SOURCE_URL" ]]; then
 fi
 
 getVodId() {
-    echo $(curl -s -X POST http://$HOST:$BUN_SERVER_PORT/api/vod/publish -F "id=$STREAM_PATH" 2>&1)
+    echo $(curl -s -X POST http://$HOST/api/vod/publish -F "id=$STREAM_PATH" 2>&1)
 }
 
 
 checkStreamIfBroken() {
-    curl -s -X POST http://$HOST:$BUN_SERVER_PORT/api/vod/verify -F "id=$VOD_ID" 2>&1
+    curl -s -X POST http://$HOST/api/vod/verify -F "id=$VOD_ID" 2>&1
 }
 
 
@@ -143,12 +142,12 @@ publish() {
 
 inform_update() {
     local MESSAGE=$1
-    curl -s -X POST http://$HOST:$BUN_SERVER_PORT/api/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Update"
+    curl -s -X POST http://$HOST/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Update"
 }
 
 inform_delete() {
     local MESSAGE=$1
-    curl -s -X POST http://$HOST:$BUN_SERVER_PORT/api/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Delete"
+    curl -s -X POST http://$HOST/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Delete"
 }
 
 close() {

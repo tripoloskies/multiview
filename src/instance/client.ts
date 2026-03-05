@@ -8,6 +8,8 @@ export type streamInstance = {
   active: boolean;
 };
 
+const INTERNAL_REGEX: RegExp = /^internal:\S*$/;
+
 export const pm2Connect = (): Promise<boolean> => {
   if (isConnected) {
     return new Promise((resolve) => {
@@ -18,8 +20,8 @@ export const pm2Connect = (): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     pm2.connect(true, (error) => {
       if (error) {
-        reject(false);
         isConnected = false;
+        reject(false);
         return;
       }
 
@@ -87,8 +89,6 @@ const pm2Describe = (
     });
   });
 };
-
-const INTERNAL_REGEX: RegExp = /^internal:\S*$/;
 
 async function createPM2Instance(config: pm2.StartOptions): Promise<boolean> {
   if (!config?.name) {

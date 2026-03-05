@@ -1,4 +1,4 @@
-import type { wsActions } from "$server/websocket";
+import type { wsActions } from "$websocket/websocket";
 
 export const actions: wsActions = async () => {
   try {

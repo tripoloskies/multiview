@@ -1,4 +1,4 @@
-import type { wsActions } from "$server/websocket";
+import type { wsActions } from "$websocket/websocket";
 import z from "zod";
 
 export const actions: wsActions = async (data) => {
@@ -12,7 +12,7 @@ export const actions: wsActions = async (data) => {
       success: true,
       message: `Opening instance ${newData.path}...`,
       data: {
-        eventUrl: `/logs/${newData.path}`,
+        eventUrl: `/api/instance/logs?path=${encodeURIComponent(newData.path)}`,
       },
     };
   } catch (event) {

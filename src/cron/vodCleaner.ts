@@ -1,4 +1,4 @@
-import { prisma } from "$lib/prisma";
+import { prisma } from "$database/client";
 import { Glob } from "bun";
 import { rm } from "node:fs/promises";
 import { dirname } from "node:path";

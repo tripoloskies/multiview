@@ -5,7 +5,8 @@
 
 	function close(): void {
 		if (returnUrl.length) {
-			goto(returnUrl);
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			goto(returnUrl); 
 		} else {
 			window.history.back();
 		}

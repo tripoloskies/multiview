@@ -1,7 +1,7 @@
-import { deleteStreamInstance } from "$server/streams/console";
+import { deleteStreamInstance } from "$instance/client";
 import z from "zod";
-import { prisma } from "$server/prisma";
-import type { wsActions } from "$server/websocket";
+import { prisma } from "$database/client";
+import type { wsActions } from "$websocket/websocket";
 export const actions: wsActions = async (data) => {
   const schema = z.object({
     path: z.string().min(1),

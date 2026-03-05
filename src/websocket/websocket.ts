@@ -1,13 +1,13 @@
 import z from "zod";
-import { actions as talk } from "$server/streams/api/talk";
-import { actions as addStream } from "$server/streams/api/addStream";
-import { actions as deleteStream } from "$server/streams/api/deleteStream";
-import { actions as getServerTime } from "$server/streams/api/getServerTime";
-import { actions as inspectStream } from "$server/streams/api/inspectStream";
-import { actions as listActiveStream } from "$server/streams/api/listActiveStream";
-import { actions as realtimeInfo } from "$server/streams/api/realtimeInfo";
-import { actions as getStream } from "$server/streams/api/getStream";
-import type { apiResponse } from "./streams/api/types";
+import { actions as talk } from "./api/talk";
+import { actions as addStream } from "./api/addStream";
+import { actions as deleteStream } from "./api/deleteStream";
+import { actions as getServerTime } from "./api/getServerTime";
+import { actions as inspectStream } from "./api/inspectStream";
+import { actions as listActiveStream } from "./api/listActiveStream";
+import { actions as realtimeInfo } from "./api/realtimeInfo";
+import { actions as getStream } from "./api/getStream";
+import type { apiResponse } from "./api/types";
 
 export type wsMessageRequest = {
   cmdName: string;

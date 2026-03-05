@@ -8,8 +8,16 @@ const config = {
     // See https://svelte.dev/docs/kit/adapters for more information about adapters.
     adapter: adapter(),
     alias: {
-      $server: "./src/server",
-      "$server/*": "./src/server/*",
+      $websocket: "./src/websocket",
+      "$websocket/*": "./src/websocket/*",
+      $vod: "./src/vod",
+      "$vod/*": "./src/vod/*",
+      $database: "./src/database",
+      "$database/*": "./src/database/*",
+      $instance: "./src/instance",
+      "$instance/*": "./src/instance/*",
+      $external: "./src/external",
+      "$external/*": "./src/external/*",
     },
   },
 };

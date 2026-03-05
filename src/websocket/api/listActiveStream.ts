@@ -2,10 +2,10 @@ import {
   deleteStoppedInstances,
   listStreamInstance,
   type streamInstance,
-} from "$server/streams/console";
-import { prisma } from "$server/prisma";
-import type { wsActions } from "$server/websocket";
-import type { controlApiPathsResponse } from "$server/types/external/mediamtx";
+} from "$instance/client";
+import { prisma } from "$database/client";
+import type { wsActions } from "$websocket/websocket";
+import type { controlApiPathsResponse } from "$external/types/mediamtx";
 
 export type streamInstanceWithStatus = streamInstance & {
   status: string;

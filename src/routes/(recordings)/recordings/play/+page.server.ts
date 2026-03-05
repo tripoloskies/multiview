@@ -1,9 +1,9 @@
-import { prisma } from "$lib/prisma";
+import { prisma } from "$database/client";
 import { redirect } from "@sveltejs/kit";
 import z, { string } from "zod";
 import type { PageServerLoad } from "./$types";
 
-export const load: PageServerLoad = async ({ url, locals }) => {
+export const load: PageServerLoad = async ({ url }) => {
   const query = Object.fromEntries(url.searchParams.entries());
 
   const schema = z.object({
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     return {
       id: data.id,
       title: new Date(data.datePublished).toUTCString(),
-      mediaUrl: `http://${locals.host}:3000/api/vod/fetch/${data.id}/index.m3u8`,
+      mediaUrl: `/api/vod/fetch/${data.id}/index.m3u8`,
     };
   } catch (e) {
     if (e instanceof z.ZodError) {

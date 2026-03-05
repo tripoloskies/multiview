@@ -1,15 +1,14 @@
-import { routes } from "./httpRoute";
 import { sockets } from "./websocket";
 
 const _server = Bun.serve({
-  fetch(req, server) {
-    const cookies = req.headers.get("cookie");
+  fetch(request, server) {
+    const cookies = request.headers.get("cookie");
 
     if (!cookies?.length) {
       return new Response("Request not allowed!");
     }
-    //
-    const success = server.upgrade(req);
+
+    const success = server.upgrade(request);
     if (success) return undefined;
 
     // Inform user that invalid request is not allowed.
@@ -17,9 +16,7 @@ const _server = Bun.serve({
   },
 
   port: 3000,
-  routes: routes,
   websocket: sockets,
 });
 
-// clearJunk();
-console.log(`Listening deez nuts ${_server.hostname}:${_server.port}`);
+console.log(`Websocket Server: Listening ${_server.hostname}:${_server.port}`);

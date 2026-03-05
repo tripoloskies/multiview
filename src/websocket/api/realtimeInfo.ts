@@ -1,7 +1,7 @@
 import { actions as talk } from "./talk";
 import { actions as getServerTime } from "./getServerTime";
 import { actions as listActiveStream } from "./listActiveStream";
-import type { wsActions } from "$server/websocket";
+import type { wsActions } from "$websocket/websocket";
 
 export const actions: wsActions = async () => {
   const talkRes = await talk({});

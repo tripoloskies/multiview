@@ -1,8 +1,8 @@
 import { error } from "@sveltejs/kit";
-import { prisma } from "$lib/prisma.js";
+import { prisma } from "$database/client";
 import type { PageServerLoad } from "./$types";
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params }) => {
   const page = Number(params.page);
   const visiblePages = [];
   const ITEMS_PER_PAGE = 9;
@@ -63,7 +63,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       id: list.id,
       title: date,
       author: list.creator.name,
-      thumbnail: `http://${locals.host}:3000/api/vod/fetch/${list.id}/thumbnail.jpg`,
+      thumbnail: `/api/vod/fetch/${list.id}/thumbnail.jpg`,
       link: `/recordings/play?id=${list.id}`,
     };
   });

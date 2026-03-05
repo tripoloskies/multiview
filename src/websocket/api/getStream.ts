@@ -1,7 +1,7 @@
-import { getStreamInstance } from "$server/streams/console";
+import { getStreamInstance } from "$instance/client";
 import z from "zod";
-import { prisma } from "$server/prisma";
-import type { wsActions } from "$server/websocket";
+import { prisma } from "$database/client";
+import type { wsActions } from "$websocket/websocket";
 
 async function urlTest(url: string): Promise<boolean> {
   try {

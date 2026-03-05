@@ -1,13 +1,12 @@
-import { isStreamExists, addStreamInstance } from "$server/streams/console";
+import { isStreamExists, addStreamInstance } from "$instance/client";
 import z from "zod";
-import { prisma } from "$server/prisma";
-import type { wsActions } from "$server/websocket";
+import { prisma } from "$database/client";
+import type { wsActions } from "$websocket/websocket";
 
 export const actions: wsActions = async (data) => {
   const TWITCH_URL_REGEX: RegExp = /^(https?:\/\/)?([a-z0-9]+\.)?twitch\.tv/;
   const YT_URL_REGEX: RegExp =
     /^(https?:\/\/)?([a-z0-9]+\.)?(youtube\.com|youtu\.be)/;
-  let newPath: string = "";
 
   const schema = z.object({
     url: z.string().min(1),
@@ -33,7 +32,7 @@ export const actions: wsActions = async (data) => {
     }
     await addStreamInstance(newData.url, newData.path);
 
-    newPath = newData.path;
+    const newPath: string = newData.path;
 
     await prisma.activeStreams.upsert({
       where: {
@@ -56,6 +55,14 @@ export const actions: wsActions = async (data) => {
         status: "Added",
       },
     });
+
+    return {
+      success: true,
+      message: "Stream instance created successfully!",
+      data: {
+        eventUrl: `/api/instance/logs?path=${encodeURIComponent(newPath)}`,
+      },
+    };
   } catch (error) {
     if (error instanceof z.ZodError) {
       const items: PropertyKey[] = [];
@@ -72,11 +79,4 @@ export const actions: wsActions = async (data) => {
       message: "There's a problem when creating a stream instance.",
     };
   }
-  return {
-    success: true,
-    message: "Stream instance created successfully!",
-    data: {
-      eventUrl: `/logs/${newPath}`,
-    },
-  };
 };

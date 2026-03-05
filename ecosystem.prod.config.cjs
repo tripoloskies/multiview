@@ -10,10 +10,31 @@ module.exports = {
       },
     },
     {
-      name: "internal:bun-server",
-      script: "./src/server/bun.ts",
+      name: "internal:websocket-server",
+      script: "./src/websocket/server.ts",
       interpreter: "bun",
       watch: false,
+      env: {
+        NODE_ENV: "production",
+      },
+    },
+    {
+      name: "internal:instance-server",
+      script: "./src/instance/server.ts",
+      interpreter: "bun",
+      watch: false,
+      env: {
+        NODE_ENV: "production",
+      },
+    },
+    {
+      name: "internal:vod-server",
+      script: "./src/vod/server.ts",
+      interpreter: "bun",
+      watch: false,
+      env: {
+        NODE_ENV: "production",
+      },
     },
     {
       name: "internal:renew-cookies",
