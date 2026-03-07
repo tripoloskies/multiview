@@ -1,6 +1,6 @@
 import { sendPersistCommand } from "$lib/bun/wsApi.svelte";
-import type { streamInstanceWithStatus } from "$server/streams/api/listActiveStream";
-import type { controlApiPathsList } from "$server/types/external/mediamtx";
+import type { streamInstanceWithStatus } from "$websocket/api/listActiveStream";
+import type { controlApiPathsList } from "$external/types/mediamtx";
 
 export type infoType = {
   paths: controlApiPathsList[];

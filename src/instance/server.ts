@@ -68,13 +68,14 @@ const _serverSSE = Bun.serve({
   port: 8080,
   hostname: Bun.env.HOST,
   routes: {
-    "/events/log": async (request, server) => {
+    "/events/log": async (request) => {
       let newData: { path: string };
       const url = new URL(request.url);
 
       const data = {
         path: url.searchParams.get("path"),
       };
+
       const schema = z.object({
         path: z.string().min(1),
       });
@@ -109,7 +110,7 @@ const _serverSSE = Bun.serve({
 
           async function streamSource(readable: ReadableStream) {
             const reader = readable.getReader();
-            let buffer = "";
+            let buffer: string = "";
 
             try {
               while (true) {
