@@ -3,7 +3,11 @@ import { dirname } from "node:path";
 import z from "zod";
 import { prisma } from "$database/client";
 import { rm } from "node:fs/promises";
-import { SEGMENT_REGEX, getCORSValues, randomStringGenerator } from "./utils";
+import {
+  SEGMENT_REGEX,
+  getCORSValues,
+  randomStringGenerator,
+} from "$lib/utils/browser";
 
 const _server = Bun.serve({
   port: 3002,

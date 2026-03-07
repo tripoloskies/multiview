@@ -7,7 +7,7 @@
 	let { data, children } = $props();
 	
 	onMount(() => {
-		start(`${data.host}:3000`)
+		start(data.wsRootUrl)
 		load()
 	})
 </script>

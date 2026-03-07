@@ -78,7 +78,7 @@
 			injectLogs("No event URL? There's something wrong with the server.");
 			return;
 		}
-		connectToLogs(eventUrl);
+		connectToLogs(`${data.eventRootUrl}${eventUrl}`);
 	}
 
 </script>

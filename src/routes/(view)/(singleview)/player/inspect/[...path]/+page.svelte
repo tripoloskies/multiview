@@ -10,7 +10,7 @@
 
 	onMount(() => {
 		isReady = true;
-		connectToLogs(`/logs/${data?.path}`)
+		connectToLogs(`${data.eventRootUrl}/events/log?path=${encodeURIComponent(data?.path)}`)
 	})
 	onDestroy(() => {
 		if (eventSource) {

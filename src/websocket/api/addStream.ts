@@ -60,7 +60,7 @@ export const actions: wsActions = async (data) => {
       success: true,
       message: "Stream instance created successfully!",
       data: {
-        eventUrl: `/api/instance/logs?path=${encodeURIComponent(newPath)}`,
+        eventUrl: `/events/log?path=${encodeURIComponent(newPath)}`,
       },
     };
   } catch (error) {

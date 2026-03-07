@@ -8,6 +8,7 @@
 	import Subcontainer from '$lib/components/Subcontainer.svelte';
 	import { onDestroy, onMount } from 'svelte';
 
+	let { data } = $props();
 	let isStreamCreated: boolean = $state(false);
 	let targetInput: HTMLInputElement | undefined = $state();
 	let eventSource: EventSource;
@@ -67,15 +68,15 @@
 		{/snippet}
 		{#if !isStreamCreated}
 			<form onsubmit={async (event) => {
-				event.preventDefault()
+				event.preventDefault();
 				if (!(event.target instanceof HTMLFormElement)) {
 					return
 				}
 				const form: HTMLFormElement = event.target;
 				const formData: FormData = new FormData(form);
-				const data = Object.fromEntries(formData.entries());
+				const responseData = Object.fromEntries(formData.entries());
 				
-				const response: wsApiResult = await sendCommand("addStream", data);
+				const response: wsApiResult = await sendCommand("addStream", responseData);
 				const eventUrl = response.data?.eventUrl as string; 
 
 
@@ -90,7 +91,7 @@
 					return;
 				}
 				
-				connectToLogs(eventUrl);
+				connectToLogs(`${data.eventRootUrl}${eventUrl}`)
 				
 			}}>
 				<div class="controls">

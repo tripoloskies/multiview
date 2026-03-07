@@ -27,8 +27,8 @@ let socket: WebSocket;
 
 let timeoutId: NodeJS.Timeout;
 
-export function start(hostUri: string): void {
-  socket = new WebSocket(`ws://${hostUri}`);
+export function start(hostUrl: string): void {
+  socket = new WebSocket(hostUrl);
 
   socket.onopen = () => {
     clearTimeout(timeoutId);
@@ -58,13 +58,13 @@ export function start(hostUri: string): void {
   socket.onerror = () => {
     console.error("Websocket client error detected! Restarting....");
     timeoutId = setTimeout(() => {
-      start(hostUri);
+      start(hostUrl);
     }, 500);
   };
 
   socket.onclose = () => {
     timeoutId = setTimeout(() => {
-      start(hostUri);
+      start(hostUrl);
     }, 500);
   };
 }

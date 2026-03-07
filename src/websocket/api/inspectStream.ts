@@ -12,7 +12,7 @@ export const actions: wsActions = async (data) => {
       success: true,
       message: `Opening instance ${newData.path}...`,
       data: {
-        eventUrl: `/api/instance/logs?path=${encodeURIComponent(newData.path)}`,
+        eventUrl: `/events/log?path=${encodeURIComponent(newData.path)}`,
       },
     };
   } catch (event) {
