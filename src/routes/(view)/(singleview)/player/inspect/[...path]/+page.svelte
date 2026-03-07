@@ -1,61 +1,17 @@
 <script lang="ts">
-    import { onMount, onDestroy } from "svelte";
+    import { onMount } from "svelte";
     import ConsoleLog from '$lib/components/ConsoleLog.svelte';
     import SidePlayerContainer from "$lib/components/SidePlayerContainer.svelte";
 
 	let { data } = $props();
-	let logs: string[] = $state([]);
-	let eventSource: EventSource;
-	let isReady: boolean = $state(false);
+	let eventUrl: string = $state("");
+	let customLog: string = $state("");
 
 	onMount(() => {
-		isReady = true;
-		connectToLogs(`${data.eventRootUrl}/events/log?path=${encodeURIComponent(data?.path)}`)
+		eventUrl = `${data.eventRootUrl}/events/log?path=${encodeURIComponent(data?.path)}`;
 	})
-	onDestroy(() => {
-		if (eventSource) {
-			eventSource.close();
-			logs = [];
-		}
-	});
-
-	async function connectToLogs(eventUrl: string) {
-		if (!isReady) {
-			return;
-		}
-
-		isReady = false;
-		if (eventSource) {
-			eventSource.close();
-			injectLogs('Closing Current Stream...');
-			await new Promise((resolve) => setTimeout(() => resolve('Pass'), 1000));
-			logs = [];
-		}
-		// 2. Connect to the SSE endpoint we created earlier
-		eventSource = new EventSource(eventUrl);
-
-		injectLogs('Stream instance is now open.');
-		isReady = true;
-		eventSource.onmessage = (event) => {
-			// This is where you see the "output" of the script starting up
-			injectLogs(event.data);
-		};
-
-		eventSource.onerror = () => {
-			injectLogs(
-				"There's something wrong with the server. Don't try again, stop all PM2 tasks first."
-			);
-			eventSource.close();
-		};
-	}
 
 
-	function injectLogs(log: string) {
-		if (logs.length > 60) {
-			logs = [];
-		}
-		logs = [...logs, log];
-	}
 </script>
 <svelte:head>
 	<title>{data.path ?? "Untitled"} - Inspector</title>
@@ -63,7 +19,7 @@
 <SidePlayerContainer>
 	<h2>Inspector</h2>
 	<div class="inspector-content">
-		<ConsoleLog logs={logs}></ConsoleLog>
+		<ConsoleLog eventUrl={eventUrl} customLog={customLog}></ConsoleLog>
 	</div>
 </SidePlayerContainer>
 <style lang="postcss">

@@ -7,30 +7,25 @@
 	import Subcontainer from '$lib/components/Subcontainer.svelte';
     import { info } from '$lib/stores/info.svelte.js';
     import { resolve } from '$app/paths';
-	import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
+    import { onMount } from 'svelte';
 
 
 	let { data } = $props();
-	let logs: string[] = $state([]);
-
-	function injectLogs(log: string) {
-		logs = [...logs, log];
-	}
+	let customLog: string = $state("");
 
 	onMount(() => {
-		injectLogs('Ready');
 		if (data.path.length) {
 			execute(data.path);
 		}
 	});
-
+	
 	async function execute(pathName: string) {
-		injectLogs("Please wait...")
+		customLog = "Please wait...";
 		const response: wsApiResult = await sendCommand("deleteStream", {
 			path: pathName
 		})
-		injectLogs(response.message);
+		customLog = response.message;
 		if (!response.success) {
 			return;	
 		}
@@ -76,7 +71,7 @@
 				</form>
 				{/if}
 				<hr />
-				<ConsoleLog {logs} />
+				<ConsoleLog customLog={customLog} />
 			{:else}
 			<hr/>
 			<b>There's no instance left</b>

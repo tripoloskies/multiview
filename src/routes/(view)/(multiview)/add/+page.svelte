@@ -6,53 +6,19 @@
     import Container from '$lib/components/Container.svelte';
 	import Prompt from '$lib/components/Prompt.svelte';
 	import Subcontainer from '$lib/components/Subcontainer.svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 
 	let { data } = $props();
 	let isStreamCreated: boolean = $state(false);
 	let targetInput: HTMLInputElement | undefined = $state();
-	let eventSource: EventSource;
-	let logs: string[] = $state([]);
+	let eventUrl: string = $state("");
+	let customLog: string = $state("");
 
-	onDestroy(() => {
-		if (eventSource) {
-			eventSource.close();
-			logs = [];
-		}
-	});
-
-	async function connectToLogs(eventUrl: string) {
-		if (eventSource) {
-			return;
-		}
-		// 2. Connect to the SSE endpoint we created earlier
-		eventSource = new EventSource(eventUrl);
-
-		eventSource.onmessage = (event) => {
-			// This is where you see the "output" of the script starting up
-			injectLogs(event.data);
-		};
-
-		eventSource.onerror = () => {
-			injectLogs(
-				"There's something wrong with the server. Don't try again, stop all PM2 tasks first."
-			);
-			eventSource.close();
-		};
-	}
-
-	function injectLogs(log: string) {
-		if (logs.length > 60) {
-			logs = [];
-		}
-		logs = [...logs, log];
-	}
 
 	onMount(() => {
 		if (targetInput) {
 			targetInput.focus();
 		}
-		injectLogs('Ready');
 	});
 </script>
 
@@ -77,21 +43,22 @@
 				const responseData = Object.fromEntries(formData.entries());
 				
 				const response: wsApiResult = await sendCommand("addStream", responseData);
-				const eventUrl = response.data?.eventUrl as string; 
+				const responseEventUrl = response.data?.eventUrl as string; 
 
 
-				injectLogs(response.message);
+				customLog = response.message;
+
 				if (!response.success) {
 					return;
 				}
 				isStreamCreated = true;
-				if (!eventUrl) {
-					injectLogs("No event URL? There's something wrong with the server.");
+				if (!responseEventUrl) {
+					customLog = "No event URL? There's something wrong with the server.";
 					isStreamCreated = false;
 					return;
 				}
 				
-				connectToLogs(`${data.eventRootUrl}${eventUrl}`)
+				eventUrl = `${data.eventRootUrl}${responseEventUrl}`
 				
 			}}>
 				<div class="controls">
@@ -109,7 +76,7 @@
 				</div>
 			</form>
 		{/if}
-		<ConsoleLog {logs} />
+		<ConsoleLog eventUrl={eventUrl} customLog={customLog}/>
 	</Prompt>
 </Subcontainer>
 </Container>
