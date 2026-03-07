@@ -163,7 +163,7 @@ close() {
 while true; do
     inform_update "Checking"
     echo "Checking status..."
-    STATUS=$(yt-dlp --js-runtimes bun:$(which bun) --extractor-args "youtube:player-client=web_creator" --cookies "$PW_DIR/config/cookies.txt" --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
+    STATUS=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
 
     if [[ "$STATUS" == "is_live" ]]; then
 
@@ -190,7 +190,7 @@ while true; do
 
             inform_update "Get Manifest URL"
             echo "Get Manifest URL."
-            MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" --no-warnings --print "url" "$SOURCE_URL" 2>&1)
+            MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" -f "best" --no-warnings --print "url" "$SOURCE_URL" 2>&1)
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
 
