@@ -4,12 +4,14 @@
 	let { eventUrl = "", customLog = "" } = $props();
 
 	const LOG_LENGTH_LIMIT: number = 60;
+	const MAX_RETRY_COUNT: number = 10;
 
 	let component: HTMLElement | undefined = $state();
 	let oldCustomLog: string = $state("");
 	let oldEventUrl: string = $state("");
 	let logs: string[] = $state([]);
 	let eventSource: EventSource | undefined = $state();
+	let retryCount: number = $state(0);
 
 	onMount(() => {
 		injectLogs("Ready");
@@ -63,7 +65,12 @@
 				"There's something wrong with the server. Don't try again, stop all PM2 tasks first."
 			);
 			if (eventSource) {
-				eventSource.close();
+				if (retryCount > MAX_RETRY_COUNT) {
+					eventSource.close();
+				}
+				injectLogs(`There's something wrong in server events. Try again. (${retryCount}/${MAX_RETRY_COUNT})`)
+				retryCount++;
+				connectToLogs(eventUrl)
 			}
 		};
 	}
