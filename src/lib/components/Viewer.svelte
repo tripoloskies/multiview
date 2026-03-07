@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import Hls, { ErrorTypes } from 'hls.js';
+	import Hls, { type ErrorTypes } from 'hls.js';
     import { resolve } from '$app/paths';
     import { goto } from '$app/navigation';
 
@@ -191,7 +191,7 @@
 			await audioContext.close()
 		}
 		
-		instance.destroy()
+		instance.destroy();
 	}
 	async function renderView() {
 		
