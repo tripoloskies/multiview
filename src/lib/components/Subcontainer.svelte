@@ -1,8 +1,10 @@
-<script>
+<script lang="ts">
 	let { front = false, children } = $props();
+
+	let isFront: string = $derived(front ? "top" : "");
 </script>
 
-<div class={front ? "top" : ""}>
+<div class={isFront}>
 	{@render children()}
 </div>
 

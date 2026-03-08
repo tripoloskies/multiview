@@ -1,5 +1,5 @@
-<script>
-    import { sendCommand } from '$lib/bun/wsApi.svelte.js';
+<script lang="ts">
+    import { sendCommand, type wsApiResult } from '$lib/bun/wsApi.svelte.js';
 	import Button from '$lib/components/Button.svelte';
 	import ConsoleLog from '$lib/components/ConsoleLog.svelte';
 	import Container from '$lib/components/Container.svelte';
@@ -7,46 +7,28 @@
 	import Subcontainer from '$lib/components/Subcontainer.svelte';
     import { info } from '$lib/stores/info.svelte.js';
     import { resolve } from '$app/paths';
-	import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
+    import { onMount } from 'svelte';
 
 
 	let { data } = $props();
-	/**
-	 * @type {string[]}
-	 */
-	let logs = $state([]);
-
-	/**
-	 * injectLogs
-	 * @param {string} log
-	 */
-	function injectLogs(log) {
-		logs = [...logs, log];
-	}
+	let customLog: string = $state("");
 
 	onMount(() => {
-		injectLogs('Ready');
 		if (data.path.length) {
 			execute(data.path);
 		}
 	});
-
-
-	/**
-
-	 * @param {string} pathName
-	 */
-	async function execute(pathName) {
-		injectLogs("Please wait...")
-		const response = await sendCommand("deleteStream", {
+	
+	async function execute(pathName: string) {
+		customLog = "Please wait...";
+		const response: wsApiResult = await sendCommand("deleteStream", {
 			path: pathName
 		})
-		injectLogs(response.message)
+		customLog = response.message;
 		if (!response.success) {
 			return;	
 		}
-
 		if (data.path.length) {
 			await goto(resolve("/(view)/(multiview)"));
 		}
@@ -66,13 +48,13 @@
 			{#if info.instances.length}
 				{#if !data.path.length}
 				<form onsubmit={async (event) => {
-					event.preventDefault()
+					event.preventDefault();
 					if (!(event.target instanceof HTMLFormElement)) {
 						return
 					}
 					const form = event.target;
 					const formData = new FormData(form);
-					const data = {...Object.fromEntries(formData.entries())}
+					const data = Object.fromEntries(formData.entries());
 
 					execute(data.path)
 					
@@ -89,7 +71,7 @@
 				</form>
 				{/if}
 				<hr />
-				<ConsoleLog {logs} />
+				<ConsoleLog customLog={customLog} />
 			{:else}
 			<hr/>
 			<b>There's no instance left</b>

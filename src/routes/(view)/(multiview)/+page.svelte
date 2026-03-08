@@ -1,10 +1,9 @@
-<script>
+<script lang="ts">
 
 	import Button from '$lib/components/Button.svelte';
     import Controls from '$lib/layouts/Controls.svelte';
     import { info } from '$lib/stores/info.svelte';
 	import { clearAction, setAction, viewState } from "$lib/stores/multiview.svelte";
-
 	
 	let activePaths = $derived(info.paths.filter((path) => path?.online)?.length);
 

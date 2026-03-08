@@ -1,20 +1,13 @@
-<script>
+<script lang="ts">
 	let { onclick = defaultClick, type = 'button', link = '', children, disabled = false } = $props();
 
-	/**
-	 * @type {HTMLInputElement | undefined}
-	 */
-	let submitButton = $state();
+	let submitButton: HTMLButtonElement | HTMLInputElement | undefined = $state();
 
-	function defaultClick() {
+	function defaultClick(): void {
 		console.log('This is a default click behavior of a button. Maybe you forgot to set up? Right?');
 	}
 
-	/**
-	 *
-	 * @param {Event} event
-	 */
-	function submitClick(event) {
+	function submitClick(event: Event): void {
 		if (!submitButton) {
 			return;
 		}

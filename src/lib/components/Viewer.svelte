@@ -1,68 +1,48 @@
-<script>
+<script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import Hls from 'hls.js';
+	import Hls, { type ErrorTypes } from 'hls.js';
     import { resolve } from '$app/paths';
     import { goto } from '$app/navigation';
 
-	/**
-	 * @type {MediaElementAudioSourceNode}
-	 */
-	let source;
-
-
-	/**
-	 * @type {AudioContext}
-	 */
-	let audioContext;
-
 	let { path = '', muted = true, online = false, visible = true, status = "Empty"} = $props();
-	/**
-	 * @type {import('hls.js').default}
-	 */
-	let instance = $state(new Hls({
+
+	let source: MediaElementAudioSourceNode;
+	let audioContext: AudioContext;
+
+
+	let instance: Hls = $state(new Hls({
 		startFragPrefetch: true,
 		maxLiveSyncPlaybackRate: 1.5,
 	}));
-	/**
-	 * @type {HTMLVideoElement}
-	 */
-	let player;
 
-	/**
-	 * @type {HTMLDivElement}
-	 */
-	let margin;
+	let player: HTMLVideoElement | undefined;
+	let margin: HTMLDivElement | undefined;
+	let marginAction: HTMLDivElement | undefined;
 
-	
-	/**
-	 * @type {HTMLDivElement}
-	 */
-	let marginAction;
+	let errorType: ErrorTypes | null = $state(null)
+	let oldVisible: boolean = $state(false)
+	let oldSource: string = $state("")
+	let isReady: boolean = $state(false)
+	let meterPercent: number = $state(0)
+	let meterLabel: number = $state(-40)
+	let meterColorIndicator: string = $state("")
 
-	/**
-	 * @type {import("hls.js").ErrorTypes | null}
-	 */
-	let errorType = $state(null)
-	let oldVisible = $state(false)
-	let oldSource = $state("")
-	let isReady = $state(false)
-	let meterPercent = $state(0)
-	let meterLabel = $state(-40)
-	let meterColorIndicator = $state("")
-
-	let playerWidth = $state(0)
-	let playerHeight = $state(0)
-	let videoHeight = $state(0)
-	let videoWidth = $state(0)
+	let playerWidth: number = $state(0)
+	let playerHeight: number = $state(0)
+	let videoHeight: number = $state(0)
+	let videoWidth: number = $state(0)
 
 	onMount(() => {
+		if (!player) {
+			return;
+		}
 		player.muted = true;
 		renderView();
 	});
 
 	$effect(() => {
 		if (online) {
-			const newSource = `http://${window.location.hostname}:8888/${path}/index.m3u8`;
+			const newSource: string = `http://${window.location.hostname}:8888/${path}/index.m3u8`;
 			if (oldSource !== newSource) {
 				oldSource = newSource;
 				instance.loadSource(newSource);
@@ -90,11 +70,10 @@
 
 	$effect(() => {
 
-		if (!margin) {
+		if (!margin || !player || !marginAction) {
 			return;
 		}
 
-		
 		const videoRatio = videoWidth / videoHeight;
 		const elementRatio = playerWidth / playerHeight;
 
@@ -129,6 +108,10 @@
 
 	})
 	async function loadMeter() {
+
+		if (!player) {
+			return;
+		}
 
 		if (audioContext) {
 			if (audioContext.state === "closed") {
@@ -191,6 +174,8 @@
 		}
 		update();
 	}
+
+	
 	/**
 	 * A "Useful" function to stop fetching HLS manifest even the player's instance is not visible to the user.
 	 * Reducing network bandwith and CPU/GPU/Media Decoder's usage at a cost of reloading HLS manifest (when trying to switch from singleview to multiview),
@@ -206,10 +191,14 @@
 			await audioContext.close()
 		}
 		
-		instance.destroy()
+		instance.destroy();
 	}
 	async function renderView() {
 		
+		if (!player) {
+			return; 
+		}
+
 		if (!Hls.isSupported()) {
 			console.error('This client browser does not support HLS.');
 			return;
@@ -221,14 +210,13 @@
 		}
 
 		player.onplay = () => {
-			if (!instance.liveSyncPosition) {
+			if (!player || !instance.liveSyncPosition) {
 				return;
 			}
 			player.currentTime = instance.liveSyncPosition;
 		}
 
-		instance.on(Hls.Events.ERROR, (event, data) => {
-			event // Just leave it here
+		instance.on(Hls.Events.ERROR, (_event, data) => {
 			if (data.fatal) {
 				errorType = data.type
 			}
@@ -241,11 +229,17 @@
 		if (instance.media) {
 			return
 		}
+
 		instance.attachMedia(player);
 	}
 </script>
 
 <button onclick={async () => {
+
+	if (!player) {
+		return;
+	}
+	
 	if (muted) {
 		await goto(resolve(`/(view)/(singleview)/player/play/[...path]`, { path: path }))
 		return

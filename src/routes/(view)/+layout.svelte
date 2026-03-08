@@ -1,10 +1,9 @@
-<script>
+<script lang="ts">
     import { onDestroy, onMount } from "svelte";
 	import { info, talkStart } from "$lib/stores/info.svelte";
     import { removePersistCommand } from "$lib/bun/wsApi.svelte";
 	let { children } = $props();
-	let transactionId = $state("");
-	let isServerActive = $derived(info.isServerActive);
+	let transactionId: string = $state("");
 	onMount(async () => {
 		transactionId = talkStart();
 	});
@@ -14,7 +13,7 @@
 	})
 </script>
 
-{#if isServerActive}
+{#if info.isServerActive}
 {@render children()}
 {:else}
 <div>

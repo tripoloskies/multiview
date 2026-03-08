@@ -1,13 +1,13 @@
-<script>
+<script lang="ts">
 
 	import favicon from '$lib/assets/favicon.svg';
     import { onMount } from "svelte";
     import { start } from "$lib/bun/wsApi.svelte";
-    import { load } from "$lib/stores/config.svelte";
+    import { load } from "$lib/stores/config.svelte.js";
 	let { data, children } = $props();
 	
 	onMount(() => {
-		start(`${data.host}:3000`)
+		start(data.wsRootUrl)
 		load()
 	})
 </script>

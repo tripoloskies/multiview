@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import Container from '$lib/components/Container.svelte';
 	import Prompt from '$lib/components/Prompt.svelte';
 	import Subcontainer from '$lib/components/Subcontainer.svelte';

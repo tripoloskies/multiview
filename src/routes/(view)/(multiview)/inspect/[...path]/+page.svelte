@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import { resolve } from '$app/paths';
     import { sendCommand } from '$lib/bun/wsApi.svelte.js';
 	import Button from '$lib/components/Button.svelte';
@@ -7,104 +7,37 @@
 	import Prompt from '$lib/components/Prompt.svelte';
 	import Subcontainer from '$lib/components/Subcontainer.svelte';
     import { info } from '$lib/stores/info.svelte.js';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	
 	let { data } = $props();
+
+	let isReady: boolean = $state(false);
+	let eventUrl: string = $state("");
+	let customLog: string = $state("");
+
 	onMount(() => {
+		isReady = true;
 		if (data.path.length) {
 			execute(data.path);
 		}
-		injectLogs('Ready');
-	});
-	let isReady = $state(false);
-	/**
-	 * @type {string[]}
-	 */
-	let logs = $state([]);
-
-	/**
-	 * @type {EventSource}
-	 */
-	let eventSource;
-
-	/**
-	 * connectToLogs
-	 * @param {string} eventUrl
-	 */
-	async function connectToLogs(eventUrl) {
-		if (!isReady) {
-			return;
-		}
-
-		isReady = false;
-		if (eventSource) {
-			eventSource.close();
-			injectLogs('Closing Current Stream...');
-			await new Promise((resolve) => setTimeout(() => resolve('Pass'), 1000));
-			logs = [];
-		}
-		// 2. Connect to the SSE endpoint we created earlier
-		eventSource = new EventSource(eventUrl);
-
-		injectLogs('Stream instance is now open.');
-		isReady = true;
-		eventSource.onmessage = (event) => {
-			// This is where you see the "output" of the script starting up
-			injectLogs(event.data);
-		};
-
-		eventSource.onerror = () => {
-			injectLogs(
-				"There's something wrong with the server. Don't try again, stop all PM2 tasks first."
-			);
-			eventSource.close();
-		};
-	}
-
-	/**
-	 * injectLogs
-	 * @param {string} log
-	 */
-	function injectLogs(log) {
-		if (logs.length > 60) {
-			logs = [];
-		}
-		logs = [...logs, log];
-	}
-	$effect(() => {
-		info
-	});
-
-	onMount(() => {
-		isReady = true;
-	});
-
-	onDestroy(() => {
-		if (eventSource) {
-			eventSource.close();
-			logs = [];
-		}
 	});
 
 
-	/**
-	 * @param {string} pathName
-	 */
-	async function execute(pathName) {
+	async function execute(pathName: string) {
 		const response = await sendCommand("inspectStream", {
 			path: pathName
 		})
-		const eventUrl = response.data?.eventUrl
-		injectLogs(response.message)
+		const responseEventUrl = response.data?.eventUrl as string; 
+		customLog = response.message;
 		if (!response.success) {
 			return;
 		}
 
-		if (!eventUrl?.length) {
-			injectLogs("No event URL? There's something wrong with the server.");
+		if (!responseEventUrl?.length) {
+			customLog = "No event URL? There's something wrong with the server.";
 			return;
 		}
-		connectToLogs(eventUrl);
+		eventUrl = `${data.eventRootUrl}${responseEventUrl}`;
 	}
 
 </script>
@@ -140,7 +73,7 @@
 					<Button type="submit" disabled={!isReady}>Inspect</Button>
 				</form>
 				<hr />
-				<ConsoleLog {logs} />
+				<ConsoleLog eventUrl={eventUrl} customLog={customLog}/>
 			{:else}
 				<hr/>
 				<b>There's no instances left.</b>

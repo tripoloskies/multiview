@@ -9,20 +9,19 @@
 #---------------------------------------------#
 
 # Environment Path Variables
-RECORDING_PATH="/mnt/record-storage"
 CURRENT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 PW_DIR=$(pwd)
 
 # Network/Hostname Variables
 HOST="127.0.0.1"
-BUN_SERVER_PORT="3000"
 
 #------ END OF CONFIGURATION VARIABLES -------#
-
 
 # Params
 SOURCE_URL="$1"
 STREAM_PATH="$2"
+RECORDING_PATH="$3"
+
 
 # Background PID's to close in case of nasty moments while this script was running.
 PUBLISHER_PID=""
@@ -33,6 +32,19 @@ VOD_ID=""
 
 
 
+if [[ "$RECORDING_PATH" == "/" ]]; then
+    echo "Save the VOD to the root directory is not allowed!"
+    exit 1
+elif [[ "$RECORDING_PATH" == "" ]]; then
+    echo "VOD path is blank."
+    exit 1
+fi
+
+if [ ! -d "$RECORDING_PATH" ]; then
+    echo "Invalid VOD Path"
+    exit 1
+fi
+
 if [[ -z "$SOURCE_URL" ]]; then
     echo "Error: Stream URL is required."
     echo "Usage: ./script.sh <URL> <PATH>"
@@ -40,12 +52,12 @@ if [[ -z "$SOURCE_URL" ]]; then
 fi
 
 getVodId() {
-    echo $(curl -s -X POST http://$HOST:$BUN_SERVER_PORT/api/vod/publish -F "id=$STREAM_PATH" 2>&1)
+    echo $(curl -s -X POST http://$HOST/api/vod/publish -F "id=$STREAM_PATH" 2>&1)
 }
 
 
 checkStreamIfBroken() {
-    curl -s -X POST http://$HOST:$BUN_SERVER_PORT/api/vod/verify -F "id=$VOD_ID" 2>&1
+    curl -s -X POST http://$HOST/api/vod/verify -F "id=$VOD_ID" 2>&1
 }
 
 
@@ -65,7 +77,11 @@ publish() {
 
     mkfifo $TMPDIR/filter1
 
-    streamlink --stream-segment-threads 3 $ARGS --ringbuffer-size 64M --stdout "$URL" best | \
+    local A_DIR="$RECORDING_PATH/$STREAM_PATH/$VOD_ID"
+    mkdir -p "$A_DIR"
+    mkdir -p "$A_DIR/segments"
+
+    streamlink --http-cookies-file "$PW_DIR/config/cookies.txt" --logfile "$A_DIR/logs.txt" --loglevel "all" --stream-segment-threads 3 $ARGS --ringbuffer-size 64M --stdout "$URL" best | \
     mbuffer -q -m $BUFFER_SIZE -P 60 > $TMPDIR/filter1 &
     MBUFFER_PID=$!
 
@@ -79,9 +95,7 @@ publish() {
         TAG="$VCODEC"
     fi
 
-    local A_DIR="$RECORDING_PATH/$STREAM_PATH/$VOD_ID"
-    mkdir -p "$A_DIR"
-    mkdir -p "$A_DIR/segments"
+
     ffmpeg -stats \
     -thread_queue_size 8192 -fflags +genpts -re \
     -i $TMPDIR/filter1 \
@@ -128,12 +142,12 @@ publish() {
 
 inform_update() {
     local MESSAGE=$1
-    curl -s -X POST http://$HOST:$BUN_SERVER_PORT/api/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Update"
+    curl -s -X POST http://$HOST/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Update"
 }
 
 inform_delete() {
     local MESSAGE=$1
-    curl -s -X POST http://$HOST:$BUN_SERVER_PORT/api/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Delete"
+    curl -s -X POST http://$HOST/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Delete"
 }
 
 close() {
@@ -167,18 +181,18 @@ while true; do
 
             inform_update "Get Manifest URL using proxy."
             echo "Get Manifest URL using proxy."
-            MANIFEST=$(yt-dlp -f "b" --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 2>&1)
+            MANIFEST=$(yt-dlp --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 2>&1)
             BUFFER="12M"
-            ADD_ARGS="--hls-playlist-reload-time segment --hls-live-edge 10 --stream-segment-timeout 1 --stream-segment-attempts 20"
+            ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
 
         # Youtube
         elif [[ "$SOURCE_URL" =~ ^(https?://)?([a-z0-9]+\.)?(youtube\.com|youtu\.be) ]]; then
 
             inform_update "Get Manifest URL"
             echo "Get Manifest URL."
-            MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" --no-warnings --print "url" "$SOURCE_URL" 2>&1)
+            MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" -f "b" --no-warnings --print "url" "$SOURCE_URL" 2>&1)
             BUFFER="12M"
-            ADD_ARGS="--hls-playlist-reload-time segment --hls-live-edge 10 --stream-segment-timeout 1 --stream-segment-attempts 20"
+            ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
 
         # Others
         else

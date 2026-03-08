@@ -1,11 +1,12 @@
-<script>
+<script lang="ts">
 	import Button from './Button.svelte';
 	import { goto } from '$app/navigation';
 	let { children, header = null, returnUrl = '', footer = null } = $props();
 
-	function close() {
+	function close(): void {
 		if (returnUrl.length) {
-			goto(returnUrl);
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			goto(returnUrl); 
 		} else {
 			window.history.back();
 		}

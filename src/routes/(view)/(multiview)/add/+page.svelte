@@ -1,75 +1,24 @@
-<script>
+<script lang="ts">
     import { resolve } from '$app/paths';
-    import { sendCommand } from '$lib/bun/wsApi.svelte';
+    import { sendCommand, type wsApiResult } from '$lib/bun/wsApi.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import ConsoleLog from '$lib/components/ConsoleLog.svelte';
     import Container from '$lib/components/Container.svelte';
 	import Prompt from '$lib/components/Prompt.svelte';
 	import Subcontainer from '$lib/components/Subcontainer.svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 
-	let isStreamCreated = $state(false);
+	let { data } = $props();
+	let isStreamCreated: boolean = $state(false);
+	let targetInput: HTMLInputElement | undefined = $state();
+	let eventUrl: string = $state("");
+	let customLog: string = $state("");
 
-
-	/**
-	 * @type {HTMLInputElement | undefined}
-	 */
-	let targetInput = $state();
-	/**
-	 * @type {EventSource}
-	 */
-	let eventSource;
-	/**
-	 * @type {string[]}
-	 */
-	let logs = $state([]);
-
-	onDestroy(() => {
-		if (eventSource) {
-			eventSource.close();
-			logs = [];
-		}
-	});
-	/**
-	 * connectToLogs
-	 * @param {string} eventUrl
-	 */
-	async function connectToLogs(eventUrl) {
-		if (eventSource) {
-			return;
-		}
-		// 2. Connect to the SSE endpoint we created earlier
-		eventSource = new EventSource(eventUrl);
-
-		eventSource.onmessage = (event) => {
-			// This is where you see the "output" of the script starting up
-			injectLogs(event.data);
-		};
-
-		eventSource.onerror = () => {
-			injectLogs(
-				"There's something wrong with the server. Don't try again, stop all PM2 tasks first."
-			);
-			eventSource.close();
-		};
-	}
-
-	/**
-	 * injectLogs
-	 * @param {string} log
-	 */
-	function injectLogs(log) {
-		if (logs.length > 60) {
-			logs = [];
-		}
-		logs = [...logs, log];
-	}
 
 	onMount(() => {
 		if (targetInput) {
 			targetInput.focus();
 		}
-		injectLogs('Ready');
 	});
 </script>
 
@@ -85,28 +34,31 @@
 		{/snippet}
 		{#if !isStreamCreated}
 			<form onsubmit={async (event) => {
-				event.preventDefault()
+				event.preventDefault();
 				if (!(event.target instanceof HTMLFormElement)) {
 					return
 				}
-				const form = event.target;
-				const formData = new FormData(form);
-				const data = {...Object.fromEntries(formData.entries())}
+				const form: HTMLFormElement = event.target;
+				const formData: FormData = new FormData(form);
+				const responseData = Object.fromEntries(formData.entries());
 				
-				const response = await sendCommand("addStream", data)
-				const eventUrl = response.data?.eventUrl
-				injectLogs(response.message)
+				const response: wsApiResult = await sendCommand("addStream", responseData);
+				const responseEventUrl = response.data?.eventUrl as string; 
+
+
+				customLog = response.message;
+
 				if (!response.success) {
 					return;
 				}
 				isStreamCreated = true;
-				if (!eventUrl?.length) {
-					injectLogs("No event URL? There's something wrong with the server.");
+				if (!responseEventUrl) {
+					customLog = "No event URL? There's something wrong with the server.";
 					isStreamCreated = false;
 					return;
 				}
 				
-				connectToLogs(eventUrl);
+				eventUrl = `${data.eventRootUrl}${responseEventUrl}`
 				
 			}}>
 				<div class="controls">
@@ -124,7 +76,7 @@
 				</div>
 			</form>
 		{/if}
-		<ConsoleLog {logs} />
+		<ConsoleLog eventUrl={eventUrl} customLog={customLog}/>
 	</Prompt>
 </Subcontainer>
 </Container>
