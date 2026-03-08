@@ -68,7 +68,17 @@ publish() {
 
     VOD_ID=$(getVodId)
 
+
+    if [[ "$URL" == "" ]]; then
+        inform_update "Broken Stream"
+        echo "No Manifest URL. Extractor did not process the link properly or a streaming site just got a tantrum."
+        echo "Retrying..."
+        sleep 5
+        return
+    fi
+
     if [[ "$VOD_ID" == "null" ]]; then
+        inform_update "Internal Server Error"
         echo "Check if the Bun Server is active and running."
         exit 1
     fi   
@@ -177,11 +187,11 @@ while true; do
 
             echo "Twitch URL detected."
             inform_update "Get Channel Name"
-            CH_NAME=$(yt-dlp --no-warnings --print "%(uploader)s" "$SOURCE_URL" | tr '[:upper:]' '[:lower:]' 2>&1)
+            CH_NAME=$(yt-dlp --no-warnings --print "%(uploader)s" "$SOURCE_URL" | tr '[:upper:]' '[:lower:]' 1>&1)
 
             inform_update "Get Manifest URL using proxy."
             echo "Get Manifest URL using proxy."
-            MANIFEST=$(yt-dlp --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 2>&1)
+            MANIFEST=$(yt-dlp -q --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 1>&1)
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
 
@@ -190,7 +200,7 @@ while true; do
 
             inform_update "Get Manifest URL"
             echo "Get Manifest URL."
-            MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" -f "b" --no-warnings --print "url" "$SOURCE_URL" 2>&1)
+            MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" -f "b" --no-warnings --print "url" "$SOURCE_URL" 1>&1)
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
 
