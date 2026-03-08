@@ -1,7 +1,7 @@
 {
   "name": "multiview",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "scripts": {
     "dev": "cross-env PM2_HOME=./.pm2 pm2 start ./ecosystem.dev.config.cjs",
@@ -37,6 +37,7 @@
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-svelte": "^3.14.0",
     "globals": "^17.1.0",
+    "hls.js": "^1.6.15",
     "postcss": "^8.5.6",
     "prettier": "^3.8.1",
     "prettier-plugin-svelte": "^3.4.1",
@@ -58,7 +59,6 @@
     "@prisma/client": "^7.4.1",
     "cross-env": "^10.1.0",
     "dotenv": "^17.3.1",
-    "hls.js": "^1.6.15",
     "pm2": "^6.0.14",
     "puppeteer": "^24.37.2",
     "queue": "^7.0.0",

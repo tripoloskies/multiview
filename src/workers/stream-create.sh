@@ -181,7 +181,7 @@ while true; do
 
             inform_update "Get Manifest URL using proxy."
             echo "Get Manifest URL using proxy."
-            MANIFEST=$(yt-dlp -f "b" --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 2>&1)
+            MANIFEST=$(yt-dlp --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 2>&1)
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
 
@@ -190,7 +190,7 @@ while true; do
 
             inform_update "Get Manifest URL"
             echo "Get Manifest URL."
-            MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" -f "best" --no-warnings --print "url" "$SOURCE_URL" 2>&1)
+            MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" -f "b" --no-warnings --print "url" "$SOURCE_URL" 2>&1)
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
 
