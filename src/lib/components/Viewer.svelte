@@ -301,7 +301,7 @@
 
   .safe-margin-action,
   .safe-margin-title {
-    @apply h-full w-full border-2 border-white;
+    @apply h-full w-full border border-white;
   }
   .safe-margin {
     @apply absolute z-10;
