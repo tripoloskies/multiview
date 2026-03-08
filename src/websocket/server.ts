@@ -9,6 +9,7 @@ const _server = Bun.serve({
     }
 
     const success = server.upgrade(request);
+
     if (success) return undefined;
 
     // Inform user that invalid request is not allowed.

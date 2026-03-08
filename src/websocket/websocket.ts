@@ -2,6 +2,7 @@ import z from "zod";
 import { actions as talk } from "./api/talk";
 import { actions as addStream } from "./api/addStream";
 import { actions as deleteStream } from "./api/deleteStream";
+import { actions as restartStream } from "./api/restartStream";
 import { actions as getServerTime } from "./api/getServerTime";
 import { actions as inspectStream } from "./api/inspectStream";
 import { actions as listActiveStream } from "./api/listActiveStream";
@@ -33,6 +34,7 @@ const lists = [
   { cmdName: "talk", fn: talk },
   { cmdName: "addStream", fn: addStream },
   { cmdName: "deleteStream", fn: deleteStream },
+  { cmdName: "restartStream", fn: restartStream },
   { cmdName: "inspectStream", fn: inspectStream },
   { cmdName: "getServerTime", fn: getServerTime },
   { cmdName: "listActiveStream", fn: listActiveStream },

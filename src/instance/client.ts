@@ -10,6 +10,10 @@ export type streamInstance = {
 
 const INTERNAL_REGEX: RegExp = /^internal:\S*$/;
 
+function isNameIllegal(name: string): boolean {
+  return INTERNAL_REGEX.test(name) || !name.length;
+}
+
 export const pm2Connect = (): Promise<boolean> => {
   if (isConnected) {
     return new Promise((resolve) => {
@@ -90,10 +94,27 @@ const pm2Describe = (
   });
 };
 
+const pm2Restart = (process: string | number): Promise<true> => {
+  return new Promise((resolve, reject) => {
+    pm2.restart(process, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(true);
+    });
+  });
+};
+
 async function createPM2Instance(config: pm2.StartOptions): Promise<boolean> {
   if (!config?.name) {
     return false;
   }
+
+  if (isNameIllegal(config.name)) {
+    return false;
+  }
+
   try {
     const description = await pm2Describe(config.name);
     if (description && description.length > 0) {
@@ -108,11 +129,25 @@ async function createPM2Instance(config: pm2.StartOptions): Promise<boolean> {
   }
 }
 
-async function checkPM2Instance(name: string): Promise<boolean> {
+async function restartPM2Instance(name: string): Promise<boolean> {
+  if (!name?.length || isNameIllegal(name)) {
+    return false;
+  }
+
   try {
-    if (name?.length) {
-      return false;
-    }
+    await pm2Restart(name);
+    await Bun.sleep(500);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function checkPM2Instance(name: string): Promise<boolean> {
+  if (!name.length) {
+    return false;
+  }
+  try {
     const description = await pm2Describe(name);
     return description && description.length > 0;
   } catch (err) {
@@ -128,7 +163,7 @@ export async function listPM2Instance(): Promise<pm2.ProcessDescription[]> {
   } catch (err) {
     console.error("PM2 Async Error:", err);
   }
-  return lists.filter((list) => !INTERNAL_REGEX.test(list?.name || ""));
+  return lists.filter((list) => !isNameIllegal(list?.name || ""));
 }
 
 async function destroyPM2Instance(name: string | string[]): Promise<boolean> {
@@ -138,7 +173,7 @@ async function destroyPM2Instance(name: string | string[]): Promise<boolean> {
     }
 
     for (const _name of name) {
-      if (!_name?.length) {
+      if (isNameIllegal(_name)) {
         continue;
       }
 
@@ -245,4 +280,10 @@ export async function deleteStreamInstance(
   streamPath: string,
 ): Promise<boolean> {
   return await destroyPM2Instance(streamPath);
+}
+
+export async function restartStreamInstance(
+  streamPath: string,
+): Promise<boolean> {
+  return await restartPM2Instance(streamPath);
 }

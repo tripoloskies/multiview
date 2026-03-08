@@ -9,7 +9,7 @@
 	});
 
 	onDestroy(async() => {
-		removePersistCommand(transactionId)
+		removePersistCommand(transactionId);
 	})
 </script>
 

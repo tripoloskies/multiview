@@ -153,7 +153,7 @@ const _serverSSE = Bun.serve({
       return new Response(stream, {
         headers: {
           "Content-Type": "text/event-stream",
-          "Connection": "keep-alive",
+          Connection: "keep-alive",
           "Cache-Control": "no-cache",
           "Access-Control-Allow-Origin": getCORSValues(),
           "X-Accel-Buffering": "no",

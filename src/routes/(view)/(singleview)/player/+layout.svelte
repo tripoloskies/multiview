@@ -33,6 +33,7 @@
 			status = streamData?.status as string;
 		}
 		})
+		serverMessage = "Ready";
 	})
 
 	onDestroy(() => {
@@ -72,15 +73,15 @@
 				}}>Inspect</Button
 			>
 			<form onsubmit={async (event) => {
-				event.preventDefault()
+				event.preventDefault();
 				if (!(event.target instanceof HTMLFormElement)) {
 					return
 				}
 				const form = event.target;
 				const formData = new FormData(form);
-				const data = {...Object.fromEntries(formData.entries())}
-				serverMessage = "Deleting stream..."
-				const response = await sendCommand("deleteStream", data)
+				const data = {...Object.fromEntries(formData.entries())};
+				serverMessage = "Deleting stream...";
+				const response = await sendCommand("deleteStream", data);
 
 				if (!response.success) {
 					serverMessage = response.message
@@ -90,6 +91,26 @@
 			}}>
 				<input type="hidden" name="path" value={data?.path} />
 				<Button type="submit">Delete</Button>
+			</form>
+			<form onsubmit={async (event) => {
+				event.preventDefault();
+				if (!(event.target instanceof HTMLFormElement)) {
+					return
+				}
+				const form = event.target;
+				const formData = new FormData(form);
+				const data = {...Object.fromEntries(formData.entries())};
+				serverMessage = "Restarting stream...";
+				const response = await sendCommand("restartStream", data);
+
+				if (!response.success) {
+					serverMessage = response.message;
+					return;
+				}
+				serverMessage = "OK";
+			}}>
+				<input type="hidden" name="path" value={data?.path} />
+				<Button type="submit">Restart</Button>
 			</form>
 			{#snippet footer()}
 				<div>
