@@ -1,12 +1,11 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 
-
 export const enum actions {
   inspect = "inspect",
   delete = "delete",
   restart = "restart",
-  none = "none"
+  none = "none",
 }
 
 export const viewState = $state({
@@ -39,21 +38,21 @@ export function selectToAction(pathName: string): string | void {
           path: pathName,
         }),
       );
-    break;
+      break;
     case actions.delete:
       goto(
         resolve("/(view)/(multiview)/delete/[...path]", {
           path: pathName,
         }),
       );
-    break;
+      break;
     case actions.restart:
       goto(
         resolve("/(view)/(multiview)/restart/[...path]", {
           path: pathName,
         }),
-      );  
-    break;
+      );
+      break;
     default:
       return;
   }

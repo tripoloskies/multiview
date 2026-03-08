@@ -10,11 +10,12 @@
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
 
-
 	let { data } = $props();
 	let customLog: string = $state("");
+	let isReady: boolean = $state(false);
 
 	onMount(() => {
+		isReady = true;
 		if (data.path.length) {
 			execute(data.path);
 		}
@@ -22,17 +23,20 @@
 	
 	async function execute(pathName: string) {
 		customLog = "Please wait...";
+		isReady = false;
 		const response: wsApiResult = await sendCommand("restartStream", {
 			path: pathName
 		})
 		customLog = response.message;
 		if (!response.success) {
+			isReady = true;
 			return;	
 		}
 		if (data.path.length) {
 			await goto(resolve("/(view)/(multiview)"));
+			return;
 		}
-		
+		isReady = true;
 	}
 </script>
 
@@ -46,7 +50,7 @@
 				<h2>Restart Stream</h2>
 			{/snippet}
 			{#if info.instances.length}
-				{#if !data.path.length}
+				{#if !data.path.length && isReady}
 				<form onsubmit={async (event) => {
 					event.preventDefault();
 					if (!(event.target instanceof HTMLFormElement)) {
@@ -56,7 +60,7 @@
 					const formData = new FormData(form);
 					const data = Object.fromEntries(formData.entries());
 
-					execute(data.path)
+					execute(data.path);
 					
 				}}>
 					<div id="inspect-field">
