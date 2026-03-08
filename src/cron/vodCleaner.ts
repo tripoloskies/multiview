@@ -51,15 +51,8 @@ async function execute(): Promise<void> {
       });
     }
 
-    await new Promise((resolve) =>
-      setTimeout(
-        () => {
-          console.log("Autocleaning job completed! See you in 5 minutes.");
-          resolve("Renewed");
-        },
-        1000 * 60 * 5,
-      ),
-    );
+    console.log("Autocleaning job completed! See you in 5 minutes.");
+    await Bun.sleep(1000 * 60 * 5);
   }
 }
 

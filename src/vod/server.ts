@@ -37,7 +37,7 @@ const _server = Bun.serve({
           // videoHeaders.set("Content-Length", fpv.size.toString());
           responseHeaders.set("Access-Control-Allow-Origin", getCORSValues());
         } else if (data.filename === "index.m3u8") {
-          await new Promise((resolve) => setTimeout(() => resolve(true), 100));
+          await Bun.sleep(100);
           fp = Bun.file(`${path}/${data.filename}`);
           responseHeaders.set("Content-Type", "application/vnd.apple.mpegurl");
           // videoHeaders.set("Content-Length", fpv.size.toString());

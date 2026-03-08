@@ -48,7 +48,7 @@
 		if (eventSource) {
 			eventSource.close();
 			injectLogs('Closing Current Stream...');
-			await new Promise((resolve) => setTimeout(() => resolve('Pass'), 500));
+			await Bun.sleep(500);
 			logs = [];
 		}
 

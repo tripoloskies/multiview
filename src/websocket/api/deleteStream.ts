@@ -33,9 +33,7 @@ export const actions: wsActions = async (data) => {
 
     await deleteStreamInstance(newData.path);
 
-    await new Promise((resolve) => {
-      setTimeout(() => resolve(true), 500);
-    });
+    await Bun.sleep(500);
 
     await prisma.activeStreams.deleteMany({
       where: {

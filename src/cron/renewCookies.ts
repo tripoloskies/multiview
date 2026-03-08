@@ -117,16 +117,8 @@ async function execute(): Promise<void> {
   await tempFile.write(netscapeNewCookies);
 
   console.log("Renewing cookies completed. See you in another time.");
-
-  await new Promise((resolve) =>
-    setTimeout(
-      () => {
-        console.log("Renewed once again. ");
-        resolve("Renewed");
-      },
-      1000 * 60 * 45,
-    ),
-  );
+  await Bun.sleep(1000 * 60 * 45);
+  console.log("Renewed once again. ");
 }
 
 execute();

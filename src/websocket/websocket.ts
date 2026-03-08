@@ -100,9 +100,7 @@ export const sockets: Bun.WebSocketHandler<undefined> = {
               ..._data,
               transactionId: transactionId,
             });
-            await new Promise((resolve) =>
-              setTimeout(() => resolve(true), PERSIST_REFRESH_DURATION),
-            );
+            await Bun.sleep(PERSIST_REFRESH_DURATION);
           }
         } else {
           send({
