@@ -1,333 +1,345 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
-	import Hls, { type ErrorTypes } from 'hls.js';
-    import { resolve } from '$app/paths';
-    import { goto } from '$app/navigation';
+  import { onDestroy, onMount } from "svelte";
+  import Hls, { type ErrorTypes } from "hls.js";
+  import { resolve } from "$app/paths";
+  import { goto } from "$app/navigation";
 
-	let { path = '', muted = true, online = false, visible = true, status = "Empty"} = $props();
+  let {
+    path = "",
+    muted = true,
+    online = false,
+    visible = true,
+    status = "Empty",
+  } = $props();
 
-	let source: MediaElementAudioSourceNode;
-	let audioContext: AudioContext;
+  let source: MediaElementAudioSourceNode;
+  let audioContext: AudioContext;
 
+  let instance: Hls = $state(
+    new Hls({
+      startFragPrefetch: true,
+      maxLiveSyncPlaybackRate: 1.5,
+    }),
+  );
 
-	let instance: Hls = $state(new Hls({
-		startFragPrefetch: true,
-		maxLiveSyncPlaybackRate: 1.5,
-	}));
+  let player: HTMLVideoElement | undefined;
+  let margin: HTMLDivElement | undefined;
+  let marginAction: HTMLDivElement | undefined;
 
-	let player: HTMLVideoElement | undefined;
-	let margin: HTMLDivElement | undefined;
-	let marginAction: HTMLDivElement | undefined;
+  let errorType: ErrorTypes | null = $state(null);
+  let oldVisible: boolean = $state(false);
+  let oldSource: string = $state("");
+  let isReady: boolean = $state(false);
+  let meterPercent: number = $state(0);
+  let meterLabel: number = $state(-40);
+  let meterColorIndicator: string = $state("");
 
-	let errorType: ErrorTypes | null = $state(null)
-	let oldVisible: boolean = $state(false)
-	let oldSource: string = $state("")
-	let isReady: boolean = $state(false)
-	let meterPercent: number = $state(0)
-	let meterLabel: number = $state(-40)
-	let meterColorIndicator: string = $state("")
+  let playerWidth: number = $state(0);
+  let playerHeight: number = $state(0);
+  let videoHeight: number = $state(0);
+  let videoWidth: number = $state(0);
 
-	let playerWidth: number = $state(0)
-	let playerHeight: number = $state(0)
-	let videoHeight: number = $state(0)
-	let videoWidth: number = $state(0)
+  onMount(() => {
+    if (!player) {
+      return;
+    }
+    player.muted = true;
+    renderView();
+  });
 
-	onMount(() => {
-		if (!player) {
-			return;
-		}
-		player.muted = true;
-		renderView();
-	});
+  $effect(() => {
+    if (online) {
+      const newSource: string = `http://${window.location.hostname}:8888/${path}/index.m3u8`;
+      if (oldSource !== newSource) {
+        oldSource = newSource;
+        instance.loadSource(newSource);
+        return;
+      }
+    } else {
+      instance.stopLoad();
+      oldSource = "";
+      instance.loadSource("");
+    }
+    if (oldVisible !== visible) {
+      oldVisible = visible;
 
-	$effect(() => {
-		if (online) {
-			const newSource: string = `http://${window.location.hostname}:8888/${path}/index.m3u8`;
-			if (oldSource !== newSource) {
-				oldSource = newSource;
-				instance.loadSource(newSource);
-				return;
-			}
-		}
-		else {
-			instance.stopLoad();
-			oldSource = "";
-			instance.loadSource("");
-		}
-		if (oldVisible !== visible) {
-			oldVisible = visible;
-			
-			if (!online) return;
+      if (!online) return;
 
-			if (visible) instance.startLoad()
-			else instance.stopLoad()
-		}
+      if (visible) instance.startLoad();
+      else instance.stopLoad();
+    }
+  });
+  onDestroy(() => {
+    destroyView();
+  });
 
-	})
-	onDestroy(() => {
-		destroyView();
-	})
+  $effect(() => {
+    if (!margin || !player || !marginAction) {
+      return;
+    }
 
-	$effect(() => {
+    const videoRatio = videoWidth / videoHeight;
+    const elementRatio = playerWidth / playerHeight;
 
-		if (!margin || !player || !marginAction) {
-			return;
-		}
+    let realWidth, realHeight;
+    let offsetX = 0;
+    let offsetY = 0;
+    if (elementRatio > videoRatio) {
+      // element is wider → black bars left/right
+      realHeight = playerHeight;
+      realWidth = realHeight * videoRatio;
+      offsetX = (playerWidth - realWidth) / 2;
+    } else {
+      // element is taller → black bars top/bottom
+      realWidth = playerWidth;
+      realHeight = realWidth / videoRatio;
+      offsetY = (playerHeight - realHeight) / 2;
+    }
 
-		const videoRatio = videoWidth / videoHeight;
-		const elementRatio = playerWidth / playerHeight;
+    margin.style.width = `${realWidth}px`;
+    margin.style.height = `${realHeight}px`;
+    margin.style.top = `${offsetY}px`;
+    margin.style.left = `${offsetX}px`;
+    margin.style.paddingLeft = `${realWidth * 0.035}px`;
+    margin.style.paddingRight = `${realWidth * 0.035}px`;
+    margin.style.paddingTop = `${realHeight * 0.035}px`;
+    margin.style.paddingBottom = `${realHeight * 0.035}px`;
 
-		let realWidth, realHeight;
-		let offsetX = 0;
-		let offsetY = 0;
-		if (elementRatio > videoRatio) {
-		// element is wider → black bars left/right
-		realHeight = playerHeight;
-		realWidth = realHeight * videoRatio;
-		offsetX = (playerWidth - realWidth) / 2;
-		} else {
-		// element is taller → black bars top/bottom
-		realWidth = playerWidth;
-		realHeight = realWidth / videoRatio;
-		offsetY = (playerHeight - realHeight) / 2;
-		}
+    marginAction.style.paddingLeft = `${realWidth * 0.015}px`;
+    marginAction.style.paddingRight = `${realWidth * 0.015}px`;
+    marginAction.style.paddingTop = `${realHeight * 0.015}px`;
+    marginAction.style.paddingBottom = `${realHeight * 0.015}px`;
+  });
+  async function loadMeter() {
+    if (!player) {
+      return;
+    }
 
-		margin.style.width = `${realWidth}px`;
-		margin.style.height = `${realHeight}px`;
-		margin.style.top = `${offsetY}px`;
-		margin.style.left = `${offsetX}px`;
-		margin.style.paddingLeft = `${(realWidth * 0.035)}px`;
-		margin.style.paddingRight = `${(realWidth * 0.035)}px`;
-		margin.style.paddingTop = `${(realHeight * 0.035)}px`;
-		margin.style.paddingBottom = `${(realHeight * 0.035)}px`;
+    if (audioContext) {
+      if (audioContext.state === "closed") {
+        await audioContext.resume();
+      }
+      return;
+    }
 
-		marginAction.style.paddingLeft = `${(realWidth * 0.015)}px`;
-		marginAction.style.paddingRight = `${(realWidth * 0.015)}px`;
-		marginAction.style.paddingTop = `${(realHeight * 0.015)}px`;
-		marginAction.style.paddingBottom = `${(realHeight * 0.015)}px`;
+    audioContext = new window.AudioContext();
+    source = audioContext.createMediaElementSource(player);
+    let analyser = audioContext.createAnalyser();
+    analyser.fftSize = 512;
 
-	})
-	async function loadMeter() {
+    // Connect the chain
+    source.connect(analyser);
+    analyser.connect(audioContext.destination);
 
-		if (!player) {
-			return;
-		}
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
 
-		if (audioContext) {
-			if (audioContext.state === "closed") {
-				await audioContext.resume()
-			}
-			return
-		}
+    function update() {
+      analyser.getByteFrequencyData(dataArray);
 
+      // Calculate average volume (RMS-like)
+      let sum = 0;
 
-		audioContext = new window.AudioContext()
-		source = audioContext.createMediaElementSource(player);
-		let analyser = audioContext.createAnalyser();
-		analyser.fftSize = 512; 
+      for (let i = 0; i < bufferLength; i++) {
+        sum += dataArray[i];
+      }
+      // 1. Get the average (0 - 255)
+      const average = sum / bufferLength;
 
-		// Connect the chain
-		source.connect(analyser);
-		analyser.connect(audioContext.destination);
+      // 2. Normalize to a scale of 0 to 1
+      const normalized = average / 255;
 
-		const bufferLength = analyser.frequencyBinCount;
-		const dataArray = new Uint8Array(bufferLength);
+      // 3. Calculate dB
+      // We use -100 as a "floor" so we don't get -Infinity
+      const roundedDB = normalized > 0 ? 20 * Math.log10(normalized) : -100;
+      // 3. Calculate dB
+      // We use -100 as a "floor" so we don't get -Infinity
+      const labelDB = normalized > 0 ? 20 * Math.log10(normalized) : -100;
 
-		function update() {
-			analyser.getByteFrequencyData(dataArray);
+      meterLabel = Math.round(labelDB);
+      meterPercent = (1 - Math.abs(roundedDB) / 40) * 100;
 
-			// Calculate average volume (RMS-like)
-			let sum = 0;
-			
-			for (let i = 0; i < bufferLength; i++) {
-				sum += dataArray[i];
-			}
-			// 1. Get the average (0 - 255)
-			const average = sum / bufferLength;
+      if (meterLabel >= -6) {
+        meterColorIndicator = "oopsie";
+      } else if (meterLabel >= -12 && meterLabel <= -7) {
+        meterColorIndicator = "warning";
+      } else {
+        meterColorIndicator = "safe";
+      }
 
-			// 2. Normalize to a scale of 0 to 1
-			const normalized = average / 255;
+      setTimeout(() => {
+        requestAnimationFrame(update);
+      }, 30);
+    }
+    update();
+  }
 
-			// 3. Calculate dB
-			// We use -100 as a "floor" so we don't get -Infinity
-			const roundedDB = (normalized > 0) ? 20 * Math.log10(normalized) : -100;
-			// 3. Calculate dB
-			// We use -100 as a "floor" so we don't get -Infinity
-			const labelDB = (normalized > 0) ? 20 * Math.log10(normalized) : -100;
-			
-			meterLabel = Math.round(labelDB)
-			meterPercent = (1 -(Math.abs(roundedDB) / 40)) * 100
+  /**
+   * A "Useful" function to stop fetching HLS manifest even the player's instance is not visible to the user.
+   * Reducing network bandwith and CPU/GPU/Media Decoder's usage at a cost of reloading HLS manifest (when trying to switch from singleview to multiview),
+   * resulting in longer delays.
+   */
+  async function destroyView() {
+    if (!Hls.isSupported()) {
+      console.error("This client browser does not support HLS.");
+      return;
+    }
 
-			if (meterLabel >= -6) {
-				meterColorIndicator = "oopsie"
-			}
-			else if (meterLabel >= -12 && meterLabel <= -7) {
-				meterColorIndicator = "warning"
-			}
-			else {
-				meterColorIndicator = "safe"
-			}
+    if (audioContext) {
+      await audioContext.close();
+    }
 
-			setTimeout(() => {
-				requestAnimationFrame(update);
-			}, 30)
-		}
-		update();
-	}
+    instance.destroy();
+  }
+  async function renderView() {
+    if (!player) {
+      return;
+    }
 
-	
-	/**
-	 * A "Useful" function to stop fetching HLS manifest even the player's instance is not visible to the user.
-	 * Reducing network bandwith and CPU/GPU/Media Decoder's usage at a cost of reloading HLS manifest (when trying to switch from singleview to multiview),
-	 * resulting in longer delays.
-	 */
-	async function destroyView() {
-		if (!Hls.isSupported()) {
-			console.error('This client browser does not support HLS.');
-			return;
-		}
+    if (!Hls.isSupported()) {
+      console.error("This client browser does not support HLS.");
+      return;
+    }
 
-		if (audioContext) {
-			await audioContext.close()
-		}
-		
-		instance.destroy();
-	}
-	async function renderView() {
-		
-		if (!player) {
-			return; 
-		}
+    if (!path?.length) {
+      console.error("Blank path");
+      return;
+    }
 
-		if (!Hls.isSupported()) {
-			console.error('This client browser does not support HLS.');
-			return;
-		}
+    player.onplay = () => {
+      if (!player || !instance.liveSyncPosition) {
+        return;
+      }
+      player.currentTime = instance.liveSyncPosition;
+    };
 
-		if (!path?.length) {
-			console.error('Blank path');
-			return;
-		}
+    instance.on(Hls.Events.ERROR, (_event, data) => {
+      if (data.fatal) {
+        errorType = data.type;
+      }
+    });
+    instance.on(Hls.Events.MANIFEST_LOADED, () => {
+      errorType = null;
+      isReady = true;
+    });
 
-		player.onplay = () => {
-			if (!player || !instance.liveSyncPosition) {
-				return;
-			}
-			player.currentTime = instance.liveSyncPosition;
-		}
+    if (instance.media) {
+      return;
+    }
 
-		instance.on(Hls.Events.ERROR, (_event, data) => {
-			if (data.fatal) {
-				errorType = data.type
-			}
-		})
-		instance.on(Hls.Events.MANIFEST_LOADED, () => {
-			errorType = null;
-			isReady = true;
-		});
-
-		if (instance.media) {
-			return
-		}
-
-		instance.attachMedia(player);
-	}
+    instance.attachMedia(player);
+  }
 </script>
 
-<button onclick={async () => {
+<button
+  onclick={async () => {
+    if (!player) {
+      return;
+    }
 
-	if (!player) {
-		return;
-	}
-	
-	if (muted) {
-		await goto(resolve(`/(view)/(singleview)/player/play/[...path]`, { path: path }))
-		return
-	}
-	if (!muted && isReady && player.muted) {
-		player.muted = false;
-		loadMeter()
-	}
-}}>
-	<div class="viewer-main">
-		<div class="viewer-player-container">
-			<div class="viewer-player-notice">
-			{#if errorType}
-				<b>{status}</b>
-			{:else}
-				<b>Online</b>
-			{/if}
-			</div>
-			<div bind:this={margin} class={`safe-margin ${videoHeight > 0 ? "" : "hidden"}`}>
-				<div bind:this={marginAction} class="safe-margin-action">
-					<div class="safe-margin-title"></div>
-				</div>
-			</div>
-			<video bind:clientHeight={playerHeight} bind:videoHeight={videoHeight} bind:videoWidth={videoWidth} bind:clientWidth={playerWidth} class={!visible ? "hidden" : ""} bind:this={player} autoplay>
-				<b>Dog</b>
-			</video>
-		</div>
-		<span class="player-info">
-			<b>{path}</b>
-		</span>
-	</div>
-	{#if !muted}
-	
-	<div class="audio-meter">
-		<div class={`audio-meter-content ${meterColorIndicator}`} style={`height:${meterPercent}%`}>
-			<div class="audio-meter-label">
-				{meterLabel <= -90 ? "NA" : meterLabel}
-			</div>
-		</div>
-	</div>
-	{/if}
+    if (muted) {
+      await goto(
+        resolve(`/(view)/(singleview)/player/play/[...path]`, { path: path }),
+      );
+      return;
+    }
+    if (!muted && isReady && player.muted) {
+      player.muted = false;
+      loadMeter();
+    }
+  }}
+>
+  <div class="viewer-main">
+    <div class="viewer-player-container">
+      <div class="viewer-player-notice">
+        {#if errorType}
+          <b>{status}</b>
+        {:else}
+          <b>Online</b>
+        {/if}
+      </div>
+      <div
+        bind:this={margin}
+        class={`safe-margin ${videoHeight > 0 ? "" : "hidden"}`}
+      >
+        <div bind:this={marginAction} class="safe-margin-action">
+          <div class="safe-margin-title"></div>
+        </div>
+      </div>
+      <video
+        bind:clientHeight={playerHeight}
+        bind:videoHeight={videoHeight}
+        bind:videoWidth={videoWidth}
+        bind:clientWidth={playerWidth}
+        class={!visible ? "hidden" : ""}
+        bind:this={player}
+        autoplay
+      >
+        <b>Dog</b>
+      </video>
+    </div>
+    <span class="player-info">
+      <b>{path}</b>
+    </span>
+  </div>
+  {#if !muted}
+    <div class="audio-meter">
+      <div
+        class={`audio-meter-content ${meterColorIndicator}`}
+        style={`height:${meterPercent}%`}
+      >
+        <div class="audio-meter-label">
+          {meterLabel <= -90 ? "NA" : meterLabel}
+        </div>
+      </div>
+    </div>
+  {/if}
 </button>
 
 <style lang="postcss">
-	@reference "tailwindcss";
+  @reference "tailwindcss";
 
-	.safe-margin-action, .safe-margin-title {
-		@apply border-2 w-full h-full border-white;
-	}
-	.safe-margin {
-		@apply absolute z-10;
-	}
-	button {
-		@apply flex flex-1 h-full w-full cursor-pointer;
-	}
-	.viewer-player-notice > * {
-		@apply bg-white text-black p-2;
-	}
-	.viewer-player-container {
-		@apply flex justify-center items-center flex-1 relative w-full h-full;
-	}
-	.player-info {
-		@apply block bg-neutral-800 text-white px-4 py-2 w-full;
-	}
-	.viewer-main {
-		@apply flex-1 flex items-center justify-between relative flex-col;
-	}
+  .safe-margin-action,
+  .safe-margin-title {
+    @apply h-full w-full border-2 border-white;
+  }
+  .safe-margin {
+    @apply absolute z-10;
+  }
+  button {
+    @apply flex h-full w-full flex-1 cursor-pointer;
+  }
+  .viewer-player-notice > * {
+    @apply bg-white p-2 text-black;
+  }
+  .viewer-player-container {
+    @apply relative flex h-full w-full flex-1 items-center justify-center;
+  }
+  .player-info {
+    @apply block w-full bg-neutral-800 px-4 py-2 text-white;
+  }
+  .viewer-main {
+    @apply relative flex flex-1 flex-col items-center justify-between;
+  }
 
-	video {
-		@apply absolute h-full w-full top-0 left-0 object-contain;
-	}
+  video {
+    @apply absolute top-0 left-0 h-full w-full object-contain;
+  }
 
-	.audio-meter {
-		@apply bg-neutral-700 rotate-180 w-6;
-	}
+  .audio-meter {
+    @apply w-6 rotate-180 bg-neutral-700;
+  }
 
-	.audio-meter-label {
-		@apply rotate-180 text-white;	
-	}
-	.audio-meter-content.safe {
-		@apply bg-blue-500;
-	}
-	.audio-meter-content.warning {
-		@apply bg-orange-500;
-	}
-	.audio-meter-content.oopsie {
-		@apply bg-red-500;
-	}
+  .audio-meter-label {
+    @apply rotate-180 text-white;
+  }
+  .audio-meter-content.safe {
+    @apply bg-blue-500;
+  }
+  .audio-meter-content.warning {
+    @apply bg-orange-500;
+  }
+  .audio-meter-content.oopsie {
+    @apply bg-red-500;
+  }
 </style>
-
-

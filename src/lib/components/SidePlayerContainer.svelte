@@ -1,14 +1,14 @@
 <script lang="ts">
-    let { children } = $props();
+  let { children } = $props();
 </script>
+
 <div>
-    {@render children()}
+  {@render children()}
 </div>
 
-
 <style lang="postcss">
-    @reference "tailwindcss";
-    div {
-		@apply  w-full md:w-md flex h-full flex-col bg-neutral-700 text-white p-4 space-y-4;
-	}
+  @reference "tailwindcss";
+  div {
+    @apply flex h-full w-full flex-col space-y-4 bg-neutral-700 p-4 text-white md:w-md;
+  }
 </style>
