@@ -170,12 +170,20 @@ publish() {
 
 inform_update() {
     local MESSAGE=$1
-    curl -s -X POST http://$HOST/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Update"
+    local INFORM_STATUS=$(curl -s -X POST http://$HOST/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Update" 1>&1)
+
+    if [[ "$INFORM_STATUS" != "0" ]]; then
+        echo "Error inform_update code $INFORM_STATUS"
+    fi
 }
 
 inform_delete() {
     local MESSAGE=$1
-    curl -s -X POST http://$HOST/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Delete"
+    local INFORM_STATUS=$(curl -s -X POST http://$HOST/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Delete" 1>&1)
+    
+    if [[ "$INFORM_STATUS" != "0" ]]; then
+        echo "Error inform_delete code $INFORM_STATUS"
+    fi
 }
 
 close() {

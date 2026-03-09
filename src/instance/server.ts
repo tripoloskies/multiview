@@ -51,7 +51,7 @@ const _server = Bun.serve({
             default:
               return new Response("-2");
           }
-          return new Response("1");
+          return new Response("0");
         } catch (error) {
           if (error instanceof z.ZodError) {
             return new Response("-1");
