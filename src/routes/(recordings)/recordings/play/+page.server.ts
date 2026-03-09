@@ -23,10 +23,19 @@ export const load: PageServerLoad = async ({ url }) => {
       redirect(302, "/recordings");
     }
 
+    const metadata = await prisma.vodMetadata.findFirst({
+      where: {
+        streamId: data.metadataId || "0",
+      },
+    });
+
     return {
       id: data.id,
-      title: new Date(data.datePublished).toUTCString(),
+      title: metadata?.title || new Date(data.datePublished).toUTCString(),
       mediaUrl: `/api/vod/fetch/${data.id}/index.m3u8`,
+      webpageUrl: metadata?.webpageUrl,
+      uploader: metadata?.uploader || data.creatorName,
+      description: metadata?.description || "None",
     };
   } catch (e) {
     if (e instanceof z.ZodError) {

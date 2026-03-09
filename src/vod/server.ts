@@ -8,7 +8,7 @@ import {
   getCORSValues,
   randomStringGenerator,
 } from "$lib/utils/browser";
-
+import type { ytdlpCustomVodMetadata } from "$external/types/yt-dlp";
 const _server = Bun.serve({
   port: 3002,
   routes: {
@@ -98,6 +98,75 @@ const _server = Bun.serve({
             });
             await rm(path, { force: true, recursive: true });
           }
+          return new Response("0");
+        } catch (error) {
+          console.error(error);
+          if (error instanceof z.ZodError) {
+            return new Response("-2");
+          } else {
+            return new Response("-3");
+          }
+        }
+      },
+    },
+    "/api/vod/metadata": {
+      POST: async (request: Bun.BunRequest) => {
+        const data = Object.fromEntries((await request.formData()).entries());
+        const schema = z.object({
+          id: z.string().min(1),
+          metadata: z.string().optional(),
+        });
+
+        const metadataSchema = z.object({
+          id: z.string().min(1),
+          fulltitle: z.string().min(1),
+          uploader: z.string().min(1),
+          timestamp: z.number(),
+          description: z.string().min(1),
+          extractor: z.string().min(1),
+          webpage_url: z.string().min(1),
+        });
+
+        try {
+          const newData = await schema.parseAsync(data);
+
+          if (!newData.metadata?.length) {
+            return new Response("1");
+          }
+
+          const metadata: ytdlpCustomVodMetadata =
+            await metadataSchema.parseAsync(JSON.parse(atob(newData.metadata)));
+
+          const vodMetadata = await prisma.vodMetadata.upsert({
+            select: {
+              streamId: true,
+            },
+            where: {
+              streamId: `${metadata.extractor}:${metadata.id}`,
+            },
+            update: {
+              title: metadata.fulltitle,
+              dateUploaded: new Date(metadata.timestamp * 1000).toISOString(),
+              webpageUrl: metadata.webpage_url,
+            },
+            create: {
+              streamId: `${metadata.extractor}:${metadata.id}`,
+              title: metadata.fulltitle,
+              description: metadata.description,
+              dateUploaded: new Date(metadata.timestamp * 1000).toISOString(),
+              uploader: metadata.uploader,
+              webpageUrl: metadata.webpage_url,
+            },
+          });
+
+          await prisma.vodProps.updateMany({
+            where: {
+              id: newData.id,
+            },
+            data: {
+              metadataId: vodMetadata.streamId,
+            },
+          });
 
           return new Response("0");
         } catch (error) {
@@ -175,4 +244,4 @@ const _server = Bun.serve({
   },
 });
 
-console.log(`Websocket Server: Listening ${_server.hostname}:${_server.port}`);
+console.log(`VOD Service: Listening ${_server.hostname}:${_server.port}`);

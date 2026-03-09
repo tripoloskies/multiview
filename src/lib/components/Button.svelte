@@ -39,6 +39,6 @@
   @reference "tailwindcss";
   button,
   a {
-    @apply block cursor-pointer border-2 border-neutral-800 bg-neutral-800 px-4 py-2 text-center font-bold text-white;
+    @apply flex cursor-pointer space-x-2 border-2 border-neutral-800 bg-neutral-800 px-4 py-2 text-center font-bold text-white;
   }
 </style>

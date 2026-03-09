@@ -47,7 +47,7 @@
     if (eventSource) {
       eventSource.close();
       injectLogs("Closing Current Stream...");
-      await Bun.sleep(500);
+      // Add sleep here
       logs = [];
     }
 

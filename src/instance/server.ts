@@ -164,8 +164,8 @@ const _serverSSE = Bun.serve({
 });
 
 console.log(
-  `Instance Server SSE: Listening ${_serverSSE.hostname}:${_serverSSE.port}`,
+  `Instance Service SSE: Listening ${_serverSSE.hostname}:${_serverSSE.port}`,
 );
 console.log(
-  `Instance Server API: Listening ${_server.hostname}:${_server.port}`,
+  `Instance Service API: Listening ${_server.hostname}:${_server.port}`,
 );

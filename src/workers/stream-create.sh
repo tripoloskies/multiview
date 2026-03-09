@@ -57,14 +57,29 @@ getVodId() {
 
 
 checkStreamIfBroken() {
-    curl -s -X POST http://$HOST/api/vod/verify -F "id=$VOD_ID" 2>&1
+    curl -s -X POST http://$HOST/api/vod/verify -F "id=$VOD_ID" > /dev/null
 }
 
-
+parseStreamMetadata() {
+    echo "Metadata extraction starting..."
+    local METADATA=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" -O "%(.{id,fulltitle,uploader,timestamp,description,extractor,webpage_url})#j" --no-warnings --skip-download $SOURCE_URL 1>&1 | base64)
+    if [[ "$METADATA" == "" ]]; then
+        echo "Metadata extraction failed."
+    else
+        echo "Metadata successfully extracted."
+        local SAVE_STATUS=$(curl -s -X POST http://$HOST/api/vod/metadata -F "id=$VOD_ID" -F "metadata=$METADATA" 1>&1)
+        if [[ "$SAVE_STATUS" == "0" ]]; then
+            echo "Metadata saved successfully."
+        else
+            echo "Metadata saved unsuccessfully."
+        fi
+    fi
+}
 publish() {
     local URL=$1
     local BUFFER_SIZE=$2
     local ARGS=$3
+    local METADATA=$4
 
     VOD_ID=$(getVodId)
 
@@ -139,6 +154,9 @@ publish() {
         ffmpeg -loglevel quiet -i $A_DIR/segments/segment1.ts -frames:v 1 -update true -y $A_DIR/thumbnail.jpg
         if [ -f "$A_DIR/thumbnail.jpg" ]; then
             echo "Thumbnail successfully created."
+            if [[ "$METADATA" == "yes" ]]; then
+                parseStreamMetadata
+            fi
             break
         else
             echo "Thumbnail failed. Retrying...."
@@ -194,7 +212,7 @@ while true; do
             MANIFEST=$(yt-dlp -q --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 1>&1)
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
-
+            ADD_METADATA="yes"
         # Youtube
         elif [[ "$SOURCE_URL" =~ ^(https?://)?([a-z0-9]+\.)?(youtube\.com|youtu\.be) ]]; then
 
@@ -203,7 +221,7 @@ while true; do
             MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" -f "b" --no-warnings --print "url" "$SOURCE_URL" 1>&1)
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
-
+            ADD_METADATA="yes"
         # Others
         else
             inform_update "Please wait."
@@ -211,11 +229,12 @@ while true; do
             MANIFEST="$SOURCE_URL"
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 5 --stream-segment-timeout 1 --stream-segment-attempts 50"
+            ADD_METADATA="no"
         fi
 
         echo "Starting."
         inform_update "Starting"
-        publish "$MANIFEST" "$BUFFER" "$ADD_ARGS"
+        publish "$MANIFEST" "$BUFFER" "$ADD_ARGS" "$ADD_METADATA"
         inform_update "Stopped"
 
         echo "Ended. Checking once again..."

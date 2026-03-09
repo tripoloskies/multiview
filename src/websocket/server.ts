@@ -20,4 +20,4 @@ const _server = Bun.serve({
   websocket: sockets,
 });
 
-console.log(`Websocket Server: Listening ${_server.hostname}:${_server.port}`);
+console.log(`Websocket Service: Listening ${_server.hostname}:${_server.port}`);
