@@ -1,3 +1,4 @@
+import { $ } from "bun";
 import pm2 from "pm2";
 
 let isConnected: boolean = false;
@@ -254,10 +255,44 @@ export async function deleteStoppedInstances(): Promise<boolean> {
 export async function addStreamInstance(
   url: string,
   streamPath: string,
-): Promise<void> {
-  await createPM2Instance({
+): Promise<boolean> {
+  let bunExecutablePath: string = "";
+  let ytdlpExecutablePath: string = "";
+  let streamlinkExecutablePath: string = "";
+  try {
+    const bunExecRelativePath = await $`which bun`.text();
+    bunExecutablePath = await $`realpath "${bunExecRelativePath}"`.text();
+  } catch {
+    console.error(
+      "[addStreamInstance] Use bun for JS runtime or install bun in your host machine. Cancelling...",
+    );
+    return false;
+  }
+
+  try {
+    const ytdlpExecRelativePath = await $`which yt-dlp`.text();
+    ytdlpExecutablePath = await $`realpath "${ytdlpExecRelativePath}"`.text();
+  } catch {
+    console.error(
+      "[addStreamInstance] yt-dlp must be installed in your host machine. Cancelling...",
+    );
+    return false;
+  }
+
+  try {
+    const streamlinkExecRelativePath = await $`which streamlink`.text();
+    streamlinkExecutablePath =
+      await $`realpath "${streamlinkExecRelativePath}"`.text();
+  } catch {
+    console.error(
+      "[addStreamInstance] streamlink must be installed in your host machine. Cancelling...",
+    );
+    return false;
+  }
+
+  return await createPM2Instance({
     name: streamPath,
-    script: `bash ./src/workers/stream-create.sh ${url} ${streamPath} ${Bun.env.RECORD_PATH || ""}`,
+    script: `bash ./src/workers/stream-create.sh "${url}" "${streamPath}" ${Bun.env.RECORD_PATH || ""} "${bunExecutablePath}" "${ytdlpExecutablePath}" "${streamlinkExecutablePath}"`,
     autorestart: false,
     namespace: "stream", // This property is not working. If this property didn't exist in PM2 API docs, why this property still exist in npm's PM2 api?
   });

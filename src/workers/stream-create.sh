@@ -21,53 +21,78 @@ HOST="127.0.0.1"
 SOURCE_URL="$1"
 STREAM_PATH="$2"
 RECORDING_PATH="$3"
-
+RUNTIME_PATH="$4"
+YTDLP_PATH="$5"
+STREAMLINK_PATH="$6"
 
 # Background PID's to close in case of nasty moments while this script was running.
 PUBLISHER_PID=""
 MBUFFER_PID=""
-
-
 VOD_ID=""
 
+echo "List of arguments: "
+echo "------------------"
+echo "Source URL: $SOURCE_URL"
+echo "Stream Path: $STREAM_PATH"
+echo "Recording Path: $RECORDING_PATH"
+echo "JS Runtime Path: $RUNTIME_PATH"
+echo "yt-dlp Path: $YTDLP_PATH"
+echo "streamlink Path: $STREAMLINK_PATH"
+echo "------------------"
 
+
+if [[ -z "$RECORDING_PATH" ]]; then
+    echo "VOD path is required"
+    exit 1
+fi
 
 if [[ "$RECORDING_PATH" == "/" ]]; then
-    echo "Save the VOD to the root directory is not allowed!"
-    exit 1
-elif [[ "$RECORDING_PATH" == "" ]]; then
-    echo "VOD path is blank."
+    echo "Saving the VOD to the root directory is not allowed!"
     exit 1
 fi
 
 if [ ! -d "$RECORDING_PATH" ]; then
-    echo "Invalid VOD Path"
+    echo "VOD directory $RECORDING_PATH does not exist."
     exit 1
 fi
 
 if [[ -z "$SOURCE_URL" ]]; then
-    echo "Error: Stream URL is required."
-    echo "Usage: ./script.sh <URL> <PATH>"
+    echo "Stream URL is required."
+    exit 1
+fi
+
+if [[ -z "$RUNTIME_PATH" ]]; then
+    echo "Runtime path is required."
+    exit 1
+fi
+
+if [[ -z "$YTDLP_PATH" ]]; then
+    echo "yt-dlp path is required."
+    exit 1
+fi
+
+if [[ -z "$STREAMLINK_PATH" ]]; then
+    echo "streamlink path is required."
     exit 1
 fi
 
 getVodId() {
-    echo $(curl -s -X POST http://$HOST/api/vod/publish -F "id=$STREAM_PATH" 2>&1)
+    echo $(curl -s -X POST http://$HOST:3002/api/vod/publish -F "id=$STREAM_PATH" 2>&1)
 }
 
 
 checkStreamIfBroken() {
-    curl -s -X POST http://$HOST/api/vod/verify -F "id=$VOD_ID" > /dev/null
+    curl -s -X POST http://$HOST:3002/api/vod/verify -F "id=$VOD_ID" > /dev/null
 }
 
 parseStreamMetadata() {
     echo "Metadata extraction starting..."
-    local METADATA=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" -O "%(.{id,fulltitle,uploader,timestamp,description,extractor,webpage_url})#j" --no-warnings --skip-download $SOURCE_URL 1>&1 | base64)
+    local METADATA=$($YTDLP_PATH --js-runtimes bun:$RUNTIME_PATH --cookies "$PW_DIR/config/cookies.txt" -O "%(.{id,fulltitle,uploader,timestamp,description,extractor,webpage_url})#j" --no-warnings --skip-download $SOURCE_URL 1>&1 | base64)
     if [[ "$METADATA" == "" ]]; then
         echo "Metadata extraction failed."
     else
         echo "Metadata successfully extracted."
-        local SAVE_STATUS=$(curl -s -X POST http://$HOST/api/vod/metadata -F "id=$VOD_ID" -F "metadata=$METADATA" 1>&1)
+        local SAVE_STATUS=$(curl -s -X POST http://$HOST:3002/api/vod/metadata -F "id=$VOD_ID" -F "metadata=$METADATA" 1>&1)
         if [[ "$SAVE_STATUS" == "0" ]]; then
             echo "Metadata saved successfully."
         else
@@ -106,11 +131,11 @@ publish() {
     mkdir -p "$A_DIR"
     mkdir -p "$A_DIR/segments"
 
-    streamlink --http-cookies-file "$PW_DIR/config/cookies.txt" --logfile "$A_DIR/logs.txt" --loglevel "all" --stream-segment-threads 3 $ARGS --ringbuffer-size 64M --stdout "$URL" best | \
+    $STREAMLINK_PATH --http-cookies-file "$PW_DIR/config/cookies.txt" --logfile "$A_DIR/logs.txt" --loglevel "all" --stream-segment-threads 3 $ARGS --ringbuffer-size 64M --stdout "$URL" best | \
     mbuffer -q -m $BUFFER_SIZE -P 60 > $TMPDIR/filter1 &
     MBUFFER_PID=$!
 
-    local VCODEC=$(streamlink --stdout "$URL" best | ffprobe -loglevel quiet -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 -analyzeduration 2k -probesize 2k -i - | head -n 1)
+    local VCODEC=$($STREAMLINK_PATH --stdout "$URL" best | ffprobe -loglevel quiet -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 -analyzeduration 2k -probesize 2k -i - | head -n 1)
 
     if [[ "$VCODEC" == "h264" ]]; then
         TAG="avc1"
@@ -170,7 +195,7 @@ publish() {
 
 inform_update() {
     local MESSAGE=$1
-    local INFORM_STATUS=$(curl -s -X POST http://$HOST/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Update" 1>&1)
+    local INFORM_STATUS=$(curl -s -X POST http://$HOST:3001/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Update")
 
     if [[ "$INFORM_STATUS" != "0" ]]; then
         echo "Error inform_update code $INFORM_STATUS"
@@ -179,7 +204,7 @@ inform_update() {
 
 inform_delete() {
     local MESSAGE=$1
-    local INFORM_STATUS=$(curl -s -X POST http://$HOST/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Delete" 1>&1)
+    local INFORM_STATUS=$(curl -s -X POST http://$HOST:3001/api/instance/inform -F "id=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Delete")
     
     if [[ "$INFORM_STATUS" != "0" ]]; then
         echo "Error inform_delete code $INFORM_STATUS"
@@ -199,7 +224,7 @@ close() {
 while true; do
     inform_update "Checking"
     echo "Checking status..."
-    STATUS=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
+    STATUS=$($YTDLP_PATH --js-runtimes bun:"$RUNTIME_PATH" --cookies "$PW_DIR/config/cookies.txt" --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
 
     if [[ "$STATUS" == "is_live" ]]; then
 
@@ -213,11 +238,11 @@ while true; do
 
             echo "Twitch URL detected."
             inform_update "Get Channel Name"
-            CH_NAME=$(yt-dlp --no-warnings --print "%(uploader)s" "$SOURCE_URL" | tr '[:upper:]' '[:lower:]' 1>&1)
+            CH_NAME=$($YTDLP_PATH --no-warnings --print "%(uploader)s" "$SOURCE_URL" | tr '[:upper:]' '[:lower:]' 1>&1)
 
             inform_update "Get Manifest URL using proxy."
             echo "Get Manifest URL using proxy."
-            MANIFEST=$(yt-dlp -q --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 1>&1)
+            MANIFEST=$($YTDLP_PATH -q --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 1>&1)
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
             ADD_METADATA="yes"
@@ -226,7 +251,7 @@ while true; do
 
             inform_update "Get Manifest URL"
             echo "Get Manifest URL."
-            MANIFEST=$(yt-dlp --js-runtimes bun:$(which bun) --cookies "$PW_DIR/config/cookies.txt" -f "b" --no-warnings --print "url" "$SOURCE_URL" 1>&1)
+            MANIFEST=$($YTDLP_PATH --js-runtimes bun:"$RUNTIME_PATH" --cookies "$PW_DIR/config/cookies.txt" -f "b" --no-warnings --print "url" "$SOURCE_URL" 1>&1)
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
             ADD_METADATA="yes"

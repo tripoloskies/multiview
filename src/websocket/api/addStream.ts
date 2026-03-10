@@ -30,7 +30,13 @@ export const actions: wsActions = async (data) => {
         message: `Adding stream denied. Stream ${newData.path} is currently active.`,
       };
     }
-    await addStreamInstance(newData.url, newData.path);
+
+    if (!(await addStreamInstance(newData.url, newData.path))) {
+      return {
+        success: false,
+        message: `Adding stream denied.`,
+      };
+    }
 
     const newPath: string = newData.path;
 
