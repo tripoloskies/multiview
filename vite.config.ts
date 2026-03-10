@@ -6,16 +6,18 @@ export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
 
   preview: {
+    host: "127.0.0.1",
     port: Number(Bun.env?.PROD_PORT || 4173),
   },
   server: {
+    host: "127.0.0.1",
     port: Number(Bun.env?.DEV_PORT || 5173),
     proxy: {
-      "/api/instance": "http://127.0.0.1:3001",
-      "/api/vod": "http://127.0.0.1:3002",
+      "/api/vod": "http://127.0.0.1:3002"
     },
     watch: {
       ignored: ["**/.pm2/**"],
     },
   },
+  
 });

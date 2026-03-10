@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "internal:svelte",
       script: "bun",
-      args: "--bun vite preview --host",
+      args: "x --bun vite preview --host",
       watch: false,
       env: {
         NODE_ENV: "production",

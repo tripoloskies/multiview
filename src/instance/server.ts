@@ -66,7 +66,6 @@ const _server = Bun.serve({
 
 const _serverSSE = Bun.serve({
   port: 8080,
-  hostname: Bun.env.HOST,
   routes: {
     "/events/log": async (request, server) => {
       server.timeout(request, 0);
