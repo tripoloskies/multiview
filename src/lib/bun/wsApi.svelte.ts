@@ -69,8 +69,12 @@ export function start(hostUrl: string): void {
   };
 }
 
-function isReady(): Promise<true> {
+function isReady(): Promise<boolean> {
   return new Promise((resolve) => {
+    if (!socket) {
+      resolve(false);
+      return;
+    }
     const x = setInterval(() => {
       if (socket.readyState == socket.OPEN) {
         clearInterval(x);
