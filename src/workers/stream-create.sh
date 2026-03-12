@@ -25,6 +25,8 @@ RUNTIME_PATH="$4"
 YTDLP_PATH="$5"
 STREAMLINK_PATH="$6"
 
+
+USE_COOKIES="1"
 # Background PID's to close in case of nasty moments while this script was running.
 PUBLISHER_PID=""
 MBUFFER_PID=""
@@ -87,7 +89,14 @@ checkStreamIfBroken() {
 
 parseStreamMetadata() {
     echo "Metadata extraction starting..."
-    local METADATA=$($YTDLP_PATH --js-runtimes bun:$RUNTIME_PATH --cookies "$PW_DIR/config/cookies.txt" -O "%(.{id,fulltitle,uploader,timestamp,description,extractor,webpage_url})#j" --no-warnings --skip-download $SOURCE_URL 1>&1 | base64)
+
+    if [[ "$USE_COOKIES" == 1 ]]; then
+        COOKIE_ARGS="--js-runtimes bun:$RUNTIME_PATH --cookies "$PW_DIR/config/cookies.txt""
+    else
+        COOKIE_ARGS=""
+    fi
+    
+    local METADATA=$($YTDLP_PATH $COOKIE_ARGS -O "%(.{id,fulltitle,uploader,timestamp,description,extractor,webpage_url})#j" --no-warnings --skip-download $SOURCE_URL 1>&1 | base64)
     if [[ "$METADATA" == "" ]]; then
         echo "Metadata extraction failed."
     else
@@ -224,7 +233,17 @@ close() {
 while true; do
     inform_update "Checking"
     echo "Checking status..."
-    STATUS=$($YTDLP_PATH --js-runtimes bun:"$RUNTIME_PATH" --cookies "$PW_DIR/config/cookies.txt" --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
+
+    echo "Use Cookies: $USE_COOKIES"
+
+    if [[ "$USE_COOKIES" == "1" ]]; then
+        COOKIE_ARGS="--js-runtimes bun:$RUNTIME_PATH --cookies "$PW_DIR/config/cookies.txt""
+    else
+        COOKIE_ARGS=""
+    fi
+    
+
+    STATUS=$($YTDLP_PATH $COOKIE_ARGS --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
 
     if [[ "$STATUS" == "is_live" ]]; then
 
@@ -251,7 +270,7 @@ while true; do
 
             inform_update "Get Manifest URL"
             echo "Get Manifest URL."
-            MANIFEST=$($YTDLP_PATH --js-runtimes bun:"$RUNTIME_PATH" --cookies "$PW_DIR/config/cookies.txt" -f "b" --no-warnings --print "url" "$SOURCE_URL" 1>&1)
+            MANIFEST=$($YTDLP_PATH $COOKIE_ARGS -f "b" --no-warnings --print "url" "$SOURCE_URL" 1>&1)
             BUFFER="12M"
             ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
             ADD_METADATA="yes"
@@ -285,6 +304,14 @@ while true; do
         inform_update "Offline"
         echo "Stream has ended. Exiting...."
         break
+    elif [[ "$STATUS" == *"The page needs to be reloaded"* ]]; then
+        inform_update "YouTube caught it. yt-dlp #16212"
+        echo "YouTube caught it. Retrying in 5s..."
+        echo "See the root issue here: https://github.com/yt-dlp/yt-dlp/issues/16212"
+        echo "Temporarily disabling cookies and retrying..."
+        sleep 5
+        USE_COOKIES="0"
+        continue
     elif [[ "$STATUS" == "NA" || "$STATUS" == *"not a valid URL"* ]]; then
         inform_update "Unknown URL"
         echo "Unknown URL."
