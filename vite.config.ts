@@ -13,11 +13,10 @@ export default defineConfig({
     host: "127.0.0.1",
     port: Number(Bun.env?.DEV_PORT || 5173),
     proxy: {
-      "/api/vod": "http://127.0.0.1:3002"
+      "/api/vod": "http://127.0.0.1:3002",
     },
     watch: {
       ignored: ["**/.pm2/**"],
     },
   },
-  
 });
