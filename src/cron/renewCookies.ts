@@ -1,4 +1,4 @@
-import type { BunFile } from "bun";
+import { $, type BunFile } from "bun";
 import path from "path";
 import puppeteer, {
   Browser,
@@ -93,12 +93,33 @@ function cookiesToNetscape(cookies: Cookie[]): string {
 async function execute(): Promise<void> {
   // Configuration: Path
   const cookiesLocation = path.resolve("config/cookies.txt");
-
   const cookies: CookieData[] = await parseNetscapeCookies(cookiesLocation);
+  let browserPath: string;
+  try {
+    browserPath = await $`which firefox`.text();
+  } catch {
+    console.error(
+      "Firefox not found in PATH. Please install it or add it to PATH.",
+    );
+    return;
+  }
   // Launch the browser and open a new blank page.
   const browser: Browser = await puppeteer.launch({
     headless: true,
-    args: ["--disable-dev-shm-usage", "--single-process", "--no-sandbox"],
+    browser: "firefox",
+    executablePath: browserPath,
+    args: [
+      "--disable-dev-shm-usage",
+      "--disable-setuid-sandbox",
+      "--no-sandbox",
+    ],
+    extraPrefsFirefox: {
+      "network.http.pipelining": true,
+      "network.http.proxy.pipelining": true,
+      "network.http.max-connections": 256,
+      "devtools.debugger.remote-enabled": true,
+      "devtools.chrome.enabled": true,
+    },
   });
 
   await browser.setCookie(...cookies);
