@@ -1,3 +1,4 @@
+# List of main files and directories to ignore.
 node_modules/
 .svelte-kit/
 build/
@@ -11,3 +12,9 @@ core
 backups/*
 backups/
 /generated/prisma
+
+# List of Distribution files to ignore (mostly executable files).
+dist/mediamtx/*
+!dist/mediamtx/run.sh
+!dist/mediamtx/mediamtx.yml
+!dist/mediamtx/LICENSE

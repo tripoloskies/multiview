@@ -11,6 +11,12 @@ module.exports = {
       },
     },
     {
+      name: "internal:mediamtx",
+      script: "bash",
+      args: "-c ./dist/mediamtx/run.sh",
+      watch: false,
+    },
+    {
       name: "internal:websocket-server",
       script: "./src/websocket/server.ts",
       interpreter: "bun",
@@ -38,6 +44,7 @@ module.exports = {
       ignore_watch: [
         "node_modules",
         ".pm2",
+        ".git",
         ".svelte-kit",
         "build",
         "db",
@@ -58,6 +65,7 @@ module.exports = {
       ignore_watch: [
         "node_modules",
         ".pm2",
+        ".git",
         ".svelte-kit",
         "build",
         "db",
