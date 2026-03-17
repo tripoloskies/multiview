@@ -3,4 +3,4 @@ database/data/*
 !database/data/README.md
 node_modules
 .turbo
-recordings
+recordings/**
