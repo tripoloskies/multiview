@@ -1,0 +1,6 @@
+{
+  "explorer.excludeGitIgnore": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.prettier": "explicit"
+  }
+}

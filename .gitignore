@@ -1,20 +1,6 @@
-# List of main files and directories to ignore.
-node_modules/
-.svelte-kit/
-build/
-.env
-.pm2/
-config/*
-!config/README.md
-db/*
-!db/README.md
-core
-backups/*
-backups/
-/generated/prisma
-
-# List of Distribution files to ignore (mostly executable files).
-dist/mediamtx/*
-!dist/mediamtx/run.sh
-!dist/mediamtx/mediamtx.yml
-!dist/mediamtx/LICENSE
+config/cookies.txt
+database/data/*
+!database/data/README.md
+node_modules
+.turbo
+recordings

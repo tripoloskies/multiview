@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model ActiveStreams {
+  status      String
+  creator     Creator @relation(fields: [creatorName], references: [name])
+  creatorName String  @id
+}
+
+model Creator {
+  name          String          @id
+  vodProps      VodProps[]
+  activeStreams ActiveStreams?
+}
+
+model VodMetadata {
+  streamId     String     @id
+  vod          VodProps[]
+  title        String
+  uploader     String
+  dateUploaded DateTime
+  webpageUrl   String
+  description  String
+}
+
+model VodProps {
+  id            String       @id
+  creator       Creator      @relation(fields: [creatorName], references: [name])
+  creatorName   String
+  metadata      VodMetadata? @relation(fields: [metadataId], references: [streamId], onDelete: SetNull, onUpdate: Cascade)
+  metadataId    String?
+  manifestPath  String
+  datePublished DateTime
+}
