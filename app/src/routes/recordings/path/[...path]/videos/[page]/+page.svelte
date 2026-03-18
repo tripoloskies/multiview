@@ -1,12 +1,11 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
-
 	let { data } = $props();
 </script>
 
 <div id="main-menu">
 	<div id="page-header">
-		<h1>Latest</h1>
+		<h1>Videos</h1>
 		<div id="page-selectors-container">
 			<div>Go to Page</div>
 			<div id="page-selectors">
@@ -62,6 +61,7 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
+
 	.front {
 		@apply grid grid-cols-1 gap-4 lg:grid-cols-3;
 	}
@@ -73,6 +73,7 @@
 	.list-image {
 		@apply flex aspect-video items-center justify-center;
 	}
+
 	.list-bottom {
 		@apply flex space-x-4 p-4;
 	}
@@ -80,6 +81,7 @@
 	.list-icon-movie {
 		@apply flex items-center justify-center;
 	}
+
 	#page-header {
 		@apply flex items-center justify-between px-2;
 	}

@@ -4,15 +4,22 @@ import { prisma } from '@shared/database';
 import { ytdlpMetadataSchema } from '@shared/schema/yt-dlp';
 import { randomStringGenerator } from '@shared/utils/browser';
 import { JSONResponse } from '@shared/utils/api';
-import { vodGetSchema, vodListsSchema } from '@shared/schema/vod';
+import {
+	vodGetVideoSchema,
+	vodGetPathSchema,
+	vodListsSchema,
+	vodListsPathSchema
+} from '@shared/schema/vod';
+import { isActiveStreamOnline } from '@shared/utils/status';
 
 const _server = Bun.serve({
 	port: 3002,
 	routes: {
-		'/list': {
+		'/list/videos': {
 			POST: async (request: Bun.BunRequest) => {
 				const data = await request.json();
 				const schema = z.object({
+					path: z.string().optional(),
 					page: z.number(),
 					maxItems: z.number().optional().default(5)
 				});
@@ -22,7 +29,7 @@ const _server = Bun.serve({
 
 					if (newData.page < 1) {
 						console.error(
-							`[VOD][/list]: Value of page must not lower than 1. Request data wants page=${newData.page}`
+							`[VOD][/list/videos]: Value of page must not lower than 1. Request data wants page=${newData.page}`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -32,7 +39,7 @@ const _server = Bun.serve({
 
 					if (newData.maxItems < 1) {
 						console.error(
-							`[VOD][/list]: Value of Max Items must not lower than 1. Request data wants maxItems=${newData.maxItems}`
+							`[VOD][/list/videos]: Value of Max Items must not lower than 1. Request data wants maxItems=${newData.maxItems}`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -51,6 +58,9 @@ const _server = Bun.serve({
 								}
 							}
 						},
+						where: {
+							creatorName: newData.path
+						},
 						orderBy: {
 							datePublished: 'desc'
 						},
@@ -58,7 +68,9 @@ const _server = Bun.serve({
 						skip: newData.maxItems * newData.page - newData.maxItems
 					});
 
-					console.log(`[VOD][/list]: Retrieved items: ${vodLists.length}`);
+					console.log(
+						`[VOD][/list/videos]: Retrieved items: ${vodLists.length}`
+					);
 
 					return JSONResponse(vodListsSchema, {
 						success: true,
@@ -66,6 +78,96 @@ const _server = Bun.serve({
 						data: {
 							count: itemCount,
 							lists: vodLists
+						}
+					});
+				} catch (error) {
+					if (error instanceof z.ZodError) {
+						const items: PropertyKey[] = [];
+						for (const issue of error.issues) {
+							items.push(...issue.path);
+						}
+						console.error(
+							`[VOD][/list/videos]: Invalid data. Missing fields (${items.join(', ')})`
+						);
+						return JSONResponse(null, {
+							success: false,
+							message: `Please complete the fields. ${items.join(', ')}`
+						});
+					}
+
+					console.error(error);
+					return JSONResponse(null, {
+						success: false,
+						message: "There's a problem when deleting a stream instance."
+					});
+				}
+			}
+		},
+		'/list/paths': {
+			POST: async (request: Bun.BunRequest) => {
+				const data = await request.json();
+				const schema = z.object({
+					page: z.number(),
+					maxItems: z.number().optional().default(5)
+				});
+
+				try {
+					const newData = await schema.parse(data);
+
+					if (newData.page < 1) {
+						console.error(
+							`[VOD][/list/paths]: Value of page must not lower than 1. Request data wants page=${newData.page}`
+						);
+						return JSONResponse(null, {
+							success: false,
+							message: 'Value of page must not lower than 1.'
+						});
+					}
+
+					if (newData.maxItems < 1) {
+						console.error(
+							`[VOD][/list/paths]: Value of Max Items must not lower than 1. Request data wants maxItems=${newData.maxItems}`
+						);
+						return JSONResponse(null, {
+							success: false,
+							message: 'Value of Max Items must not lower than 1.'
+						});
+					}
+
+					const paths = await prisma.creator.findMany({
+						select: {
+							name: true,
+							_count: {
+								select: {
+									vodProps: true
+								}
+							}
+						},
+						orderBy: {
+							vodProps: {
+								_count: 'desc'
+							}
+						},
+						take: newData.maxItems,
+						skip: newData.maxItems * newData.page - newData.maxItems
+					});
+
+					const formattedPaths = paths.map(({ name, _count }) => {
+						return {
+							name: name,
+							items: _count.vodProps
+						};
+					});
+
+					console.log(
+						`[VOD][/list]: Retrieved items: ${formattedPaths.length}`
+					);
+
+					return JSONResponse(vodListsPathSchema, {
+						success: true,
+						message: 'OK',
+						data: {
+							lists: formattedPaths
 						}
 					});
 				} catch (error) {
@@ -91,7 +193,90 @@ const _server = Bun.serve({
 				}
 			}
 		},
-		'/get/:id': {
+		'/get/path': {
+			GET: async (request: Bun.BunRequest) => {
+				const url = new URL(request.url);
+
+				const data = {
+					path: url.searchParams.get('name')
+				};
+
+				const schema = z.object({
+					path: z.string().min(1)
+				});
+
+				try {
+					const newData = await schema.parse(data);
+
+					const info = await prisma.creator.findFirst({
+						select: {
+							name: true,
+							activeStreams: {
+								select: {
+									status: true
+								}
+							},
+							_count: {
+								select: {
+									vodProps: true
+								}
+							}
+						},
+						where: {
+							name: newData.path
+						}
+					});
+
+					if (!info) {
+						console.error(
+							`[VOD][/get/:path]: Path "${newData.path}" not found.`
+						);
+						return JSONResponse(null, {
+							success: false,
+							message: 'Path not found'
+						});
+					}
+
+					let liveStatus: string;
+
+					if (await isActiveStreamOnline(info.name)) {
+						liveStatus = 'online';
+					} else {
+						liveStatus = info.activeStreams?.status || 'offline';
+					}
+
+					return JSONResponse(vodGetPathSchema, {
+						success: true,
+						message: 'OK',
+						data: {
+							name: info.name,
+							videoCount: info._count.vodProps,
+							liveStatus: liveStatus
+						}
+					});
+				} catch (error) {
+					if (error instanceof z.ZodError) {
+						const items: PropertyKey[] = [];
+						for (const issue of error.issues) {
+							items.push(...issue.path);
+						}
+						console.error(
+							`[VOD][/get/path/:path]: Invalid data. Missing fields (${items.join(', ')})`
+						);
+						return JSONResponse(null, {
+							success: false,
+							message: `Please complete the fields. ${items.join(', ')}`
+						});
+					}
+					console.error(error);
+					return JSONResponse(null, {
+						success: false,
+						message: "There's a problem when deleting a stream instance."
+					});
+				}
+			}
+		},
+		'/get/video/:id': {
 			GET: async (request: Bun.BunRequest) => {
 				const data = { ...request.params };
 				const schema = z.object({
@@ -108,16 +293,18 @@ const _server = Bun.serve({
 					});
 
 					if (!vodInfo) {
-						console.error(`[VOD][/get/:id]: VOD id "${newData.id}" not found.`);
+						console.error(
+							`[VOD][/get/video/:id]: VOD id "${newData.id}" not found.`
+						);
 						return JSONResponse(null, {
 							success: false,
 							message: 'VOD not found'
 						});
 					} else if (!vodInfo?.metadataId) {
 						console.warn(
-							`[VOD][/get/:id]: VOD id "${newData.id}" contains no metadata. Continue.`
+							`[VOD][/get/video/:id]: VOD id "${newData.id}" contains no metadata. Continue.`
 						);
-						return JSONResponse(vodGetSchema, {
+						return JSONResponse(vodGetVideoSchema, {
 							success: true,
 							message: 'OK',
 							data: {
@@ -134,9 +321,9 @@ const _server = Bun.serve({
 					});
 
 					console.log(
-						`[VOD][/get/:id]: VOD id "${newData.id}" contains metadata. Continue.`
+						`[VOD][/get/video/:id]: VOD id "${newData.id}" contains metadata. Continue.`
 					);
-					return JSONResponse(vodGetSchema, {
+					return JSONResponse(vodGetVideoSchema, {
 						success: true,
 						message: 'OK',
 						data: {
@@ -151,7 +338,7 @@ const _server = Bun.serve({
 							items.push(...issue.path);
 						}
 						console.error(
-							`[VOD][/get/:id]: Invalid data. Missing fields (${items.join(', ')})`
+							`[VOD][/get/video/:id]: Invalid data. Missing fields (${items.join(', ')})`
 						);
 						return JSONResponse(null, {
 							success: false,

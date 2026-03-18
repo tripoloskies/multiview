@@ -4,15 +4,7 @@ import { getStreamInstance } from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
 import { getStreamResponseSchema } from '@shared/schema/websocket';
-
-async function urlTest(url: string): Promise<boolean> {
-	try {
-		const response = await fetch(`http://${Bun.env.MEDIAMTX_HOST}:8888/${url}`);
-		return response.status === 200;
-	} catch {
-		return false;
-	}
-}
+import { isActiveStreamOnline } from '@shared/utils/status';
 
 export const actions: wsActions = async (data) => {
 	const schema = z.object({
@@ -21,7 +13,7 @@ export const actions: wsActions = async (data) => {
 	try {
 		const newData = await schema.parseAsync(data);
 		const instance = await getStreamInstance(newData.path);
-		const mediaUrl: string = `${newData.path}/index.m3u8`;
+		const mediaUrl: string = `${newData.path}`;
 
 		if (!instance) {
 			return wsResponse(null, {
@@ -52,7 +44,7 @@ export const actions: wsActions = async (data) => {
 			data: {
 				status: activeStreamsData.status,
 				url: mediaUrl,
-				online: await urlTest(mediaUrl),
+				online: await isActiveStreamOnline(mediaUrl),
 				instance: instance
 			}
 		});

@@ -1,8 +1,7 @@
 import type { LayoutServerLoad } from './$types.js';
 
-export const load: LayoutServerLoad = async ({ locals, url }) => {
+export const load: LayoutServerLoad = async () => {
 	return {
-		rootUrl: `${url.protocol}//${locals.host}`,
 		eventRootUrl: ``,
 		wsRootUrl: `/ws`
 	};

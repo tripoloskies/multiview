@@ -1,9 +1,11 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import type { vodListsSchema } from '@shared/schema/vod';
 import type { apiResponseSchema } from '@shared/schema';
+import type { vodListsSchema } from '@shared/schema/vod';
+
 export const load: PageServerLoad = async ({ params }) => {
-	const page = Number(params.page);
+	const path: string = params.path;
+	const page: number = Number(params.page);
 	const visiblePages = [];
 	const ITEMS_PER_PAGE = 9;
 	const VISIBLE_PAGE_LIMIT = 4;
@@ -18,6 +20,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		method: 'POST',
 		body: JSON.stringify({
 			page: page,
+			path: path,
 			maxItems: ITEMS_PER_PAGE
 		})
 	});

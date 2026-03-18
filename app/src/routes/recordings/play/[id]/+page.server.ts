@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import z, { string } from 'zod';
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import type { vodGetSchema } from '@shared/schema/vod';
+import type { vodGetVideoSchema } from '@shared/schema/vod';
 import type { apiResponseSchema } from '@shared/schema';
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -18,7 +18,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		const sanitizedQuery = await schema.parseAsync(query);
 
 		const response = await fetch(
-			`http://localhost:3002/get/${sanitizedQuery.id}`
+			`http://localhost:3002/get/video/${sanitizedQuery.id}`
 		);
 
 		if (response.status !== 200) {
@@ -31,7 +31,7 @@ export const load: PageServerLoad = async ({ params }) => {
 			error(404, 'VOD does not exist');
 		}
 
-		const { info, metadata } = responseData.data as vodGetSchema;
+		const { info, metadata } = responseData.data as vodGetVideoSchema;
 
 		return {
 			id: info.id,

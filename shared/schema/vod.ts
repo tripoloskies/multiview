@@ -1,6 +1,6 @@
 import z from 'zod';
 
-export const vodGetSchema = z.object({
+export const vodGetVideoSchema = z.object({
 	info: z.object({
 		id: z.string().min(1),
 		creatorName: z.string().min(1),
@@ -20,7 +20,15 @@ export const vodGetSchema = z.object({
 		.nullable()
 });
 
-export type vodGetSchema = z.infer<typeof vodGetSchema>;
+export type vodGetVideoSchema = z.infer<typeof vodGetVideoSchema>;
+
+export const vodGetPathSchema = z.object({
+	name: z.string(),
+	videoCount: z.number(),
+	liveStatus: z.string()
+});
+
+export type vodGetPathSchema = z.infer<typeof vodGetPathSchema>;
 
 export const vodListSchema = z.object({
 	id: z.string(),
@@ -38,3 +46,14 @@ export const vodListsSchema = z.object({
 });
 
 export type vodListsSchema = z.infer<typeof vodListsSchema>;
+
+export const vodListsPathSchema = z.object({
+	lists: z.array(
+		z.object({
+			name: z.string(),
+			items: z.number()
+		})
+	)
+});
+
+export type vodListsPathSchema = z.infer<typeof vodListsPathSchema>;
