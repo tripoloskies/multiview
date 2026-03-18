@@ -74,7 +74,9 @@ const _server = Bun.serve({
 						for (const issue of error.issues) {
 							items.push(...issue.path);
 						}
-						console.error(`[VOD][/list]: Invalid data. Missing fields (${items.join(', ')})`);
+						console.error(
+							`[VOD][/list]: Invalid data. Missing fields (${items.join(', ')})`
+						);
 						return JSONResponse(null, {
 							success: false,
 							message: `Please complete the fields. ${items.join(', ')}`
@@ -112,7 +114,9 @@ const _server = Bun.serve({
 							message: 'VOD not found'
 						});
 					} else if (!vodInfo?.metadataId) {
-						console.warn(`[VOD][/get/:id]: VOD id "${newData.id}" contains no metadata. Continue.`);
+						console.warn(
+							`[VOD][/get/:id]: VOD id "${newData.id}" contains no metadata. Continue.`
+						);
 						return JSONResponse(vodGetSchema, {
 							success: true,
 							message: 'OK',
@@ -129,7 +133,9 @@ const _server = Bun.serve({
 						}
 					});
 
-					console.log(`[VOD][/get/:id]: VOD id "${newData.id}" contains metadata. Continue.`);
+					console.log(
+						`[VOD][/get/:id]: VOD id "${newData.id}" contains metadata. Continue.`
+					);
 					return JSONResponse(vodGetSchema, {
 						success: true,
 						message: 'OK',
@@ -144,7 +150,9 @@ const _server = Bun.serve({
 						for (const issue of error.issues) {
 							items.push(...issue.path);
 						}
-						console.error(`[VOD][/get/:id]: Invalid data. Missing fields (${items.join(', ')})`);
+						console.error(
+							`[VOD][/get/:id]: Invalid data. Missing fields (${items.join(', ')})`
+						);
 						return JSONResponse(null, {
 							success: false,
 							message: `Please complete the fields. ${items.join(', ')}`
@@ -185,7 +193,9 @@ const _server = Bun.serve({
 				});
 
 				if (!vodData) {
-					console.error(`[VOD Internal][/verify]: No VOD information from ID "${newData.vodId}"`);
+					console.error(
+						`[VOD Internal][/verify]: No VOD information from ID "${newData.vodId}"`
+					);
 					return new Response('2');
 				}
 
@@ -193,7 +203,10 @@ const _server = Bun.serve({
 				const videoPath = `${path}/index.m3u8`;
 				const imagePath = `${path}/thumbnail.jpg`;
 
-				if (!(await Bun.file(videoPath).exists()) || !(await Bun.file(imagePath).exists())) {
+				if (
+					!(await Bun.file(videoPath).exists()) ||
+					!(await Bun.file(imagePath).exists())
+				) {
 					console.warn(
 						`[VOD Internal][/verify]: Detected broken files from VOD id "${newData.vodId}". Deleting VOD information and its remaning files.`
 					);
@@ -209,7 +222,9 @@ const _server = Bun.serve({
 						`[VOD Internal][/verify]: Files and information from VOD id "${newData.vodId}" are deleted successfully..`
 					);
 				} else {
-					console.log(`[VOD Internal][/verify]: All files from VOD id "${newData.vodId}" exists.`);
+					console.log(
+						`[VOD Internal][/verify]: All files from VOD id "${newData.vodId}" exists.`
+					);
 				}
 				return new Response('0');
 			}
@@ -232,7 +247,9 @@ const _server = Bun.serve({
 				const newData = result.data;
 
 				if (!newData.metadata?.length) {
-					console.error(`[VOD Internal][/metadata]: No metadata from VOD id "${newData.vodId}".`);
+					console.error(
+						`[VOD Internal][/metadata]: No metadata from VOD id "${newData.vodId}".`
+					);
 					return new Response('2');
 				}
 
@@ -305,7 +322,9 @@ const _server = Bun.serve({
 					});
 
 					if (!creatorData) {
-						console.error(`[VOD Internal][/publish]: Path "${newData.id}" not found.`);
+						console.error(
+							`[VOD Internal][/publish]: Path "${newData.id}" not found.`
+						);
 						return new Response('2');
 					}
 
@@ -357,4 +376,6 @@ const _server = Bun.serve({
 	}
 });
 
-console.log(`VOD Internal Service API: Listening ${_server.hostname}:${_server.port}`);
+console.log(
+	`VOD Internal Service API: Listening ${_server.hostname}:${_server.port}`
+);

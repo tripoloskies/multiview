@@ -83,7 +83,10 @@ async function _sendCommand(
 		function func(event: MessageEvent) {
 			const result: wsMessageResponseSchema = JSON.parse(event.data);
 			const resultTransactionId = result?.transactionId;
-			if (!result?.transactionId?.length || resultTransactionId != transactionId) {
+			if (
+				!result?.transactionId?.length ||
+				resultTransactionId != transactionId
+			) {
 				return;
 			}
 

@@ -16,7 +16,9 @@
 				<h2>Multiview Recordings</h2>
 			</a>
 		</div>
-		<Button type="link" link={resolve('/(view)/(multiview)')}>Back to Multiview</Button>
+		<Button type="link" link={resolve('/(view)/(multiview)')}
+			>Back to Multiview</Button
+		>
 	</nav>
 	<Container>
 		{@render children()}

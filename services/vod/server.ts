@@ -12,7 +12,9 @@ const _server = Bun.serve({
 				const responseHeaders = new Headers();
 				const data = { ...request.params };
 
-				const fileLists = new Glob(`${Bun.env.RECORD_PATH}/**/${data.id}/index.m3u8`);
+				const fileLists = new Glob(
+					`${Bun.env.RECORD_PATH}/**/${data.id}/index.m3u8`
+				);
 
 				let path: string = '';
 

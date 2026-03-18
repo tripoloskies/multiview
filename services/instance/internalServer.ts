@@ -61,4 +61,6 @@ const _server = Bun.serve({
 	}
 });
 
-console.log(`Instance Internal Service API: Listening ${_server.hostname}:${_server.port}`);
+console.log(
+	`Instance Internal Service API: Listening ${_server.hostname}:${_server.port}`
+);

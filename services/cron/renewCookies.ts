@@ -1,6 +1,11 @@
 import { $, type BunFile } from 'bun';
 import path from 'path';
-import puppeteer, { Browser, Page, type Cookie, type CookieData } from 'puppeteer';
+import puppeteer, {
+	Browser,
+	Page,
+	type Cookie,
+	type CookieData
+} from 'puppeteer';
 
 async function parseNetscapeCookies(filePath: string): Promise<CookieData[]> {
 	const file: BunFile = Bun.file(filePath);
@@ -22,13 +27,24 @@ async function parseNetscapeCookies(filePath: string): Promise<CookieData[]> {
 		const parts: string[] = trimmed.split('\t');
 		if (parts.length < 7) continue;
 
-		const [domain, _includeSubdomains, path, secure, expires, name, value]: string[] = parts;
+		const [
+			domain,
+			_includeSubdomains,
+			path,
+			secure,
+			expires,
+			name,
+			value
+		]: string[] = parts;
 
 		if (!name?.length || !value?.length || !domain?.length) {
 			continue;
 		}
 
-		console.log('[renewCookies][parseNetscapeCookies] Exclude those values: ', _includeSubdomains);
+		console.log(
+			'[renewCookies][parseNetscapeCookies] Exclude those values: ',
+			_includeSubdomains
+		);
 
 		cookies.push({
 			name,
@@ -53,7 +69,9 @@ function cookiesToNetscape(cookies: Cookie[]): string {
 	];
 
 	for (const cookie of cookies) {
-		const domain = cookie.domain.startsWith('.') ? cookie.domain : '.' + cookie.domain;
+		const domain = cookie.domain.startsWith('.')
+			? cookie.domain
+			: '.' + cookie.domain;
 
 		const includeSubdomains: string = 'TRUE';
 		const path: string = cookie.path || '/';
@@ -66,7 +84,15 @@ function cookiesToNetscape(cookies: Cookie[]): string {
 		const expires: number = cookie.expires ? Math.floor(cookie.expires) : 0;
 
 		lines.push(
-			[domain, includeSubdomains, path, secure, expires, cookie.name, cookie.value].join('\t')
+			[
+				domain,
+				includeSubdomains,
+				path,
+				secure,
+				expires,
+				cookie.name,
+				cookie.value
+			].join('\t')
 		);
 	}
 
@@ -83,7 +109,9 @@ async function execute(): Promise<void> {
 	try {
 		browserPath = await $`which chromium`.text();
 	} catch {
-		console.error("Chromium not found in PATH. Please ensure it's installed and accessible.");
+		console.error(
+			"Chromium not found in PATH. Please ensure it's installed and accessible."
+		);
 		return;
 	}
 	// Launch the browser and open a new blank page.

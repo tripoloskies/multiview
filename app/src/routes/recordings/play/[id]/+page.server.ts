@@ -17,7 +17,9 @@ export const load: PageServerLoad = async ({ params }) => {
 	try {
 		const sanitizedQuery = await schema.parseAsync(query);
 
-		const response = await fetch(`http://localhost:3002/get/${sanitizedQuery.id}`);
+		const response = await fetch(
+			`http://localhost:3002/get/${sanitizedQuery.id}`
+		);
 
 		if (response.status !== 200) {
 			error(500, 'Internal Backend Server is down.');

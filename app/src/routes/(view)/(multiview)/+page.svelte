@@ -2,7 +2,12 @@
 	import Button from '$lib/components/Button.svelte';
 	import Controls from '$lib/layouts/Controls.svelte';
 	import { info } from '$lib/stores/info.svelte';
-	import { actions, clearAction, setAction, viewState } from '$lib/stores/multiview.svelte';
+	import {
+		actions,
+		clearAction,
+		setAction,
+		viewState
+	} from '$lib/stores/multiview.svelte';
 
 	let activePaths = $derived(info.paths.filter((path) => path?.online)?.length);
 </script>
@@ -16,9 +21,15 @@
 		<Button onclick={() => clearAction()}>Cancel</Button>
 	{:else}
 		<Button type="link" link="/add">Add</Button>
-		<Button type="button" onclick={() => setAction(actions.inspect)}>Inspect</Button>
-		<Button type="button" onclick={() => setAction(actions.delete)}>Delete</Button>
-		<Button type="button" onclick={() => setAction(actions.restart)}>Restart</Button>
+		<Button type="button" onclick={() => setAction(actions.inspect)}
+			>Inspect</Button
+		>
+		<Button type="button" onclick={() => setAction(actions.delete)}
+			>Delete</Button
+		>
+		<Button type="button" onclick={() => setAction(actions.restart)}
+			>Restart</Button
+		>
 	{/if}
 
 	{#snippet footer()}

@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { removePersistCommand, sendCommand, sendPersistCommand } from '$lib/api/websocket.svelte';
+	import {
+		removePersistCommand,
+		sendCommand,
+		sendPersistCommand
+	} from '$lib/api/websocket.svelte';
 	import type { getStreamResponseSchema } from '@shared/schema/websocket';
 	import Button from '$lib/components/Button.svelte';
 	import Viewer from '$lib/components/Viewer.svelte';
@@ -50,7 +54,8 @@
 					{@render children()}
 				</div>
 			{/if}
-			<Viewer path={data.path} online={online || false} {status} muted={false}></Viewer>
+			<Viewer path={data.path} online={online || false} {status} muted={false}
+			></Viewer>
 		{/if}
 	</div>
 

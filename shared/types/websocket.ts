@@ -4,4 +4,6 @@ export type apiResponse = {
 	data?: Record<string, unknown>;
 };
 
-export type wsActions = (data?: Record<string, unknown>) => Promise<apiResponse>;
+export type wsActions = (
+	data?: Record<string, unknown>
+) => Promise<apiResponse>;

@@ -54,7 +54,9 @@ const _server = Bun.serve({
 						const reader = readable.getReader();
 						let buffer: string = '';
 
-						console.log(`[Instance Event] Instance Log for "${newData.path}" started.`);
+						console.log(
+							`[Instance Event] Instance Log for "${newData.path}" started.`
+						);
 
 						try {
 							while (true) {
@@ -73,7 +75,9 @@ const _server = Bun.serve({
 
 							if (buffer) controller.enqueue(`data: ${buffer}\n\n`);
 						} catch {
-							console.warn('[Instance Event] Controller suddenly stops. Ignoring...');
+							console.warn(
+								'[Instance Event] Controller suddenly stops. Ignoring...'
+							);
 						} finally {
 							console.warn('[Instance Event] Logging done.');
 						}
@@ -86,13 +90,17 @@ const _server = Bun.serve({
 					Promise.all([stdoutStream, stderrStream]).finally(() => {
 						if (!process.killed) {
 							process.kill();
-							console.log(`[Instance Event] Process ${process.pid} killed: ${process.exitCode}`);
+							console.log(
+								`[Instance Event] Process ${process.pid} killed: ${process.exitCode}`
+							);
 						}
 					});
 				},
 				cancel() {
 					process.kill();
-					console.log(`[Instance Event] Process ${process.pid} killed: ${process.exitCode}`);
+					console.log(
+						`[Instance Event] Process ${process.pid} killed: ${process.exitCode}`
+					);
 				}
 			});
 
@@ -108,4 +116,6 @@ const _server = Bun.serve({
 	}
 });
 
-console.log(`Instance Service Events: Listening ${_server.hostname}:${_server.port}`);
+console.log(
+	`Instance Service Events: Listening ${_server.hostname}:${_server.port}`
+);

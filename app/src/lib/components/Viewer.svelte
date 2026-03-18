@@ -4,7 +4,13 @@
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 
-	let { path = '', muted = true, online = false, visible = true, status = 'Empty' } = $props();
+	let {
+		path = '',
+		muted = true,
+		online = false,
+		visible = true,
+		status = 'Empty'
+	} = $props();
 
 	let source: MediaElementAudioSourceNode;
 	let audioContext: AudioContext;
@@ -232,7 +238,9 @@
 		}
 
 		if (muted) {
-			await goto(resolve(`/(view)/(singleview)/player/play/[...path]`, { path: path }));
+			await goto(
+				resolve(`/(view)/(singleview)/player/play/[...path]`, { path: path })
+			);
 			return;
 		}
 		if (!muted && isReady && player.muted) {
@@ -250,7 +258,10 @@
 					<b>Online</b>
 				{/if}
 			</div>
-			<div bind:this={margin} class={`safe-margin ${videoHeight > 0 ? '' : 'hidden'}`}>
+			<div
+				bind:this={margin}
+				class={`safe-margin ${videoHeight > 0 ? '' : 'hidden'}`}
+			>
 				<div bind:this={marginAction} class="safe-margin-action">
 					<div class="safe-margin-title"></div>
 				</div>
@@ -273,7 +284,10 @@
 	</div>
 	{#if !muted}
 		<div class="audio-meter">
-			<div class={`audio-meter-content ${meterColorIndicator}`} style={`height:${meterPercent}%`}>
+			<div
+				class={`audio-meter-content ${meterColorIndicator}`}
+				style={`height:${meterPercent}%`}
+			>
 				<div class="audio-meter-label">
 					{meterLabel <= -90 ? 'NA' : meterLabel}
 				</div>

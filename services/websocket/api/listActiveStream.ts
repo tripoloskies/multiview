@@ -4,11 +4,16 @@ import type { instanceSchema } from '@shared/schema/instance';
 import { type wsActions } from '@shared/types/websocket';
 import { controlApiPathsResponse } from '@shared/schema/mediamtx';
 import { listActiveStreamsResponseSchema } from '@shared/schema/websocket';
-import { listStreamInstance, deleteStoppedInstances } from '$services/instance/client';
+import {
+	listStreamInstance,
+	deleteStoppedInstances
+} from '$services/instance/client';
 
 export const actions: wsActions = async () => {
 	try {
-		const request: Response = await fetch(`http://${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/list`);
+		const request: Response = await fetch(
+			`http://${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/list`
+		);
 
 		if (request.status !== 200) {
 			return wsResponse(null, {
@@ -17,7 +22,9 @@ export const actions: wsActions = async () => {
 			});
 		}
 
-		const parseResponse = await controlApiPathsResponse.safeParseAsync(await request.json());
+		const parseResponse = await controlApiPathsResponse.safeParseAsync(
+			await request.json()
+		);
 
 		if (!parseResponse.success) {
 			return wsResponse(null, {

@@ -26,13 +26,17 @@ export const streamEventResponseSchema = z.object({
 	eventUrl: z.string()
 });
 
-export type streamEventResponseSchema = z.infer<typeof streamEventResponseSchema>;
+export type streamEventResponseSchema = z.infer<
+	typeof streamEventResponseSchema
+>;
 
 export const getServerTimeResponseSchema = z.object({
 	serverTime: z.string()
 });
 
-export type getServerTimeResponseSchema = z.infer<typeof getServerTimeResponseSchema>;
+export type getServerTimeResponseSchema = z.infer<
+	typeof getServerTimeResponseSchema
+>;
 
 export const getStreamResponseSchema = z.object({
 	status: z.string(),
@@ -48,7 +52,9 @@ export const listActiveStreamsResponseSchema = z.object({
 	instances: z.array(instanceSchema)
 });
 
-export type listActiveStreamsResponseSchema = z.infer<typeof listActiveStreamsResponseSchema>;
+export type listActiveStreamsResponseSchema = z.infer<
+	typeof listActiveStreamsResponseSchema
+>;
 
 export const realtimeResponseSchema = listActiveStreamsResponseSchema.extend(
 	getServerTimeResponseSchema.shape

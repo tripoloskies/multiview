@@ -7,7 +7,10 @@ import { actions as inspectStream } from './api/inspectStream';
 import { actions as listActiveStream } from './api/listActiveStream';
 import { actions as realtimeInfo } from './api/realtimeInfo';
 import { actions as getStream } from './api/getStream';
-import { wsMessageRequestSchema, wsMessageResponseSchema } from '@shared/schema/websocket';
+import {
+	wsMessageRequestSchema,
+	wsMessageResponseSchema
+} from '@shared/schema/websocket';
 
 const lists = [
 	{ cmdName: 'talk', fn: talk },
@@ -47,7 +50,9 @@ export const sockets: Bun.WebSocketHandler<undefined> = {
 				for (const issue of response.error.issues) {
 					items.push(...issue.path);
 				}
-				console.error(`[Websocket]: Error. Missing response fields ${items.join(', ')}`);
+				console.error(
+					`[Websocket]: Error. Missing response fields ${items.join(', ')}`
+				);
 				return;
 			}
 
@@ -77,7 +82,9 @@ export const sockets: Bun.WebSocketHandler<undefined> = {
 			for (const issue of result.error.issues) {
 				items.push(...issue.path);
 			}
-			console.error(`[Websocket][${transactionId}]: Missing or bad fields: ${items.join(', ')}.`);
+			console.error(
+				`[Websocket][${transactionId}]: Missing or bad fields: ${items.join(', ')}.`
+			);
 
 			send({
 				success: false,
@@ -112,7 +119,9 @@ export const sockets: Bun.WebSocketHandler<undefined> = {
 					await Bun.sleep(PERSIST_REFRESH_DURATION);
 				}
 			} else {
-				console.log(`[Websocket][${transactionId}]: Command name: ${list.cmdName}.`);
+				console.log(
+					`[Websocket][${transactionId}]: Command name: ${list.cmdName}.`
+				);
 				send({
 					...(await list.fn(newData.data)),
 					transactionId: transactionId

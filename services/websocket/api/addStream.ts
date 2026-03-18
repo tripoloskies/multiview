@@ -7,7 +7,8 @@ import { streamEventResponseSchema } from '@shared/schema/websocket';
 
 export const actions: wsActions = async (data) => {
 	const TWITCH_URL_REGEX: RegExp = /^(https?:\/\/)?([a-z0-9]+\.)?twitch\.tv/;
-	const YT_URL_REGEX: RegExp = /^(https?:\/\/)?([a-z0-9]+\.)?(youtube\.com|youtu\.be)/;
+	const YT_URL_REGEX: RegExp =
+		/^(https?:\/\/)?([a-z0-9]+\.)?(youtube\.com|youtu\.be)/;
 
 	const schema = z.object({
 		url: z.string().min(1),

@@ -4,11 +4,16 @@ export const config = $state({
 
 export function load(): void {
 	config.showVideoMultiView = Boolean(
-		Number(localStorage.getItem('showVideoMultiView') || config.showVideoMultiView)
+		Number(
+			localStorage.getItem('showVideoMultiView') || config.showVideoMultiView
+		)
 	);
 }
 
-export function change(configName: string, value: string | boolean | number): void {
+export function change(
+	configName: string,
+	value: string | boolean | number
+): void {
 	localStorage.setItem(configName, String(value));
 	load();
 }

@@ -1,10 +1,18 @@
 <script lang="ts">
-	let { onclick = defaultClick, type = 'button', link = '', children, disabled = false } = $props();
+	let {
+		onclick = defaultClick,
+		type = 'button',
+		link = '',
+		children,
+		disabled = false
+	} = $props();
 
 	let submitButton: HTMLButtonElement | HTMLInputElement | undefined = $state();
 
 	function defaultClick(): void {
-		console.log('This is a default click behavior of a button. Maybe you forgot to set up? Right?');
+		console.log(
+			'This is a default click behavior of a button. Maybe you forgot to set up? Right?'
+		);
 	}
 
 	function submitClick(event: Event): void {
@@ -20,7 +28,8 @@
 	<a href={link}>{@render children?.()}</a>
 {:else if type == 'submit'}
 	<input bind:this={submitButton} type="submit" class="hidden" />
-	<button {type} onclick={submitClick} {disabled}>{@render children?.()}</button>
+	<button {type} onclick={submitClick} {disabled}>{@render children?.()}</button
+	>
 {:else}
 	<button {onclick} {disabled}>{@render children?.()}</button>
 {/if}

@@ -77,7 +77,9 @@ const pm2Delete = (process: string | number): Promise<boolean> => {
 	});
 };
 
-const pm2Describe = (process: string | number): Promise<pm2.ProcessDescription[]> => {
+const pm2Describe = (
+	process: string | number
+): Promise<pm2.ProcessDescription[]> => {
 	return new Promise((resolve, reject) => {
 		pm2.describe(process, (error, ProcessDescription) => {
 			if (error) {
@@ -204,7 +206,9 @@ async function destroyStoppedPM2Instance(): Promise<boolean> {
 }
 
 export async function isStreamExists(path: string): Promise<boolean> {
-	const pathRequest = await fetch(`http:/${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/get/${path}`);
+	const pathRequest = await fetch(
+		`http:/${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/get/${path}`
+	);
 	switch (pathRequest.status) {
 		case 200:
 			return true;
@@ -212,7 +216,9 @@ export async function isStreamExists(path: string): Promise<boolean> {
 		case 404:
 			return false;
 		default:
-			throw new Error('Something wrong with the server. Contact the administrator');
+			throw new Error(
+				'Something wrong with the server. Contact the administrator'
+			);
 	}
 }
 
@@ -242,7 +248,10 @@ export async function deleteStoppedInstances(): Promise<boolean> {
 	return await destroyStoppedPM2Instance();
 }
 
-export async function addStreamInstance(url: string, streamPath: string): Promise<boolean> {
+export async function addStreamInstance(
+	url: string,
+	streamPath: string
+): Promise<boolean> {
 	let bunExecutablePath: string;
 	let ytdlpExecutablePath: string;
 	let streamlinkExecutablePath: string;
@@ -268,7 +277,8 @@ export async function addStreamInstance(url: string, streamPath: string): Promis
 
 	try {
 		const streamlinkExecRelativePath = await $`which streamlink`.text();
-		streamlinkExecutablePath = await $`realpath "${streamlinkExecRelativePath}"`.text();
+		streamlinkExecutablePath =
+			await $`realpath "${streamlinkExecRelativePath}"`.text();
 	} catch {
 		console.error(
 			'[addStreamInstance:error] streamlink must be installed in your host machine. Cancelling...'
@@ -291,11 +301,15 @@ export async function addStreamInstance(url: string, streamPath: string): Promis
 	}
 }
 
-export async function checkStreamInstance(streamPath: string): Promise<boolean> {
+export async function checkStreamInstance(
+	streamPath: string
+): Promise<boolean> {
 	return await checkPM2Instance(streamPath);
 }
 
-export async function getStreamInstance(streamPath: string): Promise<instance | null> {
+export async function getStreamInstance(
+	streamPath: string
+): Promise<instance | null> {
 	const lists = await listPM2Instance();
 
 	const selectedInstance = lists?.find((list) => list.name === streamPath);
@@ -311,10 +325,14 @@ export async function getStreamInstance(streamPath: string): Promise<instance | 
 	};
 }
 
-export async function deleteStreamInstance(streamPath: string): Promise<boolean> {
+export async function deleteStreamInstance(
+	streamPath: string
+): Promise<boolean> {
 	return await destroyPM2Instance(streamPath);
 }
 
-export async function restartStreamInstance(streamPath: string): Promise<boolean> {
+export async function restartStreamInstance(
+	streamPath: string
+): Promise<boolean> {
 	return await restartPM2Instance(streamPath);
 }

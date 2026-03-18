@@ -5,7 +5,14 @@ module.exports = {
 			script: './websocket/server.ts',
 			interpreter: 'bun',
 			watch: true,
-			ignore_watch: ['node_modules', '.pm2', 'backup', 'config', 'generated', 'prisma'],
+			ignore_watch: [
+				'node_modules',
+				'.pm2',
+				'backup',
+				'config',
+				'generated',
+				'prisma'
+			],
 			env: {
 				NODE_ENV: 'development'
 			}
@@ -15,7 +22,14 @@ module.exports = {
 			script: './instance/server.ts',
 			interpreter: 'bun',
 			watch: true,
-			ignore_watch: ['node_modules', '.pm2', 'backup', 'config', 'generated', 'prisma'],
+			ignore_watch: [
+				'node_modules',
+				'.pm2',
+				'backup',
+				'config',
+				'generated',
+				'prisma'
+			],
 			env: {
 				NODE_ENV: 'development'
 			}
@@ -25,7 +39,14 @@ module.exports = {
 			script: './instance/internalServer.ts',
 			interpreter: 'bun',
 			watch: true,
-			ignore_watch: ['node_modules', '.pm2', 'backup', 'config', 'generated', 'prisma'],
+			ignore_watch: [
+				'node_modules',
+				'.pm2',
+				'backup',
+				'config',
+				'generated',
+				'prisma'
+			],
 			env: {
 				NODE_ENV: 'development'
 			}
@@ -35,7 +56,14 @@ module.exports = {
 			script: './vod/server.ts',
 			interpreter: 'bun',
 			watch: true,
-			ignore_watch: ['node_modules', '.pm2', 'config', 'backup', 'generated', 'prisma'],
+			ignore_watch: [
+				'node_modules',
+				'.pm2',
+				'config',
+				'backup',
+				'generated',
+				'prisma'
+			],
 			env: {
 				NODE_ENV: 'development'
 			}
@@ -45,7 +73,14 @@ module.exports = {
 			script: './vod/internalServer.ts',
 			interpreter: 'bun',
 			watch: true,
-			ignore_watch: ['node_modules', '.pm2', 'backup', 'config', 'generated', 'prisma'],
+			ignore_watch: [
+				'node_modules',
+				'.pm2',
+				'backup',
+				'config',
+				'generated',
+				'prisma'
+			],
 			env: {
 				NODE_ENV: 'development'
 			}

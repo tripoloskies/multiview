@@ -54,7 +54,8 @@
 
 						isStreamCreated = true;
 						if (!eventUrl) {
-							customLog = "No event URL? There's something wrong with the server.";
+							customLog =
+								"No event URL? There's something wrong with the server.";
 							isStreamCreated = false;
 							return;
 						}
@@ -66,7 +67,11 @@
 						<div class="controls-input">
 							<span>
 								<label for="url">Stream URL</label>
-								<input bind:this={targetInput} name="url" placeholder="Stream URL" />
+								<input
+									bind:this={targetInput}
+									name="url"
+									placeholder="Stream URL"
+								/>
 							</span>
 							<span>
 								<label for="path">Path</label>
