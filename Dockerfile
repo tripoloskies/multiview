@@ -1,6 +1,9 @@
 FROM oven/bun:1.3.10 as builder
 
 WORKDIR /app
+
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
 COPY package.json bun.lock turbo.json ./
 COPY app/package.json ./app/
 COPY services/package.json ./services/
@@ -54,6 +57,7 @@ COPY --from=builder /app/shared/types/node_modules shared/types/node_modules
 COPY --from=builder /app/shared/utils/node_modules shared/utils/node_modules
 COPY --from=builder /app/shared/schema/node_modules shared/schema/node_modules
 COPY --from=builder /app/shared/config/node_modules shared/config/node_modules
+COPY --from=builder /root/.cache/puppeteer /root/.cache/puppeteer
 COPY . .
 
 WORKDIR /app/app

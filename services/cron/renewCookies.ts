@@ -100,51 +100,66 @@ function cookiesToNetscape(cookies: Cookie[]): string {
 }
 
 async function execute(): Promise<void> {
-	// Configuration: Path
-	const cookiesLocation = path.resolve('config/cookies.txt');
+	while (true) {
+		try {
+			// Configuration: Path
+			const cookiesLocation = path.resolve('config/cookies.txt');
 
-	const cookies: CookieData[] = await parseNetscapeCookies(cookiesLocation);
-	let browserPath: string;
+			const cookies: CookieData[] = await parseNetscapeCookies(cookiesLocation);
+			let browserPath: string;
 
-	try {
-		browserPath = await $`which chromium`.text();
-	} catch {
-		console.error(
-			"Chromium not found in PATH. Please ensure it's installed and accessible."
-		);
-		return;
+			try {
+				browserPath = await $`which chromium`.text();
+			} catch {
+				console.error(
+					"Chromium not found in PATH. Please ensure it's installed and accessible."
+				);
+				return;
+			}
+
+			// Launch the browser and open a new blank page.
+			const browser: Browser = await puppeteer.launch({
+				headless: true,
+				executablePath: browserPath,
+				args: [
+					'--disable-gpu',
+					'--disable-dev-shm-usage',
+					'--single-process',
+					'--no-sandbox',
+					'--disable-setuid-sandbox'
+				]
+			});
+
+			await browser.setCookie(...cookies);
+			const page: Page = await browser.newPage();
+
+			await page.goto('https://www.youtube.com');
+			await page.setViewport({ width: 1366, height: 768 });
+			await page.waitForSelector('#logo-icon');
+			const newCookies: Cookie[] = await browser.cookies();
+
+			await page.close();
+			await browser.close();
+
+			const netscapeNewCookies: string = cookiesToNetscape(newCookies);
+			const tempFile: BunFile = Bun.file(cookiesLocation);
+			await tempFile.write(netscapeNewCookies);
+
+			console.log(
+				'[cron][renewCookies] Renewing cookies completed. See you in another time.'
+			);
+			await Bun.sleep(1000 * 60 * 45);
+			console.log('Renewed once again. ');
+		} catch (error) {
+			console.error(error);
+			console.warn(
+				`[cron][renewCookies] Internal Error detected. Please check file "RootDir/config/cookies.txt". If the cookie file is broken or not valid, renew manually`
+			);
+
+			console.warn('[cron][renewCookies] Restarting in 60s');
+			await Bun.sleep(1000 * 60);
+		}
 	}
-	// Launch the browser and open a new blank page.
-	const browser: Browser = await puppeteer.launch({
-		headless: true,
-		executablePath: browserPath,
-		args: [
-			'--disable-gpu',
-			'--disable-dev-shm-usage',
-			'--single-process',
-			'--no-sandbox',
-			'--disable-setuid-sandbox'
-		]
-	});
-
-	await browser.setCookie(...cookies);
-	const page: Page = await browser.newPage();
-
-	await page.goto('https://www.youtube.com');
-	await page.setViewport({ width: 1366, height: 768 });
-	await page.waitForSelector('#logo-icon');
-	const newCookies: Cookie[] = await browser.cookies();
-
-	await page.close();
-	await browser.close();
-
-	const netscapeNewCookies: string = cookiesToNetscape(newCookies);
-	const tempFile: BunFile = Bun.file(cookiesLocation);
-	await tempFile.write(netscapeNewCookies);
-
-	console.log('Renewing cookies completed. See you in another time.');
-	await Bun.sleep(1000 * 60 * 45);
-	console.log('Renewed once again. ');
 }
 
 execute();
