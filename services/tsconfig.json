@@ -24,6 +24,13 @@
 		// Some stricter flags (disabled by default)
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
-		"noPropertyAccessFromIndexSignature": false
+		"noPropertyAccessFromIndexSignature": false,
+		"types": ["bun"],
+		"paths": {
+			// "$database/*": ["./shared/database/*"],
+			// "$utils/*": ["./shared/utils/*"],
+			// "$types/*": ["./shared/types/*"],
+			"$services/*": ["./*"]
+		}
 	}
 }

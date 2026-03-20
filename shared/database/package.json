@@ -1,0 +1,32 @@
+{
+	"name": "@shared/database",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"devDependencies": {
+		"@shared/config": "workspace:*",
+		"@types/bun": "latest",
+		"@types/pg": "^8.18.0",
+		"cross-env": "^10.1.0",
+		"eslint": "^10.0.3",
+		"globals": "^17.4.0",
+		"prettier": "3.8.1",
+		"prisma": "^7.5.0",
+		"typescript-eslint": "^8.57.1"
+	},
+	"scripts": {
+		"db:migrate": "prisma migrate dev --name db && prisma generate",
+		"db:generate": "cross-env DATABASE_URL=postgresql://dont-delete:this@lineof.command:5432/multiview prisma generate",
+		"lint": "prettier --check . && eslint .",
+		"format": "prettier --write ."
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@prisma/adapter-pg": "^7.5.0",
+		"@prisma/client": "^7.5.0",
+		"dotenv": "^17.3.1",
+		"pg": "^8.20.0"
+	}
+}

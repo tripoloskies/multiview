@@ -1,0 +1,338 @@
+
+#!/bin/bash
+
+
+# Environment Path Variables
+CURRENT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+PW_DIR=$(pwd)
+
+# Network/Hostname Variables
+HOST="localhost"
+USE_COOKIES="1"
+
+# Params
+SOURCE_URL="$1"
+STREAM_PATH="$2"
+RECORDING_PATH="$3"
+RUNTIME_PATH="$4"
+YTDLP_PATH="$5"
+STREAMLINK_PATH="$6"
+MEDIAMTX_HOST="$7"
+
+# Background PID's to close in case of nasty moments while this script was running.
+PUBLISHER_PID=""
+MBUFFER_PID=""
+VOD_ID=""
+
+echo "List of arguments: "
+echo "------------------"
+echo "Source URL: $SOURCE_URL"
+echo "Stream Path: $STREAM_PATH"
+echo "Recording Path: $RECORDING_PATH"
+echo "JS Runtime Path: $RUNTIME_PATH"
+echo "yt-dlp Path: $YTDLP_PATH"
+echo "streamlink Path: $STREAMLINK_PATH"
+echo "Mediamtx Host: $MEDIAMTX_HOST"
+echo "------------------"
+
+
+if [[ -z "$RECORDING_PATH" ]]; then
+    echo "VOD path is required"
+    exit 1
+fi
+
+if [[ "$RECORDING_PATH" == "/" ]]; then
+    echo "Saving the VOD to the root directory is not allowed!"
+    exit 1
+fi
+
+if [ ! -d "$RECORDING_PATH" ]; then
+    echo "VOD directory $RECORDING_PATH does not exist."
+    exit 1
+fi
+
+if [[ -z "$SOURCE_URL" ]]; then
+    echo "Stream URL is required."
+    exit 1
+fi
+
+if [[ -z "$RUNTIME_PATH" ]]; then
+    echo "Runtime path is required."
+    exit 1
+fi
+
+if [[ -z "$YTDLP_PATH" ]]; then
+    echo "yt-dlp path is required."
+    exit 1
+fi
+
+if [[ -z "$STREAMLINK_PATH" ]]; then
+    echo "streamlink path is required."
+    exit 1
+fi
+
+if [[ -z "$MEDIAMTX_HOST" ]]; then
+    echo "Mediamtx host is required."
+    exit 1
+fi
+
+getVodId() {
+    echo $(curl -s -X POST http://$HOST:3002/publish -F "id=$STREAM_PATH" 2>&1)
+}
+
+
+checkStreamIfBroken() {
+    echo $(curl -s -X POST http://$HOST:3002/verify -F "vodId=$VOD_ID" 2>&1)
+}
+
+parseStreamMetadata() {
+    echo "Metadata extraction starting..."
+
+    if [[ "$USE_COOKIES" == 1 ]]; then
+        COOKIE_ARGS="--js-runtimes bun:$RUNTIME_PATH --cookies "$PW_DIR/config/cookies.txt""
+    else
+        COOKIE_ARGS=""
+    fi
+    
+    local METADATA=$($YTDLP_PATH $COOKIE_ARGS -O "%(.{id,fulltitle,uploader,timestamp,description,extractor,webpage_url})#j" --no-warnings --skip-download $SOURCE_URL 1>&1 | base64)
+    if [[ "$METADATA" == "" ]]; then
+        echo "Metadata extraction failed."
+    else
+        echo "Metadata successfully extracted."
+        local SAVE_STATUS=$(curl -s -X POST http://$HOST:3002/metadata -F "vodId=$VOD_ID" -F "metadata=$METADATA" 1>&1)
+        if [[ "$SAVE_STATUS" == "0" ]]; then
+            echo "Metadata saved successfully."
+        else
+            echo "Metadata saved unsuccessfully."
+        fi
+    fi
+}
+publish() {
+    local URL=$1
+    local BUFFER_SIZE=$2
+    local ARGS=$3
+    local METADATA=$4
+
+    VOD_ID=$(getVodId)
+
+
+    if [[ "$URL" == "" ]]; then
+        inform_update "Broken Stream"
+        echo "No Manifest URL. Extractor did not process the link properly or a streaming site just got a tantrum."
+        echo "Retrying..."
+        sleep 5
+        return
+    fi
+
+    if [[ "$VOD_ID" == "-1" ]]; then
+        inform_update "Internal Server Error"
+        echo "Check if the Bun Server is active and running."
+        exit 1
+
+    elif [[ "$VOD_ID" == "1" ]]; then
+        inform_update "Internal Server Error"
+        echo "Invalid data."
+        exit 1
+        
+    elif [[ "$VOD_ID" == "2" ]]; then
+        inform_update "Creator not found."
+        echo "Creator not found. Retrying..."
+        return        
+    fi   
+
+    TMPDIR=$(mktemp -d /tmp/buffer.XXXXXX)
+
+    mkfifo $TMPDIR/filter1
+
+    local A_DIR="$RECORDING_PATH/$STREAM_PATH/$VOD_ID"
+    mkdir -p "$A_DIR"
+    mkdir -p "$A_DIR/segments"
+
+    $STREAMLINK_PATH --http-cookies-file "$PW_DIR/config/cookies.txt" --logfile "$A_DIR/logs.txt" --loglevel "all" --stream-segment-threads 3 $ARGS --ringbuffer-size 64M --stdout "$URL" best | \
+    mbuffer -q -m $BUFFER_SIZE -P 60 > $TMPDIR/filter1 &
+    MBUFFER_PID=$!
+
+    local VCODEC=$($STREAMLINK_PATH --stdout "$URL" best | ffprobe -loglevel quiet -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 -analyzeduration 2k -probesize 2k -i - | head -n 1)
+
+    if [[ "$VCODEC" == "h264" ]]; then
+        TAG="avc1"
+    elif [[ "$VCODEC" == "h265" ]]; then
+        TAG="hvc1"
+    else
+        TAG="$VCODEC"
+    fi
+
+
+    ffmpeg -stats \
+    -thread_queue_size 8192 -fflags +genpts -re \
+    -i $TMPDIR/filter1 \
+    -c:v copy \
+    -c:a aac \
+    -b:a 192k \
+    -af "aresample=async=1:first_pts=0" -profile:a aac_low \
+    -aac_coder fast \
+    -flags +global_header \
+    -map 0:v -map 0:a \
+    -aac_ms false \
+    -aac_is false \
+    -aac_pns false \
+    -tag:v "$TAG" \
+    -aac_tns false \
+    -sn -dn \
+    -avoid_negative_ts make_zero \
+    -muxdelay 0.5 \
+    -f tee " \
+        [f=mpegts:onfail=abort]srt://$MEDIAMTX_HOST:8890?streamid=publish:$STREAM_PATH&latency=500000&pkt_size=1316| \
+        [f=hls:onfail=abort:hls_time=5:hls_segment_filename=$A_DIR/segments/segment%d.ts:hls_playlist_type=event]$A_DIR/index.m3u8" &
+
+    PUBLISHER_PID=$!
+    
+    while true; do
+        echo "Thumbnail......"
+        if ! kill -0 $MBUFFER_PID 2>/dev/null && ! kill -0 $PUBLISHER_PID 2>/dev/null ; then
+            echo "The publisher was dead. Skipping..."
+            break
+        fi
+        ffmpeg -loglevel quiet -i $A_DIR/segments/segment1.ts -frames:v 1 -update true -y $A_DIR/thumbnail.jpg
+        if [ -f "$A_DIR/thumbnail.jpg" ]; then
+            echo "Thumbnail successfully created."
+            if [[ "$METADATA" == "yes" ]]; then
+                parseStreamMetadata
+            fi
+            break
+        else
+            echo "Thumbnail failed. Retrying...."
+        fi
+        sleep 5
+    done
+
+    wait $PUBLISHER_PID
+    checkStreamIfBroken
+}
+
+inform_update() {
+    local MESSAGE=$1
+    local INFORM_STATUS=$(curl -s -X POST http://$HOST:3001/inform -F "path=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Update" 1>&1)
+
+    if [[ "$INFORM_STATUS" != "0" ]]; then
+        echo "Error inform_update code $INFORM_STATUS"
+    fi
+}
+
+inform_delete() {
+    local MESSAGE=$1
+    local INFORM_STATUS=$(curl -s -X POST http://$HOST:3001/inform -F "path=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Delete" 1>&1)
+    
+    if [[ "$INFORM_STATUS" != "0" ]]; then
+        echo "Error inform_delete code $INFORM_STATUS"
+    fi
+}
+
+close() {
+    checkStreamIfBroken
+    inform_delete "Closing"
+    [ -n "$PUBLISHER_PID" ] && kill -9 "$PUBLISHER_PID" 2>/dev/null
+    [ -n "$MBUFFER_PID" ] && kill -9 "$MBUFFER_PID" 2>/dev/null
+    rm -rf "$TMPDIR"
+    exit 1
+}
+
+
+while true; do
+    inform_update "Checking"
+    echo "Checking status..."
+
+    echo "Use Cookies: $USE_COOKIES"
+
+    if [[ "$USE_COOKIES" == "1" ]]; then
+        COOKIE_ARGS="--js-runtimes bun:$RUNTIME_PATH --cookies "$PW_DIR/config/cookies.txt""
+    else
+        COOKIE_ARGS=""
+    fi
+    
+
+    STATUS=$($YTDLP_PATH $COOKIE_ARGS --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
+
+    if [[ "$STATUS" == "is_live" ]]; then
+
+        inform_update "Live Detected"
+
+        # Trap signals and errors 
+        trap close SIGINT SIGTERM EXIT
+
+        # Twitch
+        if [[ "$SOURCE_URL" =~ ^(https?://)?([a-z0-9]+\.)?twitch\.tv ]]; then
+
+            echo "Twitch URL detected."
+            inform_update "Get Channel Name"
+            CH_NAME=$($YTDLP_PATH --no-warnings --print "%(uploader)s" "$SOURCE_URL" | tr '[:upper:]' '[:lower:]' 1>&1)
+
+            inform_update "Get Manifest URL using proxy."
+            echo "Get Manifest URL using proxy."
+            MANIFEST=$($YTDLP_PATH -q --print "url" "https://as.luminous.dev/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 1>&1)
+            BUFFER="12M"
+            ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
+            ADD_METADATA="yes"
+        # Youtube
+        elif [[ "$SOURCE_URL" =~ ^(https?://)?([a-z0-9]+\.)?(youtube\.com|youtu\.be) ]]; then
+
+            inform_update "Get Manifest URL"
+            echo "Get Manifest URL."
+            MANIFEST=$($YTDLP_PATH $COOKIE_ARGS -f "b" --no-warnings --print "url" "$SOURCE_URL" 1>&1)
+            BUFFER="12M"
+            ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
+            ADD_METADATA="yes"
+        # Others
+        else
+            inform_update "Please wait."
+            echo "Use Source URL as a Manifest URL."
+            MANIFEST="$SOURCE_URL"
+            BUFFER="12M"
+            ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 5 --stream-segment-timeout 1 --stream-segment-attempts 50"
+            ADD_METADATA="no"
+        fi
+
+        echo "Starting."
+        inform_update "Starting"
+        publish "$MANIFEST" "$BUFFER" "$ADD_ARGS" "$ADD_METADATA"
+        inform_update "Stopped"
+
+        echo "Ended. Checking once again..."
+    
+    elif [[ "$STATUS" == "upcoming" ]]; then
+        inform_update "Waiting for the LIVE signal"
+        echo "Stream is scheduled. Sleeping 15s..."
+        sleep 15
+        continue
+    elif [[ "$STATUS" == "was_live" ]]; then
+        inform_update "Error URL"
+        echo "Bummer! This link is a VOD!. Exiting..."
+        break
+    elif [[ "$STATUS" == "post_live" || "$STATUS" == *"not currently live"* ]]; then
+        inform_update "Offline"
+        echo "Stream has ended. Exiting...."
+        break
+    elif [[ "$STATUS" == *"The page needs to be reloaded"* ]]; then
+        inform_update "YouTube caught it. yt-dlp #16212"
+        echo "YouTube caught it. Retrying in 5s..."
+        echo "See the root issue here: https://github.com/yt-dlp/yt-dlp/issues/16212"
+        echo "Temporarily disabling cookies and retrying..."
+        sleep 5
+        USE_COOKIES="0"
+        continue
+    elif [[ "$STATUS" == "NA" || "$STATUS" == *"not a valid URL"* ]]; then
+        inform_update "Unknown URL"
+        echo "Unknown URL."
+        break
+    else
+        inform_update "$STATUS"
+        echo "Unknown ($STATUS). Retrying in 15s..."
+        sleep 15
+        continue
+    fi
+    
+    rm -rf "$TMPDIR"
+    inform_update "No Signal"
+    echo "Waiting 5 seconds..."
+    sleep 5
+done
