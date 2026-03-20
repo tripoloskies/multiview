@@ -4,6 +4,10 @@
 	let { data } = $props();
 </script>
 
+<svelte:head>
+	<title>VOD</title>
+</svelte:head>
+
 <div id="main-menu">
 	<div id="page-header">
 		<h1>Latest</h1>

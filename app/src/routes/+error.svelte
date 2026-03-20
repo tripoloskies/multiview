@@ -19,6 +19,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Oops, something went wrong.</title>
+</svelte:head>
+
 <main>
 	<div id="error-container">
 		<h1>Error {page.status}</h1>

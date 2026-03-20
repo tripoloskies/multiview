@@ -3,6 +3,10 @@
 	let { data } = $props();
 </script>
 
+<svelte:head>
+	<title>{data.pathInfo.name} Videos - VOD</title>
+</svelte:head>
+
 <div id="main-menu">
 	<div id="page-header">
 		<h1>Videos</h1>
