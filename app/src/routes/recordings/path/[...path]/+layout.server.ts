@@ -15,8 +15,12 @@ export const load: LayoutServerLoad = async ({ params }) => {
 
 	const responseData = (await response.json()) as apiResponseSchema;
 
-	if (!responseData.success || !responseData.data) {
-		error(500, 'Internal Backend Server is also down: ' + responseData.message);
+	if (!responseData.success) {
+		error(404, `Path "${path}" does not exist.`);
+	}
+
+	if (!responseData.data) {
+		error(500, `Path '${path}" has no data.`);
 	}
 
 	const { name, videoCount, liveStatus } =

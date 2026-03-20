@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	const VISIBLE_PAGE_LIMIT = 4;
 
 	if (isNaN(page)) {
-		error(400, 'Bad Request. Please check if the page number is valid or not.');
+		error(400, 'Bad Request. Please check if the page is a number or not.');
 	} else if (page <= 0) {
 		error(400, "Bad Request. There's no page 0 below!");
 	}
@@ -36,6 +36,10 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	const { count, lists } = responseData.data as vodListsSchema;
+
+	if (!lists.length) {
+		error(404, `No recordings found on page "${page}" from "${path}".`);
+	}
 
 	const pageCount = Math.ceil(count / ITEMS_PER_PAGE);
 
