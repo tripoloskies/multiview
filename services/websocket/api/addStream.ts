@@ -1,9 +1,10 @@
 import z from 'zod';
 import { prisma } from '@shared/database';
-import { isStreamExists, addStreamInstance } from '$services/instance/client';
+import { addStreamInstance } from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
 import { streamEventResponseSchema } from '@shared/schema/websocket';
+import { isActiveStreamOnline } from '@shared/utils/status';
 
 export const actions: wsActions = async (data) => {
 	const TWITCH_URL_REGEX: RegExp = /^(https?:\/\/)?([a-z0-9]+\.)?twitch\.tv/;
@@ -26,10 +27,10 @@ export const actions: wsActions = async (data) => {
 			newData.path = 'others/' + newData.path;
 		}
 
-		if (await isStreamExists(newData.path)) {
+		if (await isActiveStreamOnline(newData.path)) {
 			return {
 				success: false,
-				message: `Adding stream denied. Stream ${newData.path} is currently active.`
+				message: `Adding stream denied. Stream ${newData.path} is currently online.`
 			};
 		}
 

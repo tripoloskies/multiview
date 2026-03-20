@@ -205,22 +205,23 @@ async function destroyStoppedPM2Instance(): Promise<boolean> {
 	}
 }
 
-export async function isStreamExists(path: string): Promise<boolean> {
-	const pathRequest = await fetch(
-		`http:/${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/get/${path}`
-	);
-	switch (pathRequest.status) {
-		case 200:
-			return true;
-		// That's the only way to check if path exists without spending much time to parse the result.
-		case 404:
-			return false;
-		default:
-			throw new Error(
-				'Something wrong with the server. Contact the administrator'
-			);
-	}
-}
+// For later use....
+// export async function isStreamOnline(path: string): Promise<boolean> {
+// 	const pathRequest = await fetch(
+// 		`http:/${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/get/${path}`
+// 	);
+// 	switch (pathRequest.status) {
+// 		case 200:
+// 			return true;
+// 		// That's the only way to check if path exists without spending much time to parse the result.
+// 		case 404:
+// 			return false;
+// 		default:
+// 			throw new Error(
+// 				'Something wrong with the server. Contact the administrator'
+// 			);
+// 	}
+// }
 
 export async function listStreamInstance(): Promise<instance[]> {
 	const newLists: instance[] = [];
