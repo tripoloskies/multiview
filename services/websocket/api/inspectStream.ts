@@ -2,6 +2,7 @@ import z from 'zod';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
 import { streamEventResponseSchema } from '@shared/schema/websocket';
+import { getStreamInstance } from '$services/instance/client';
 
 export const actions: wsActions = async (data) => {
 	const schema = z.object({
@@ -10,6 +11,16 @@ export const actions: wsActions = async (data) => {
 
 	try {
 		const newData = await schema.parseAsync(data);
+
+		const instance = await getStreamInstance(newData.path);
+
+		if (!instance) {
+			return wsResponse(null, {
+				success: false,
+				message: `Instance "${newData.path}" does not exist.`
+			});
+		}
+
 		return wsResponse(streamEventResponseSchema, {
 			success: true,
 			message: `Opening instance ${newData.path}...`,

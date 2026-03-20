@@ -7,15 +7,16 @@
 	import Prompt from '$lib/components/Prompt.svelte';
 	import Subcontainer from '$lib/components/Subcontainer.svelte';
 	import { info } from '$lib/stores/info.svelte.js';
+	import type { streamEventResponseSchema } from '@shared/schema/websocket';
 	import { onMount } from 'svelte';
 
 	let { data } = $props();
 
 	let isReady: boolean = $state(false);
-	let eventUrl: string = $state('');
+	let eventSrc: string = $state('');
 	let customLog: string = $state('');
 
-	onMount(() => {
+	onMount(async () => {
 		isReady = true;
 		if (data.path.length) {
 			execute(data.path);
@@ -26,17 +27,21 @@
 		const response = await sendCommand('inspectStream', {
 			path: pathName
 		});
-		const responseEventUrl = response.data?.eventUrl as string;
+
 		customLog = response.message;
+
 		if (!response.success) {
 			return;
 		}
 
-		if (!responseEventUrl?.length) {
+		const { eventUrl } = response.data as streamEventResponseSchema;
+
+		if (!eventUrl?.length) {
 			customLog = "No event URL? There's something wrong with the server.";
 			return;
 		}
-		eventUrl = `${data.eventRootUrl}${responseEventUrl}`;
+
+		eventSrc = `${data.eventRootUrl}${eventUrl}`;
 	}
 </script>
 
@@ -73,7 +78,7 @@
 					<Button type="submit" disabled={!isReady}>Inspect</Button>
 				</form>
 				<hr />
-				<ConsoleLog {eventUrl} {customLog} />
+				<ConsoleLog eventUrl={eventSrc} {customLog} />
 			{:else}
 				<hr />
 				<b>There's no instances left.</b>
