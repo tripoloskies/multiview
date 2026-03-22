@@ -62,34 +62,34 @@ authMethod: internal
 authInternalUsers:
   # Default unprivileged user.
   # Username. 'any' means any user, including anonymous ones.
-- user: any
-  # Password. Not used in case of 'any' user.
-  pass:
-  # IPs or networks allowed to use this user. An empty list means any IP.
-  ips: []
-  # Permissions.
-  permissions:
-    # Available actions are: publish, read, playback, api, metrics, pprof.
-  - action: publish
-    # Paths can be set to further restrict access to a specific path.
-    # An empty path means any path.
-    # Regular expressions can be used by using a tilde as prefix.
-    path:
-  - action: read
-    path:
-  - action: playback
-    path:
+  - user: any
+    # Password. Not used in case of 'any' user.
+    pass:
+    # IPs or networks allowed to use this user. An empty list means any IP.
+    ips: []
+    # Permissions.
+    permissions:
+      # Available actions are: publish, read, playback, api, metrics, pprof.
+      - action: publish
+        # Paths can be set to further restrict access to a specific path.
+        # An empty path means any path.
+        # Regular expressions can be used by using a tilde as prefix.
+        path:
+      - action: read
+        path:
+      - action: playback
+        path:
 
-  # Default administrator.
-  # This allows to use API, metrics and PPROF without authentication,
-  # if the IP is localhost.
-- user: any
-  pass:
-  ips: []
-  permissions:
-  - action: api
-  - action: metrics
-  - action: pprof
+    # Default administrator.
+    # This allows to use API, metrics and PPROF without authentication,
+    # if the IP is localhost.
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: api
+      - action: metrics
+      - action: pprof
 
 # HTTP-based authentication.
 # URL called to perform authentication. Every time a user wants
@@ -118,9 +118,9 @@ authHTTPFingerprint:
 # Actions to exclude from HTTP-based authentication.
 # Format is the same as the one of user permissions.
 authHTTPExclude:
-- action: api
-- action: metrics
-- action: pprof
+  - action: api
+  - action: metrics
+  - action: pprof
 
 # JWT-based authentication.
 # Users have to login through an external identity server and obtain a JWT.
@@ -205,7 +205,7 @@ metricsTrustedProxies: []
 # Global settings -> PPROF
 
 # Enable pprof-compatible endpoint to monitor performances.
-pprof: false
+pprof: true
 # Address of the pprof listener.
 pprofAddress: :9999
 # Enable HTTPS on the pprof server.
@@ -253,12 +253,12 @@ playbackTrustedProxies: []
 # Global settings -> RTSP server
 
 # Enable publishing and reading streams with the RTSP protocol.
-rtsp: true
+rtsp: false
 # Enabled RTSP transport protocols. The handshake is always performed with TCP.
 rtspTransports: [udp, multicast, tcp]
 # Use secure protocol variants (RTSPS, SRTP, SRTCP).
 # Available values are "no", "strict", "optional".
-rtspEncryption: "no"
+rtspEncryption: 'no'
 # Address of the TCP/RTSP listener. This is needed only when encryption is "no" or "optional".
 rtspAddress: :8554
 # Address of the TCP/RTSPS listener. This is needed only when encryption is "strict" or "optional".
@@ -296,10 +296,10 @@ rtspAuthMethods: [basic]
 # Global settings -> RTMP server
 
 # Enable publishing and reading streams with the RTMP protocol.
-rtmp: true
+rtmp: false
 # Use the secure protocol variant (RTMP).
 # Available values are "no", "strict", "optional".
-rtmpEncryption: "no"
+rtmpEncryption: 'no'
 # Address of the RTMP listener. This is needed only when encryption is "no" or "optional".
 rtmpAddress: :1935
 # Address of the RTMPS listener. This is needed only when encryption is "strict" or "optional".
@@ -347,13 +347,13 @@ hlsVariant: mpegts
 # Number of HLS segments to keep on the server.
 # Segments allow to seek through the stream.
 # Their number doesn't influence latency.
-hlsSegmentCount: 7
+hlsSegmentCount: 5
 # Minimum duration of each segment.
 # A player usually puts 3 segments in a buffer before reproducing the stream.
 # The final segment duration is also influenced by the interval between IDR frames,
 # since the server changes the duration in order to include at least one IDR frame
 # in each segment.
-hlsSegmentDuration: 1s
+hlsSegmentDuration: 5s
 # Minimum duration of each part.
 # A player usually puts 3 parts in a buffer before reproducing the stream.
 # Parts are used in Low-Latency HLS in place of segments.
@@ -442,7 +442,6 @@ srtAddress: :8890
 # Settings in "pathDefaults" are applied anywhere,
 # unless they are overridden in "paths".
 pathDefaults:
-
   ###############################################
   # Default path settings -> General
 
@@ -624,7 +623,7 @@ pathDefaults:
   # format: [red,blue].
   rpiCameraAWBGains: [0, 0]
   # Denoise operating mode (off, cdn_off, cdn_fast, cdn_hq).
-  rpiCameraDenoise: "off"
+  rpiCameraDenoise: 'off'
   # Fixed shutter speed, in microseconds.
   rpiCameraShutter: 0
   # Metering mode of the AEC/AGC algorithm (centre, spot, matrix or custom).

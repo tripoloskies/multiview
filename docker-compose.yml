@@ -3,7 +3,7 @@ services:
     hostname: nginx
     image: nginx:1.29
     ports:
-      - "80:80"
+      - '80:80'
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/default.conf
     restart: always
@@ -12,8 +12,7 @@ services:
     hostname: mediamtx
     image: bluenviron/mediamtx:1.16.3
     ports:
-      - 9997:9997
-      - 8888:8888
+      - 9999:9999
     volumes:
       - ./config/mediamtx.yml:/mediamtx.yml
 
