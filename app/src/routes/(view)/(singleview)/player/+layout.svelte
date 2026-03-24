@@ -33,7 +33,7 @@
 				}
 				const streamData = data as getStreamResponseSchema;
 
-				url = streamData.mediaUrl || "";
+				url = streamData.mediaUrl || '';
 				online = streamData.online;
 				status = streamData.statusText;
 			}

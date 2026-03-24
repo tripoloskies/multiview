@@ -18,7 +18,6 @@
 	onDestroy(async () => {
 		removePersistCommand(transactionId);
 	});
-
 </script>
 
 <Multiview>
