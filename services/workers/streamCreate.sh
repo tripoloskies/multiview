@@ -211,7 +211,7 @@ publish() {
        echo "Unknown Error: Exiting..."
     fi
 
-    ffmpeg -hide_banner -stats \
+    ffmpeg -hide_banner -stats_period 5 \
     -thread_queue_size 8192 -fflags +genpts -re \
     -i "$TMPDIR/filter1" \
     -c:v copy \
