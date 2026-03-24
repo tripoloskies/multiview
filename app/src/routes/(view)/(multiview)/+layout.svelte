@@ -19,35 +19,25 @@
 		removePersistCommand(transactionId);
 	});
 
-	let sources = $derived(
-		info.instances.map((instance) => {
-			const foundPath = info.paths.find((path) => path.name == instance.name);
-			return {
-				name: instance.name,
-				status: instance.status,
-				online: foundPath ? true : false
-			};
-		})
-	);
 </script>
 
 <Multiview>
 	<div id="multiview-container">
-		{#each sources as source (source.name)}
+		{#each info.instances as instance (instance.name)}
 			<div class="item">
 				{#if viewState.action !== 'none'}
 					<div class="item-overlay">
-						<Button onclick={() => selectToAction(source.name)}
+						<Button onclick={() => selectToAction(instance.name)}
 							>{viewState.action.toUpperCase()}?</Button
 						>
 					</div>
 				{/if}
 				<Viewer
-					path={source?.name}
+					path={instance?.name}
 					muted={true}
-					online={source?.online}
+					online={instance?.online}
 					visible={config.showVideoMultiView}
-					status={source.status}
+					status={instance.statusText}
 				></Viewer>
 			</div>
 		{/each}

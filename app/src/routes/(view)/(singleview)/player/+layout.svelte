@@ -33,9 +33,9 @@
 				}
 				const streamData = data as getStreamResponseSchema;
 
-				url = streamData.url;
+				url = streamData.mediaUrl || "";
 				online = streamData.online;
-				status = streamData.status;
+				status = streamData.statusText;
 			}
 		});
 		serverMessage = 'Ready';

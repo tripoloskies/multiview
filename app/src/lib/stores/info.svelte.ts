@@ -1,10 +1,8 @@
 import { sendPersistCommand } from '$lib/api/websocket.svelte';
 import type { realtimeResponseSchema } from '@shared/schema/websocket';
 import type { instanceSchema } from '@shared/schema/instance';
-import type { controlApiPathsList } from '@shared/schema/mediamtx';
 
 export type infoType = {
-	paths: controlApiPathsList[];
 	instances: instanceSchema[];
 	isServerActive: boolean;
 	serverTime: string;
@@ -35,10 +33,9 @@ export function infoStart(): string {
 			if (!success) {
 				return;
 			}
-			const { paths, instances, serverTime } = data as realtimeResponseSchema;
+			const { instances, serverTime } = data as realtimeResponseSchema;
 
 			info.serverTime = String(serverTime || '00:00:00.000000');
-			info.paths = [...paths];
 			info.instances = [...instances];
 		}
 	});

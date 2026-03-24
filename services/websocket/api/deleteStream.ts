@@ -1,5 +1,4 @@
 import z from 'zod';
-import { prisma } from '@shared/database';
 import {
 	deleteStreamInstance,
 	getStreamInstance
@@ -22,37 +21,8 @@ export const actions: wsActions = async (data) => {
 				message: `Instance "${newData.path}" does not exist.`
 			});
 		}
-		await prisma.activeStreams.upsert({
-			where: {
-				creatorName: newData.path
-			},
-			update: {
-				status: 'Deleting...'
-			},
-			create: {
-				creator: {
-					connectOrCreate: {
-						where: {
-							name: newData.path
-						},
-						create: {
-							name: newData.path
-						}
-					}
-				},
-				status: 'Deleting...'
-			}
-		});
 
 		await deleteStreamInstance(newData.path);
-
-		await Bun.sleep(500);
-
-		await prisma.activeStreams.deleteMany({
-			where: {
-				creatorName: newData.path
-			}
-		});
 
 		return wsResponse(null, {
 			success: true,

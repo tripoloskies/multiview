@@ -1,5 +1,4 @@
 import z from 'zod';
-import { prisma } from '@shared/database';
 import { addStreamInstance } from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
@@ -42,28 +41,6 @@ export const actions: wsActions = async (data) => {
 		}
 
 		const newPath: string = newData.path;
-
-		await prisma.activeStreams.upsert({
-			where: {
-				creatorName: newData.path
-			},
-			update: {
-				status: 'Added'
-			},
-			create: {
-				creator: {
-					connectOrCreate: {
-						where: {
-							name: newData.path
-						},
-						create: {
-							name: newData.path
-						}
-					}
-				},
-				status: 'Added'
-			}
-		});
 
 		return wsResponse(streamEventResponseSchema, {
 			success: true,

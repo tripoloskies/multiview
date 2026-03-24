@@ -1,5 +1,4 @@
 import z from 'zod';
-import { prisma } from '@shared/database';
 import {
 	getStreamInstance,
 	restartStreamInstance
@@ -22,27 +21,6 @@ export const actions: wsActions = async (data) => {
 				message: `Instance "${newData.path}" does not exist.`
 			});
 		}
-		await prisma.activeStreams.upsert({
-			where: {
-				creatorName: newData.path
-			},
-			update: {
-				status: 'Restarting'
-			},
-			create: {
-				creator: {
-					connectOrCreate: {
-						where: {
-							name: newData.path
-						},
-						create: {
-							name: newData.path
-						}
-					}
-				},
-				status: 'Restarting'
-			}
-		});
 
 		await restartStreamInstance(newData.path);
 

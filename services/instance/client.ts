@@ -1,6 +1,8 @@
 import { $ } from 'bun';
 import pm2 from 'pm2';
 import { type instanceSchema } from '@shared/schema/instance';
+import { prisma } from '@shared/database';
+import { isActiveStreamOnline } from '@shared/utils/status';
 let isConnected: boolean = false;
 
 type instance = instanceSchema;
@@ -227,17 +229,28 @@ export async function listStreamInstance(): Promise<instance[]> {
 	const newLists: instance[] = [];
 	try {
 		const lists = await listPM2Instance();
-		if (lists?.length) {
-			for (const list of lists) {
-				if (!list?.name?.length) {
-					continue;
-				}
-				newLists.push({
-					name: list.name,
-					labelName: `${list.name} ${list?.pm2_env?.status}`,
-					active: list?.pm2_env?.status !== 'stopped'
-				});
+		for (const list of lists) {
+			if (!list?.name?.length) {
+				continue;
 			}
+
+			const activeStreamsData = await prisma.activeStreams.findFirst({
+				select: {
+					status: true
+				},
+				where: {
+					creatorName: list.name
+				}
+			});
+
+			newLists.push({
+				name: list.name,
+				labelName: `${list.name} ${list?.pm2_env?.status}`,
+				online: await isActiveStreamOnline(list.name),
+				active: list?.pm2_env?.status !== 'stopped',
+				statusText: activeStreamsData ? activeStreamsData?.status : 'No Report',
+				mediaUrl: list.name
+			});
 		}
 	} catch {
 		return [];
@@ -299,6 +312,28 @@ export async function addStreamInstance(
 		);
 		console.warn(error);
 		return true;
+	} finally {
+		await prisma.activeStreams.upsert({
+			where: {
+				creatorName: streamPath
+			},
+			update: {
+				status: 'Added'
+			},
+			create: {
+				creator: {
+					connectOrCreate: {
+						where: {
+							name: streamPath
+						},
+						create: {
+							name: streamPath
+						}
+					}
+				},
+				status: 'Added'
+			}
+		});
 	}
 }
 
@@ -311,29 +346,78 @@ export async function checkStreamInstance(
 export async function getStreamInstance(
 	streamPath: string
 ): Promise<instance | null> {
-	const lists = await listPM2Instance();
-
+	const lists = await listStreamInstance();
 	const selectedInstance = lists?.find((list) => list.name === streamPath);
 
-	if (!selectedInstance || !selectedInstance.name?.length) {
+	if (!selectedInstance) {
 		return null;
 	}
 
-	return {
-		name: selectedInstance.name,
-		labelName: `${selectedInstance.name} ${selectedInstance?.pm2_env?.status}`,
-		active: selectedInstance?.pm2_env?.status !== 'stopped'
-	};
+	return selectedInstance;
 }
 
 export async function deleteStreamInstance(
 	streamPath: string
 ): Promise<boolean> {
-	return await destroyPM2Instance(streamPath);
+	await prisma.activeStreams.upsert({
+		where: {
+			creatorName: streamPath
+		},
+		update: {
+			status: 'Deleting...'
+		},
+		create: {
+			creator: {
+				connectOrCreate: {
+					where: {
+						name: streamPath
+					},
+					create: {
+						name: streamPath
+					}
+				}
+			},
+			status: 'Deleting...'
+		}
+	});
+
+	const isSuccess = await destroyPM2Instance(streamPath);
+
+	await Bun.sleep(500);
+
+	await prisma.activeStreams.deleteMany({
+		where: {
+			creatorName: streamPath
+		}
+	});
+
+	return isSuccess;
 }
 
 export async function restartStreamInstance(
 	streamPath: string
 ): Promise<boolean> {
+	await prisma.activeStreams.upsert({
+		where: {
+			creatorName: streamPath
+		},
+		update: {
+			status: 'Restarting'
+		},
+		create: {
+			creator: {
+				connectOrCreate: {
+					where: {
+						name: streamPath
+					},
+					create: {
+						name: streamPath
+					}
+				}
+			},
+			status: 'Restarting'
+		}
+	});
+
 	return await restartPM2Instance(streamPath);
 }
