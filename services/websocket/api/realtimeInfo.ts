@@ -29,7 +29,7 @@ export const actions: wsActions = async () => {
 
 	return wsResponse(realtimeResponseSchema, {
 		success: true,
-		message: talkRes.message,
+		message: streamRes.message,
 		data: {
 			...(timeRes.data as getServerTimeResponseSchema),
 			...(streamRes.data as listActiveStreamsResponseSchema)
