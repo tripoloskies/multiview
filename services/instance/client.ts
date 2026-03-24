@@ -1,4 +1,4 @@
-import { $ } from 'bun';
+import { $, redis } from 'bun';
 import pm2 from 'pm2';
 import { type instanceSchema } from '@shared/schema/instance';
 import { prisma } from '@shared/database';
@@ -8,6 +8,8 @@ let isConnected: boolean = false;
 type instance = instanceSchema;
 
 const INTERNAL_REGEX: RegExp = /^internal:\S*$/;
+const INSTANCE_CACHE_KEY: string = 'instance';
+const INSTANCE_CACHE_EXPIRE: number = 5;
 
 function isNameIllegal(name: string): boolean {
 	return INTERNAL_REGEX.test(name) || !name.length;
@@ -189,6 +191,7 @@ async function destroyPM2Instance(name: string | string[]): Promise<boolean> {
 }
 
 async function destroyStoppedPM2Instance(): Promise<boolean> {
+	let isSomeInstanceDeleted = false;
 	try {
 		const lists = await pm2List();
 
@@ -198,9 +201,10 @@ async function destroyStoppedPM2Instance(): Promise<boolean> {
 			}
 			if (list.pm2_env?.status === 'stopped') {
 				await pm2Delete(list.name);
+				isSomeInstanceDeleted = true;
 			}
 		}
-		return true;
+		return isSomeInstanceDeleted;
 	} catch (err) {
 		console.error('PM2 Async Error:', err);
 		return false;
@@ -227,39 +231,69 @@ async function destroyStoppedPM2Instance(): Promise<boolean> {
 
 export async function listStreamInstance(): Promise<instance[]> {
 	const newLists: instance[] = [];
-	try {
-		const lists = await listPM2Instance();
-		for (const list of lists) {
-			if (!list?.name?.length) {
+
+	if (await redis.exists(INSTANCE_CACHE_KEY)) {
+		const cachedData = await redis.hgetall(INSTANCE_CACHE_KEY);
+
+		for (const key in cachedData) {
+			if (!cachedData[key]) {
 				continue;
 			}
-
-			const activeStreamsData = await prisma.activeStreams.findFirst({
-				select: {
-					status: true
-				},
-				where: {
-					creatorName: list.name
-				}
-			});
-
-			newLists.push({
-				name: list.name,
-				labelName: `${list.name} ${list?.pm2_env?.status}`,
-				online: await isActiveStreamOnline(list.name),
-				active: list?.pm2_env?.status !== 'stopped',
-				statusText: activeStreamsData ? activeStreamsData?.status : 'No Report',
-				mediaUrl: list.name
-			});
+			newLists.push(JSON.parse(cachedData[key]));
 		}
-	} catch {
-		return [];
+	} else {
+		try {
+			const lists = await listPM2Instance();
+			for (const list of lists) {
+				if (!list?.name?.length) {
+					continue;
+				}
+
+				const activeStreamsData = await prisma.activeStreams.findFirst({
+					select: {
+						status: true
+					},
+					where: {
+						creatorName: list.name
+					}
+				});
+
+				const instanceInfo = {
+					name: list.name,
+					labelName: `${list.name} ${list?.pm2_env?.status}`,
+					online: await isActiveStreamOnline(list.name),
+					active: list?.pm2_env?.status !== 'stopped',
+					statusText: activeStreamsData
+						? activeStreamsData?.status
+						: 'No Report',
+					mediaUrl: list.name
+				};
+				newLists.push(instanceInfo);
+
+				await redis.hset(
+					INSTANCE_CACHE_KEY,
+					list.name,
+					JSON.stringify(instanceInfo)
+				);
+			}
+
+			await redis.expire(INSTANCE_CACHE_KEY, INSTANCE_CACHE_EXPIRE);
+		} catch {
+			return [];
+		}
 	}
 	return newLists;
 }
 
 export async function deleteStoppedInstances(): Promise<boolean> {
-	return await destroyStoppedPM2Instance();
+	const isSuccess = await destroyStoppedPM2Instance();
+	if (isSuccess) {
+		console.log(
+			'[instance][deleteStoppedInstance] Stopped Instance deleted successfully.'
+		);
+		await redis.del(INSTANCE_CACHE_KEY);
+	}
+	return isSuccess;
 }
 
 export async function addStreamInstance(
@@ -383,6 +417,7 @@ export async function deleteStreamInstance(
 
 	const isSuccess = await destroyPM2Instance(streamPath);
 
+	await redis.del(INSTANCE_CACHE_KEY);
 	await Bun.sleep(500);
 
 	await prisma.activeStreams.deleteMany({
@@ -394,30 +429,60 @@ export async function deleteStreamInstance(
 	return isSuccess;
 }
 
-export async function restartStreamInstance(
-	streamPath: string
-): Promise<boolean> {
-	await prisma.activeStreams.upsert({
-		where: {
-			creatorName: streamPath
-		},
-		update: {
-			status: 'Restarting'
-		},
-		create: {
-			creator: {
-				connectOrCreate: {
-					where: {
-						name: streamPath
-					},
-					create: {
-						name: streamPath
-					}
-				}
-			},
-			status: 'Restarting'
-		}
-	});
+export async function restartStreamInstance(name: string): Promise<boolean> {
+	await updateInstanceStatus(name, 'Update', 'Restarting');
+	return await restartPM2Instance(name);
+}
 
-	return await restartPM2Instance(streamPath);
+export async function updateInstanceStatus(
+	name: string,
+	action: string,
+	status: string
+): Promise<boolean> {
+	const instance = await getStreamInstance(name);
+
+	switch (action) {
+		case 'Update':
+			await prisma.activeStreams.upsert({
+				where: {
+					creatorName: name
+				},
+				update: {
+					status: status
+				},
+				create: {
+					creator: {
+						connectOrCreate: {
+							where: {
+								name: name
+							},
+							create: {
+								name: name
+							}
+						}
+					},
+					status: status
+				}
+			});
+
+			if (instance) {
+				instance.statusText = status;
+				await redis.hset(INSTANCE_CACHE_KEY, name, JSON.stringify(instance));
+			}
+			break;
+		case 'Delete':
+			await prisma.activeStreams.deleteMany({
+				where: {
+					creatorName: name
+				}
+			});
+			if (instance) {
+				instance.statusText = status;
+				await redis.hdel(INSTANCE_CACHE_KEY, name);
+			}
+			break;
+		default:
+			return false;
+	}
+	return true;
 }
