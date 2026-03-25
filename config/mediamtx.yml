@@ -29,7 +29,7 @@ writeQueueSize: 32768
 # Maximum size of outgoing UDP payloads.
 # It defaults to the maximum packet size on ethernet (1500) minus IPv6 and UDP headers (48).
 # This can be decreased to avoid fragmentation on networks with a low MTU.
-udpMaxPayloadSize: 1452
+udpMaxPayloadSize: 1472
 # Size of the read buffer of every UDP socket.
 # This can be increased to decrease packet losses.
 # It defaults to the default value of the operating system.
@@ -253,9 +253,9 @@ playbackTrustedProxies: []
 # Global settings -> RTSP server
 
 # Enable publishing and reading streams with the RTSP protocol.
-rtsp: false
+rtsp: true
 # Enabled RTSP transport protocols. The handshake is always performed with TCP.
-rtspTransports: [udp, multicast, tcp]
+rtspTransports: [udp]
 # Use secure protocol variants (RTSPS, SRTP, SRTCP).
 # Available values are "no", "strict", "optional".
 rtspEncryption: 'no'
@@ -432,7 +432,7 @@ webrtcTrackGatherTimeout: 2s
 # Global settings -> SRT server
 
 # Enable publishing and reading streams with the SRT protocol.
-srt: true
+srt: false
 # Address of the SRT listener.
 srtAddress: :8890
 
@@ -490,7 +490,7 @@ pathDefaults:
   # SRT encryption passphrase required to read from this path.
   srtReadPassphrase:
   # Use absolute timestamp of frames, instead of replacing them with the current time.
-  useAbsoluteTimestamp: true
+  useAbsoluteTimestamp: false
 
   ###############################################
   # Default path settings -> Always available

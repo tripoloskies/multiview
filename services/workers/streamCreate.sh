@@ -221,6 +221,7 @@ publish() {
     -c:a aac \
     -b:a 192k \
     -profile:a aac_low \
+    -flags +global_header \
     -aac_coder fast \
     -aac_ms false \
     -aac_is false \
@@ -231,7 +232,7 @@ publish() {
     -avoid_negative_ts make_zero \
     -muxdelay 0.5 \
     -f tee " \
-        [f=mpegts:onfail=abort]srt://$MEDIAMTX_HOST:8890?streamid=publish:$STREAM_PATH&latency=500000&pkt_size=1316| \
+        [f=rtsp:onfail=abort:rtpflags=latm]rtsp://$MEDIAMTX_HOST:8554/$STREAM_PATH| \
         [f=hls:onfail=abort:hls_time=5:hls_segment_filename=$A_DIR/segments/segment%d.ts:hls_playlist_type=event]$A_DIR/index.m3u8" &
 
     PUBLISHER_PID=$!
