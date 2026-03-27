@@ -20,16 +20,16 @@ sysLogPrefix: mediamtx
 dumpPackets: false
 
 # Timeout of read operations.
-readTimeout: 1s
+readTimeout: 5s
 # Timeout of write operations.
-writeTimeout: 1s
+writeTimeout: 5s
 # Size of the queue of outgoing packets.
 # A higher value allows to increase throughput, a lower value allows to save RAM.
-writeQueueSize: 32768
+writeQueueSize: 16384
 # Maximum size of outgoing UDP payloads.
 # It defaults to the maximum packet size on ethernet (1500) minus IPv6 and UDP headers (48).
 # This can be decreased to avoid fragmentation on networks with a low MTU.
-udpMaxPayloadSize: 1472
+udpMaxPayloadSize: 1316
 # Size of the read buffer of every UDP socket.
 # This can be increased to decrease packet losses.
 # It defaults to the default value of the operating system.
@@ -347,7 +347,7 @@ hlsVariant: mpegts
 # Number of HLS segments to keep on the server.
 # Segments allow to seek through the stream.
 # Their number doesn't influence latency.
-hlsSegmentCount: 5
+hlsSegmentCount: 3
 # Minimum duration of each segment.
 # A player usually puts 3 segments in a buffer before reproducing the stream.
 # The final segment duration is also influenced by the interval between IDR frames,
