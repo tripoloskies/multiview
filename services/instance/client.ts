@@ -3,20 +3,14 @@ import pm2 from 'pm2';
 import { type instanceSchema } from '@shared/schema/instance';
 import { prisma } from '@shared/database';
 
-import {
-	controlApiPathsList,
-	controlApiPathsResponse
-} from '@shared/schema/mediamtx';
-
 let isConnected: boolean = false;
 
 type instance = instanceSchema;
 
 const INTERNAL_REGEX: RegExp = /^internal:\S*$/;
 const INSTANCE_CACHE_KEY: string = 'instance';
-const INSTANCE_CACHE_CONTROLAPI_KEY: string = 'instance:controlapi';
-const INSTANCE_CACHE_CONTROLAPI_EXPIRE: number = 2;
-const INSTANCE_CACHE_EXPIRE: number = 5;
+
+const INSTANCE_CACHE_EXPIRE: number = 30;
 
 function isNameIllegal(name: string): boolean {
 	return INTERNAL_REGEX.test(name) || !name.length;
@@ -235,7 +229,7 @@ async function destroyStoppedPM2Instance(): Promise<boolean> {
 // For later use....
 // export async function isStreamOnline(path: string): Promise<boolean> {
 // 	const pathRequest = await fetch(
-// 		`http:/${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/get/${path}`
+// 		`http:/${Bun.env.STREAMING_HOST}:9997/v3/paths/get/${path}`
 // 	);
 // 	switch (pathRequest.status) {
 // 		case 200:
@@ -250,62 +244,21 @@ async function destroyStoppedPM2Instance(): Promise<boolean> {
 // 	}
 // }
 
-export async function getPathFromControlApi(
-	name: string
-): Promise<controlApiPathsList | null> {
-	let items: controlApiPathsList[] = [];
-
-	const fetchRequest = async (): Promise<controlApiPathsList[]> => {
-		const response = await fetch(
-			`http://${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/list`
-		);
-
-		if (response.status !== 200) {
-			return [];
-		}
-
-		const { data, success } = await controlApiPathsResponse.safeParseAsync(
-			await response.json()
-		);
-
-		if (!success) {
-			return [];
-		}
-
-		await redis.set(
-			INSTANCE_CACHE_CONTROLAPI_KEY,
-			JSON.stringify(data.items),
-			'EX',
-			INSTANCE_CACHE_CONTROLAPI_EXPIRE + 2
-		);
-
-		return data.items;
-	};
-
-	if ((await redis.ttl(INSTANCE_CACHE_CONTROLAPI_KEY)) > 2) {
-		let result = await redis.get(INSTANCE_CACHE_CONTROLAPI_KEY);
-
-		if (result) {
-			items = JSON.parse(result);
-		} else {
-			items = await fetchRequest();
-		}
-	} else {
-		items = await fetchRequest();
-	}
-
-	if (!items.length) {
-		return null;
-	}
-
-	return items.find((item) => item.name === name) || null;
-}
 export async function invalidateInstanceCache(
 	name: string
 ): Promise<instance | null> {
+	if (!name.length) {
+		return null;
+	}
+
 	const selectedInstance = await getPM2Instance(name);
 
 	if (!selectedInstance) {
+		await prisma.activeStreams.deleteMany({
+			where: {
+				creatorName: name
+			}
+		});
 		return null;
 	}
 
@@ -325,16 +278,11 @@ export async function invalidateInstanceCache(
 			creatorName: name
 		}
 	});
-	const instanceInfoFromControlApi = await getPathFromControlApi(name);
 
 	const instanceInfo = {
 		name: name,
 		labelName: `${name} ${selectedInstance?.pm2_env?.status}`,
-		online:
-			activeStreamsData?.status.toLowerCase() === 'starting' &&
-			instanceInfoFromControlApi
-				? instanceInfoFromControlApi.online
-				: false,
+		online: activeStreamsData?.status.toLowerCase() === 'online',
 		active: selectedInstance?.pm2_env?.status !== 'stopped',
 		statusText: activeStreamsData ? activeStreamsData?.status : 'No Report',
 		mediaUrl: name
@@ -369,7 +317,7 @@ export async function invalidateAllInstanceCache(): Promise<instance[]> {
 export async function listStreamInstance(): Promise<instance[]> {
 	let newLists: instance[] = [];
 
-	if ((await redis.ttl(INSTANCE_CACHE_KEY)) > 2) {
+	if ((await redis.ttl(INSTANCE_CACHE_KEY)) >= 2) {
 		const cachedData = await redis.hgetall(INSTANCE_CACHE_KEY);
 
 		for (const key in cachedData) {
@@ -437,7 +385,7 @@ export async function addStreamInstance(
 	try {
 		const status = await createPM2Instance({
 			name: streamPath,
-			script: `bash ./workers/streamCreate.sh "${url}" "${streamPath}" ${Bun.env.RECORD_PATH || ''} "${bunExecutablePath}" "${ytdlpExecutablePath}" "${streamlinkExecutablePath}" ${Bun.env.MEDIAMTX_HOST || ''}`,
+			script: `bash ./instance/workers/create.sh "${url}" "${streamPath}" ${Bun.env.RECORD_PATH || ''} "${bunExecutablePath}" "${ytdlpExecutablePath}" "${streamlinkExecutablePath}" ${Bun.env.STREAMING_HOST || ''}`,
 			autorestart: false
 		});
 
@@ -544,8 +492,6 @@ export async function updateInstanceStatus(
 					status: status
 				}
 			});
-
-			await invalidateInstanceCache(name);
 			break;
 		case 'Delete':
 			await prisma.activeStreams.deleteMany({
@@ -553,10 +499,10 @@ export async function updateInstanceStatus(
 					creatorName: name
 				}
 			});
-			await invalidateInstanceCache(name);
 			break;
 		default:
 			return false;
 	}
+	await invalidateInstanceCache(name);
 	return true;
 }

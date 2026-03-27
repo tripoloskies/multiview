@@ -14,7 +14,7 @@ RECORDING_PATH="$3"
 RUNTIME_PATH="$4"
 YTDLP_PATH="$5"
 STREAMLINK_PATH="$6"
-MEDIAMTX_HOST="$7"
+STREAMING_HOST="$7"
 LOG_DL_PROGRESS="$8"
 
 # Background PID's to close in case of nasty moments while this script was running.
@@ -32,7 +32,7 @@ echo "Recording Path: $RECORDING_PATH"
 echo "JS Runtime Path: $RUNTIME_PATH"
 echo "yt-dlp Path: $YTDLP_PATH"
 echo "streamlink Path: $STREAMLINK_PATH"
-echo "Mediamtx Host: $MEDIAMTX_HOST"
+echo "Mediamtx Host: $STREAMING_HOST"
 echo "------------------"
 
 
@@ -71,7 +71,7 @@ if [[ -z "$STREAMLINK_PATH" ]]; then
     exit 1
 fi
 
-if [[ -z "$MEDIAMTX_HOST" ]]; then
+if [[ -z "$STREAMING_HOST" ]]; then
     echo "Mediamtx host is required."
     exit 1
 fi
@@ -192,7 +192,7 @@ publish() {
         local LOG_ARGS=""
     fi
 
-    $STREAMLINK_PATH --http-cookies-file "$WORK_DIR/config/cookies.txt" $LOG_ARGS --stream-segment-threads 2 $ARGS --ringbuffer-size 64M --stdout "$URL" best | \
+    $STREAMLINK_PATH --loglevel none --http-cookies-file "$WORK_DIR/config/cookies.txt" $LOG_ARGS --stream-segment-threads 2 $ARGS --ringbuffer-size 64M --stdout "$URL" best | \
     mbuffer -q -m "$BUFFER_SIZE" -P 60 > "$TMPDIR/filter1" &
     
     MBUFFER_PID=$!
@@ -213,7 +213,7 @@ publish() {
        echo "Unknown Error: Exiting..."
     fi
 
-    ffmpeg -hide_banner -stats_period 5 \
+    ffmpeg -hide_banner -loglevel quiet -stats -stats_period 5 \
     -thread_queue_size 8192 -fflags +genpts -re \
     -i "$TMPDIR/filter1" \
     -c:v copy \
@@ -234,7 +234,7 @@ publish() {
     -avoid_negative_ts make_zero \
     -muxdelay 0.5 \
     -f tee " \
-        [f=rtsp:onfail=abort:rtpflags=latm:pkt_size=1316]rtsp://$MEDIAMTX_HOST:8554/$STREAM_PATH| \
+        [f=rtsp:onfail=abort:rtpflags=latm]rtsp://$STREAMING_HOST:8554/$STREAM_PATH| \
         [f=hls:onfail=abort:hls_time=5:hls_segment_filename=$A_DIR/segments/segment%d.ts:hls_playlist_type=event]$A_DIR/index.m3u8" &
 
     PUBLISHER_PID=$!

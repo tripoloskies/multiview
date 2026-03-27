@@ -8,8 +8,6 @@
 		setAction,
 		viewState
 	} from '$lib/stores/multiview.svelte';
-
-	let activePaths = $derived(info.paths.filter((path) => path?.online)?.length);
 </script>
 
 <svelte:head>
@@ -33,7 +31,7 @@
 	{/if}
 
 	{#snippet footer()}
-		<span><b>Active:</b> {activePaths}</span>
+		<span><b>Active:</b> {info.instances.length}</span>
 		<span><b>{info.serverTime}</b></span>
 		<div class="stats-buttons">
 			<Button type="link" link="/recordings">Recordings</Button>
