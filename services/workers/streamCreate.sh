@@ -22,6 +22,8 @@ PUBLISHER_PID=""
 MBUFFER_PID=""
 VOD_ID=""
 
+sleep 1
+
 echo "List of arguments: "
 echo "------------------"
 echo "Source URL: $SOURCE_URL"
@@ -232,7 +234,7 @@ publish() {
     -avoid_negative_ts make_zero \
     -muxdelay 0.5 \
     -f tee " \
-        [f=rtsp:onfail=abort:rtpflags=latm]rtsp://$MEDIAMTX_HOST:8554/$STREAM_PATH| \
+        [f=rtsp:onfail=abort:rtpflags=latm:pkt_size=1316]rtsp://$MEDIAMTX_HOST:8554/$STREAM_PATH| \
         [f=hls:onfail=abort:hls_time=5:hls_segment_filename=$A_DIR/segments/segment%d.ts:hls_playlist_type=event]$A_DIR/index.m3u8" &
 
     PUBLISHER_PID=$!
