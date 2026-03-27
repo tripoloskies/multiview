@@ -2,7 +2,11 @@ import { $, redis } from 'bun';
 import pm2 from 'pm2';
 import { type instanceSchema } from '@shared/schema/instance';
 import { prisma } from '@shared/database';
-import { isActiveStreamOnline } from '@shared/utils/status';
+
+import {
+	controlApiPathsList,
+	controlApiPathsResponse
+} from '@shared/schema/mediamtx';
 
 let isConnected: boolean = false;
 
@@ -10,6 +14,8 @@ type instance = instanceSchema;
 
 const INTERNAL_REGEX: RegExp = /^internal:\S*$/;
 const INSTANCE_CACHE_KEY: string = 'instance';
+const INSTANCE_CACHE_CONTROLAPI_KEY: string = 'instance:controlapi';
+const INSTANCE_CACHE_CONTROLAPI_EXPIRE: number = 2;
 const INSTANCE_CACHE_EXPIRE: number = 5;
 
 function isNameIllegal(name: string): boolean {
@@ -244,6 +250,56 @@ async function destroyStoppedPM2Instance(): Promise<boolean> {
 // 	}
 // }
 
+export async function getPathFromControlApi(
+	name: string
+): Promise<controlApiPathsList | null> {
+	let items: controlApiPathsList[] = [];
+
+	const fetchRequest = async (): Promise<controlApiPathsList[]> => {
+		const response = await fetch(
+			`http://${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/list`
+		);
+
+		if (response.status !== 200) {
+			return [];
+		}
+
+		const { data, success } = await controlApiPathsResponse.safeParseAsync(
+			await response.json()
+		);
+
+		if (!success) {
+			return [];
+		}
+
+		await redis.set(
+			INSTANCE_CACHE_CONTROLAPI_KEY,
+			JSON.stringify(data.items),
+			'EX',
+			INSTANCE_CACHE_CONTROLAPI_EXPIRE + 2
+		);
+
+		return data.items;
+	};
+
+	if ((await redis.ttl(INSTANCE_CACHE_CONTROLAPI_KEY)) > 2) {
+		let result = await redis.get(INSTANCE_CACHE_CONTROLAPI_KEY);
+
+		if (result) {
+			items = JSON.parse(result);
+		} else {
+			items = await fetchRequest();
+		}
+	} else {
+		items = await fetchRequest();
+	}
+
+	if (!items.length) {
+		return null;
+	}
+
+	return items.find((item) => item.name === name) || null;
+}
 export async function invalidateInstanceCache(
 	name: string
 ): Promise<instance | null> {
@@ -269,11 +325,16 @@ export async function invalidateInstanceCache(
 			creatorName: name
 		}
 	});
+	const instanceInfoFromControlApi = await getPathFromControlApi(name);
 
 	const instanceInfo = {
 		name: name,
 		labelName: `${name} ${selectedInstance?.pm2_env?.status}`,
-		online: await isActiveStreamOnline(name),
+		online:
+			activeStreamsData?.status.toLowerCase() === 'starting' &&
+			instanceInfoFromControlApi
+				? instanceInfoFromControlApi.online
+				: false,
 		active: selectedInstance?.pm2_env?.status !== 'stopped',
 		statusText: activeStreamsData ? activeStreamsData?.status : 'No Report',
 		mediaUrl: name
@@ -308,11 +369,7 @@ export async function invalidateAllInstanceCache(): Promise<instance[]> {
 export async function listStreamInstance(): Promise<instance[]> {
 	let newLists: instance[] = [];
 
-	if ((await redis.ttl(INSTANCE_CACHE_KEY)) == -1) {
-		await redis.expire(INSTANCE_CACHE_KEY, INSTANCE_CACHE_EXPIRE);
-	}
-
-	if (await redis.exists(INSTANCE_CACHE_KEY)) {
+	if ((await redis.ttl(INSTANCE_CACHE_KEY)) > 2) {
 		const cachedData = await redis.hgetall(INSTANCE_CACHE_KEY);
 
 		for (const key in cachedData) {
@@ -323,8 +380,9 @@ export async function listStreamInstance(): Promise<instance[]> {
 		}
 	} else {
 		newLists = await invalidateAllInstanceCache();
+		await redis.expire(INSTANCE_CACHE_KEY, INSTANCE_CACHE_EXPIRE + 2);
 	}
-	return newLists;
+	return newLists.sort((a, b) => (a.name > b.name ? 1 : -1));
 }
 
 export async function deleteStoppedInstances(): Promise<boolean> {
