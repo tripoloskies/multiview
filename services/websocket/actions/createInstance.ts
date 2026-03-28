@@ -29,14 +29,14 @@ export const actions: wsActions = async (data) => {
 		if (await isInstanceOnline(newData.path)) {
 			return {
 				success: false,
-				message: `Adding stream denied. Stream ${newData.path} is currently online.`
+				message: `Adding stream denied. Instance "${newData.path}" is currently online.`
 			};
 		}
 
 		if (!(await addStreamInstance(newData.url, newData.path))) {
 			return {
 				success: false,
-				message: `Adding stream denied.`
+				message: `Adding stream "${newData.path}" is denied.`
 			};
 		}
 
@@ -44,7 +44,7 @@ export const actions: wsActions = async (data) => {
 
 		return wsResponse(streamEventResponseSchema, {
 			success: true,
-			message: 'Stream instance created successfully!',
+			message: `Stream ${newData.path} added successfully!`,
 			data: {
 				eventUrl: `/events/log?path=${encodeURIComponent(newPath)}`
 			}
@@ -62,8 +62,7 @@ export const actions: wsActions = async (data) => {
 		}
 		return wsResponse(null, {
 			success: false,
-			message:
-				"There's a problem when creating a stream instance. Internal Server Error."
+			message: "There's a problem when adding a stream. Internal Server Error."
 		});
 	}
 };
