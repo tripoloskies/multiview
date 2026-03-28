@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
+	import PlatformTag from '$lib/components/PlatformTag.svelte';
 	let { data } = $props();
 </script>
 
@@ -55,7 +56,9 @@
 					</div>
 					<div class="list-description">
 						<b>{item.title}</b>
-						<p>{item.author}</p>
+						<p>
+							<PlatformTag path={item.author} />
+						</p>
 					</div>
 				</div>
 			</a>

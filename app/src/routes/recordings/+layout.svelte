@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { sleep } from '@shared/utils/timer';
 	import { invalidateAll, onNavigate } from '$app/navigation';
+	import PlatformTag from '$lib/components/PlatformTag.svelte';
 
 	let { data, children } = $props();
 
@@ -63,8 +64,10 @@
 							href={resolve('/recordings/path/[...path]/videos/[page]', {
 								path: name,
 								page: '1'
-							})}>{name} {`(${items})`}</a
-						>
+							})}
+							><PlatformTag path={name} />
+							<span>{`(${items})`}</span>
+						</a>
 					{/each}
 				</div>
 			</aside>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PlatformTag from '$lib/components/PlatformTag.svelte';
+
 	const { data, children } = $props();
 
 	let isPathOnlineClass: string = $state('');
@@ -20,7 +22,9 @@
 
 <div id="path-header">
 	<span id="live-status-label">
-		<h1>{data.pathInfo.name}</h1>
+		<h1>
+			<PlatformTag path={data.pathInfo.name} />
+		</h1>
 		<b id="live-status-badge" class={isPathOnlineClass.toLowerCase()}
 			>{isPathOnlineClass.toUpperCase()}</b
 		>

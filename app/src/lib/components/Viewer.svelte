@@ -3,6 +3,7 @@
 	import Hls, { type ErrorTypes } from 'hls.js';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
+	import PlatformTag from './PlatformTag.svelte';
 
 	let {
 		path = '',
@@ -279,7 +280,9 @@
 			</video>
 		</div>
 		<span class="player-info">
-			<b>{path}</b>
+			<b>
+				<PlatformTag {path} />
+			</b>
 		</span>
 	</div>
 	{#if !muted}
