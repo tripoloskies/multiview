@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { apiResponseSchema } from '@shared/schema';
-import type { vodGetPathSchema } from '@shared/schema/vod';
+import type { recordGetPathSchema } from '@shared/schema/record';
 
 export const load: LayoutServerLoad = async ({ params }) => {
 	const path = params.path;
@@ -24,7 +24,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
 	}
 
 	const { name, videoCount, liveStatus } =
-		responseData.data as vodGetPathSchema;
+		responseData.data as recordGetPathSchema;
 
 	return {
 		pathInfo: {

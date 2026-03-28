@@ -24,7 +24,7 @@
 	async function execute(pathName: string) {
 		customLog = 'Please wait...';
 		isReady = false;
-		const response = await sendCommand('deleteStream', {
+		const response = await sendCommand('deleteInstance', {
 			path: pathName
 		});
 		customLog = response.message;
@@ -41,13 +41,13 @@
 </script>
 
 <svelte:head>
-	<title>Delete Stream - Multiview</title>
+	<title>Delete | Multiview</title>
 </svelte:head>
 <Container full={true}>
 	<Subcontainer front={true}>
 		<Prompt returnUrl={resolve('/(view)/(multiview)')}>
 			{#snippet header()}
-				<h2>Delete Stream</h2>
+				<h2>Delete</h2>
 			{/snippet}
 			{#if info.instances.length}
 				{#if !data.path.length && isReady}

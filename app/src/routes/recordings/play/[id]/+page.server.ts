@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import z, { string } from 'zod';
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import type { vodGetVideoSchema } from '@shared/schema/vod';
+import type { recordGetSchema } from '@shared/schema/record';
 import type { apiResponseSchema } from '@shared/schema';
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -28,17 +28,17 @@ export const load: PageServerLoad = async ({ params }) => {
 		const responseData = (await response.json()) as apiResponseSchema;
 
 		if (!responseData.success || !responseData.data) {
-			error(404, 'VOD does not exist');
+			error(404, 'Recording does not exist');
 		}
 
-		const { info, metadata } = responseData.data as vodGetVideoSchema;
+		const { info, metadata } = responseData.data as recordGetSchema;
 
 		return {
 			id: info.id,
 			title: metadata?.title || new Date(info.datePublished).toUTCString(),
-			mediaUrl: `/api/vod/fetch/${info.id}/index.m3u8`,
+			mediaUrl: `/api/recordings/fetch/${info.id}/index.m3u8`,
 			webpageUrl: metadata?.webpageUrl,
-			uploader: metadata?.uploader || info.creatorName,
+			uploader: metadata?.uploader || info.pathName,
 			description: metadata?.description || 'None'
 		};
 	} catch (e) {

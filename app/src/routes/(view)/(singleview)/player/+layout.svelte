@@ -23,7 +23,7 @@
 
 	onMount(async () => {
 		transactionId = await sendPersistCommand({
-			cmdName: 'getStream',
+			cmdName: 'getInstance',
 			data: { path: data.path },
 			callback: ({ success, data }) => {
 				if (!success) {
@@ -92,8 +92,8 @@
 					const form = event.target;
 					const formData = new FormData(form);
 					const data = { ...Object.fromEntries(formData.entries()) };
-					serverMessage = 'Deleting stream...';
-					const response = await sendCommand('deleteStream', data);
+					serverMessage = `Deleting "${data.path}"`;
+					const response = await sendCommand('deleteInstance', data);
 
 					if (!response.success) {
 						serverMessage = response.message;
@@ -114,8 +114,8 @@
 					const form = event.target;
 					const formData = new FormData(form);
 					const data = { ...Object.fromEntries(formData.entries()) };
-					serverMessage = 'Restarting stream...';
-					const response = await sendCommand('restartStream', data);
+					serverMessage = `Restarting "${data.path}"`;
+					const response = await sendCommand('restartInstance', data);
 
 					if (!response.success) {
 						serverMessage = response.message;

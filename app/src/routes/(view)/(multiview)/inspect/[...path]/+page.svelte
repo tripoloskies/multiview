@@ -46,13 +46,13 @@
 </script>
 
 <svelte:head>
-	<title>Inspect Stream - Multiview</title>
+	<title>Inspect | Multiview</title>
 </svelte:head>
 <Container full={true}>
 	<Subcontainer front={true}>
 		<Prompt returnUrl={resolve('/(view)/(multiview)')}>
 			{#snippet header()}
-				<h2>Inspector</h2>
+				<h2>Inspect</h2>
 			{/snippet}
 			{#if info.instances.length}
 				<form

@@ -9,7 +9,7 @@ const STREAM_CACHE_EXPIRE: number = 1;
 const STREAMLIST_CACHE_KEY: string = 'instance:controlapi';
 const STREAMLIST_CACHE_EXPIRE: number = 2;
 
-export async function getStreamPathList(
+export async function getPathList(
 	name: string
 ): Promise<controlApiPathsList | null> {
 	let items: controlApiPathsList[];

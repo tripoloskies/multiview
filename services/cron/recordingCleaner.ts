@@ -15,7 +15,7 @@ async function execute(): Promise<void> {
 		const paths: pathsList[] = [];
 		const idsToDeleted: string[] = [];
 
-		const vodDbLists = await prisma.vodProps.findMany({
+		const recordings = await prisma.record.findMany({
 			select: {
 				id: true,
 				manifestPath: true
@@ -31,7 +31,7 @@ async function execute(): Promise<void> {
 			paths.push({ id: splicedPath[0], fullPath: file });
 		}
 
-		for (const lists of vodDbLists) {
+		for (const lists of recordings) {
 			const pathindex: number = paths.findIndex((path) => path.id === lists.id);
 			if (pathindex === -1) {
 				idsToDeleted.push(lists.id);
@@ -40,7 +40,7 @@ async function execute(): Promise<void> {
 			}
 		}
 
-		await prisma.vodProps.deleteMany({
+		await prisma.record.deleteMany({
 			where: {
 				id: {
 					in: idsToDeleted

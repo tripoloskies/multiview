@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.pathInfo.name} Videos - VOD</title>
+	<title>{data.pathInfo.name} Videos | Recordings</title>
 </svelte:head>
 
 <div id="main-menu">

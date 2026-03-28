@@ -1,14 +1,15 @@
 import z from 'zod';
+import {
+	getStreamInstance,
+	restartStreamInstance
+} from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
-import { streamEventResponseSchema } from '@shared/schema/websocket';
-import { getStreamInstance } from '$services/instance/client';
 
 export const actions: wsActions = async (data) => {
 	const schema = z.object({
 		path: z.string().min(1)
 	});
-
 	try {
 		const newData = await schema.parseAsync(data);
 
@@ -21,17 +22,18 @@ export const actions: wsActions = async (data) => {
 			});
 		}
 
-		return wsResponse(streamEventResponseSchema, {
+		await restartStreamInstance(newData.path);
+
+		await Bun.sleep(1000);
+
+		return wsResponse(null, {
 			success: true,
-			message: `Opening instance ${newData.path}...`,
-			data: {
-				eventUrl: `/events/log?path=${encodeURIComponent(newData.path)}`
-			}
+			message: `Instance ${newData.path} restarted successfully.`
 		});
-	} catch (event) {
-		if (event instanceof z.ZodError) {
+	} catch (error) {
+		if (error instanceof z.ZodError) {
 			const items: PropertyKey[] = [];
-			for (const issue of event.issues) {
+			for (const issue of error.issues) {
 				items.push(...issue.path);
 			}
 			return wsResponse(null, {
@@ -41,7 +43,7 @@ export const actions: wsActions = async (data) => {
 		}
 		return wsResponse(null, {
 			success: false,
-			message: "There's a problem when creating a stream information."
+			message: "There's a problem when restarting a stream information."
 		});
 	}
 };

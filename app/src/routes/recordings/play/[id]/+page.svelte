@@ -19,8 +19,9 @@
 </script>
 
 <svelte:head>
-	<title>{data.title} - Multiview Recordings</title>
+	<title>{data.title} | Recordings</title>
 </svelte:head>
+
 <div class="playback-container">
 	<div class="playback-container-header">
 		<h1>{data.title}</h1>

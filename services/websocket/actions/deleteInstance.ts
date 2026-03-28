@@ -1,7 +1,7 @@
 import z from 'zod';
 import {
-	getStreamInstance,
-	restartStreamInstance
+	deleteStreamInstance,
+	getStreamInstance
 } from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
@@ -22,13 +22,11 @@ export const actions: wsActions = async (data) => {
 			});
 		}
 
-		await restartStreamInstance(newData.path);
-
-		await Bun.sleep(1000);
+		await deleteStreamInstance(newData.path);
 
 		return wsResponse(null, {
 			success: true,
-			message: `Instance ${newData.path} restarted successfully.`
+			message: `Instance ${newData.path} deleted successfully.`
 		});
 	} catch (error) {
 		if (error instanceof z.ZodError) {
@@ -43,7 +41,8 @@ export const actions: wsActions = async (data) => {
 		}
 		return wsResponse(null, {
 			success: false,
-			message: "There's a problem when creating a stream information."
+			message:
+				"There's a problem when deleting an instance. Internal Server Error."
 		});
 	}
 };

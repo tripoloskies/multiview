@@ -24,9 +24,9 @@
 </script>
 
 <svelte:head>
-	<title>VOD</title>
+	<title>Recordings</title>
 </svelte:head>
-<div id="vod">
+<div id="recordings">
 	<nav>
 		<div class="nav-items">
 			<Button type="button" onclick={() => (isSidebarOpen = !isSidebarOpen)}>
@@ -46,7 +46,7 @@
 				</svg>
 			</Button>
 			<a href={resolve('/recordings')}>
-				<h2>VOD</h2>
+				<h2>Recordings</h2>
 			</a>
 		</div>
 		<Button type="link" link={resolve('/(view)/(multiview)')}
@@ -90,7 +90,7 @@
 		@apply flex flex-col space-y-2;
 	}
 
-	#vod {
+	#recordings {
 		@apply flex h-screen max-h-screen w-full flex-col;
 	}
 

@@ -24,7 +24,7 @@
 	async function execute(pathName: string) {
 		customLog = 'Please wait...';
 		isReady = false;
-		const response = await sendCommand('restartStream', {
+		const response = await sendCommand('restartInstance', {
 			path: pathName
 		});
 		customLog = response.message;
@@ -41,13 +41,13 @@
 </script>
 
 <svelte:head>
-	<title>Restart Stream - Multiview</title>
+	<title>Restart | Multiview</title>
 </svelte:head>
 <Container full={true}>
 	<Subcontainer front={true}>
 		<Prompt returnUrl={resolve('/(view)/(multiview)')}>
 			{#snippet header()}
-				<h2>Restart Stream</h2>
+				<h2>Restart</h2>
 			{/snippet}
 			{#if info.instances.length}
 				{#if !data.path.length && isReady}

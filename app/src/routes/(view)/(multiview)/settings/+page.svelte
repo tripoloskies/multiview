@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-	<title>Settings - Multiview</title>
+	<title>Settings | Multiview</title>
 </svelte:head>
 <Container full={true}>
 	<Subcontainer front={true}>

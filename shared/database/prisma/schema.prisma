@@ -10,21 +10,22 @@ datasource db {
   provider = "postgresql"
 }
 
-model ActiveStreams {
-  status      String
-  creator     Creator @relation(fields: [creatorName], references: [name])
-  creatorName String  @id
+model Instance {
+  status   String
+  path     Path   @relation(fields: [pathName], references: [name])
+  pathName String @id
 }
 
-model Creator {
-  name          String          @id
-  vodProps      VodProps[]
-  activeStreams ActiveStreams?
+model Path {
+  name     String     @id
+  created  DateTime   @default(now())
+  record   Record[]
+  instance Instance?
 }
 
-model VodMetadata {
-  streamId     String     @id
-  vod          VodProps[]
+model RecordSourceMetadata {
+  recordId     String   @id
+  record          Record[]
   title        String
   uploader     String
   dateUploaded DateTime
@@ -32,12 +33,14 @@ model VodMetadata {
   description  String
 }
 
-model VodProps {
-  id            String       @id
-  creator       Creator      @relation(fields: [creatorName], references: [name])
-  creatorName   String
-  metadata      VodMetadata? @relation(fields: [metadataId], references: [streamId], onDelete: SetNull, onUpdate: Cascade)
-  metadataId    String?
-  manifestPath  String
-  datePublished DateTime
+model Record {
+  id               String                @id
+  path             Path                  @relation(fields: [pathName], references: [name])
+  pathName         String
+  sourceMetadata   RecordSourceMetadata? @relation(fields: [sourceMetadataId], references: [recordId], onDelete: SetNull, onUpdate: Cascade)
+  sourceMetadataId String?
+  manifestPath     String
+  datePublished    DateTime @map("publishedDate")
+
+  @@map("RecordProps")
 }

@@ -10,7 +10,7 @@
 	import { onMount } from 'svelte';
 
 	let { data } = $props();
-	let isStreamCreated: boolean = $state(false);
+	let isCreated: boolean = $state(false);
 	let targetInput: HTMLInputElement | undefined = $state();
 	let eventSrc: string = $state('');
 	let customLog: string = $state('');
@@ -23,16 +23,16 @@
 </script>
 
 <svelte:head>
-	<title>Add Stream - Multiview</title>
+	<title>Add | Multiview</title>
 </svelte:head>
 
 <Container>
 	<Subcontainer front={true}>
 		<Prompt returnUrl={resolve('/(view)/(multiview)')}>
 			{#snippet header()}
-				<h2>Add Stream</h2>
+				<h2>Add</h2>
 			{/snippet}
-			{#if !isStreamCreated}
+			{#if !isCreated}
 				<form
 					onsubmit={async (event) => {
 						event.preventDefault();
@@ -43,7 +43,7 @@
 						const formData: FormData = new FormData(form);
 						const responseData = Object.fromEntries(formData.entries());
 
-						const response = await sendCommand('addStream', responseData);
+						const response = await sendCommand('createInstance', responseData);
 						customLog = response.message;
 
 						if (!response.success) {
@@ -52,11 +52,11 @@
 
 						const { eventUrl } = response.data as streamEventResponseSchema;
 
-						isStreamCreated = true;
+						isCreated = true;
 						if (!eventUrl) {
 							customLog =
 								"No event URL? There's something wrong with the server.";
-							isStreamCreated = false;
+							isCreated = false;
 							return;
 						}
 
@@ -74,8 +74,8 @@
 								/>
 							</span>
 							<span>
-								<label for="path">Path</label>
-								<input name="path" placeholder="Path" />
+								<label for="path">Path Name</label>
+								<input name="path" placeholder="Path Name" />
 							</span>
 							<Button type="submit">Add</Button>
 						</div>

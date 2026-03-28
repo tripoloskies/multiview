@@ -1,4 +1,4 @@
-export async function isActiveStreamOnline(path: string): Promise<boolean> {
+export async function isInstanceOnline(path: string): Promise<boolean> {
 	try {
 		const response = await fetch(
 			`http://${Bun.env.STREAMING_HOST}:8888/${path}/index.m3u8`

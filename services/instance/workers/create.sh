@@ -20,7 +20,7 @@ LOG_DL_PROGRESS="$8"
 # Background PID's to close in case of nasty moments while this script was running.
 PUBLISHER_PID=""
 MBUFFER_PID=""
-VOD_ID=""
+RECORD_ID=""
 
 sleep 1
 
@@ -37,17 +37,17 @@ echo "------------------"
 
 
 if [[ -z "$RECORDING_PATH" ]]; then
-    echo "VOD path is required"
+    echo "Recording path is required"
     exit 1
 fi
 
 if [[ "$RECORDING_PATH" == "/" ]]; then
-    echo "Saving the VOD to the root directory is not allowed!"
+    echo "Saving the recording to the root directory is not allowed!"
     exit 1
 fi
 
 if [ ! -d "$RECORDING_PATH" ]; then
-    echo "VOD directory $RECORDING_PATH does not exist."
+    echo "Recording directory $RECORDING_PATH does not exist."
     exit 1
 fi
 
@@ -91,13 +91,13 @@ getytdlpCookieArgs() {
     fi
 }
 
-getVodId() {
-    curl -s -X POST http://$HOST:3002/publish -F "id=$STREAM_PATH" 2>&1
+getrecordId() {
+    curl -s -X POST http://$HOST:3002/publish -F "path=$STREAM_PATH" 2>&1
 }
 
 
 checkStreamIfBroken() {
-    curl -s -X POST http://$HOST:3002/verify -F "vodId=$VOD_ID" 2>&1
+    curl -s -X POST http://$HOST:3002/verify -F "recordId=$RECORD_ID" 2>&1
 }
 
 parseStreamMetadata() {
@@ -114,7 +114,7 @@ parseStreamMetadata() {
     else
         echo "Metadata successfully extracted."
 
-        SAVE_STATUS=$(curl -s -X POST http://$HOST:3002/metadata -F "vodId=$VOD_ID" -F "metadata=$METADATA" 1>&1)
+        SAVE_STATUS=$(curl -s -X POST http://$HOST:3002/metadata -F "recordId=$RECORD_ID" -F "metadata=$METADATA" 1>&1)
         if [[ "$SAVE_STATUS" == "0" ]]; then
             echo "Metadata saved successfully."
         else
@@ -150,7 +150,7 @@ publish() {
     local ARGS=$3
     local METADATA=$4
     
-    VOD_ID=$(getVodId)
+    RECORD_ID=$(getrecordId)
 
     if [[ "$URL" == "" ]]; then
         inform_update "Broken Stream"
@@ -160,25 +160,25 @@ publish() {
         return
     fi
 
-    if [[ "$VOD_ID" == "-1" ]]; then
+    if [[ "$RECORD_ID" == "-1" ]]; then
         inform_update "Internal Server Error"
         echo "Check if the Bun Server is active and running."
         exit 1
 
-    elif [[ "$VOD_ID" == "1" ]]; then
+    elif [[ "$RECORD_ID" == "1" ]]; then
         inform_update "Internal Server Error"
         echo "Invalid data."
         exit 1
         
-    elif [[ "$VOD_ID" == "2" ]]; then
-        inform_update "Creator not found."
-        echo "Creator not found. Retrying..."
+    elif [[ "$RECORD_ID" == "2" ]]; then
+        inform_update "Path not found."
+        echo "Path not found. Retrying..."
         return        
     fi   
 
     TMPDIR=$(mktemp -d /tmp/buffer.XXXXXX)
 
-    local A_DIR="$RECORDING_PATH/$STREAM_PATH/$VOD_ID"
+    local A_DIR="$RECORDING_PATH/$STREAM_PATH/$RECORD_ID"
 
     mkfifo "$TMPDIR/filter1"
     mkdir -p "$A_DIR"

@@ -41,15 +41,15 @@ export const getStreamResponseSchema = instanceSchema;
 
 export type getStreamResponseSchema = z.infer<typeof getStreamResponseSchema>;
 
-export const listActiveStreamsResponseSchema = z.object({
+export const listInstancesResponseSchema = z.object({
 	instances: z.array(instanceSchema)
 });
 
-export type listActiveStreamsResponseSchema = z.infer<
-	typeof listActiveStreamsResponseSchema
+export type listInstancesResponseSchema = z.infer<
+	typeof listInstancesResponseSchema
 >;
 
-export const realtimeResponseSchema = listActiveStreamsResponseSchema.extend(
+export const realtimeResponseSchema = listInstancesResponseSchema.extend(
 	getServerTimeResponseSchema.shape
 );
 

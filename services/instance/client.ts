@@ -254,9 +254,9 @@ export async function invalidateInstanceCache(
 	const selectedInstance = await getPM2Instance(name);
 
 	if (!selectedInstance) {
-		await prisma.activeStreams.deleteMany({
+		await prisma.instance.deleteMany({
 			where: {
-				creatorName: name
+				pathName: name
 			}
 		});
 		return null;
@@ -270,21 +270,21 @@ export async function invalidateInstanceCache(
 		await redis.hdel(INSTANCE_CACHE_KEY, name);
 	}
 
-	const activeStreamsData = await prisma.activeStreams.findFirst({
+	const instances = await prisma.instance.findFirst({
 		select: {
 			status: true
 		},
 		where: {
-			creatorName: name
+			pathName: name
 		}
 	});
 
 	const instanceInfo = {
 		name: name,
 		labelName: `${name} ${selectedInstance?.pm2_env?.status}`,
-		online: activeStreamsData?.status.toLowerCase() === 'online',
+		online: instances?.status.toLowerCase() === 'online',
 		active: selectedInstance?.pm2_env?.status !== 'stopped',
-		statusText: activeStreamsData ? activeStreamsData?.status : 'No Report',
+		statusText: instances ? instances?.status : 'No Report',
 		mediaUrl: name
 	};
 
@@ -346,7 +346,7 @@ export async function deleteStoppedInstances(): Promise<boolean> {
 
 export async function addStreamInstance(
 	url: string,
-	streamPath: string
+	path: string
 ): Promise<boolean> {
 	let bunExecutablePath: string;
 	let ytdlpExecutablePath: string;
@@ -384,12 +384,12 @@ export async function addStreamInstance(
 
 	try {
 		const status = await createPM2Instance({
-			name: streamPath,
-			script: `bash ./instance/workers/create.sh "${url}" "${streamPath}" ${Bun.env.RECORD_PATH || ''} "${bunExecutablePath}" "${ytdlpExecutablePath}" "${streamlinkExecutablePath}" ${Bun.env.STREAMING_HOST || ''}`,
+			name: path,
+			script: `bash ./instance/workers/create.sh "${url}" "${path}" ${Bun.env.RECORD_PATH || ''} "${bunExecutablePath}" "${ytdlpExecutablePath}" "${streamlinkExecutablePath}" ${Bun.env.STREAMING_HOST || ''}`,
 			autorestart: false
 		});
 
-		await updateInstanceStatus(streamPath, 'Update', 'Added');
+		await updateInstanceStatus(path, 'Update', 'Added');
 
 		return status;
 	} catch (error) {
@@ -401,17 +401,15 @@ export async function addStreamInstance(
 	}
 }
 
-export async function checkStreamInstance(
-	streamPath: string
-): Promise<boolean> {
-	return await checkPM2Instance(streamPath);
+export async function checkStreamInstance(path: string): Promise<boolean> {
+	return await checkPM2Instance(path);
 }
 
 export async function getStreamInstance(
-	streamPath: string
+	path: string
 ): Promise<instance | null> {
 	const lists = await listStreamInstance();
-	const selectedInstance = lists?.find((list) => list.name === streamPath);
+	const selectedInstance = lists?.find((list) => list.name === path);
 
 	if (!selectedInstance) {
 		return null;
@@ -420,24 +418,22 @@ export async function getStreamInstance(
 	return selectedInstance;
 }
 
-export async function deleteStreamInstance(
-	streamPath: string
-): Promise<boolean> {
-	await prisma.activeStreams.upsert({
+export async function deleteStreamInstance(path: string): Promise<boolean> {
+	await prisma.instance.upsert({
 		where: {
-			creatorName: streamPath
+			pathName: path
 		},
 		update: {
 			status: 'Deleting...'
 		},
 		create: {
-			creator: {
+			path: {
 				connectOrCreate: {
 					where: {
-						name: streamPath
+						name: path
 					},
 					create: {
-						name: streamPath
+						name: path
 					}
 				}
 			},
@@ -445,14 +441,14 @@ export async function deleteStreamInstance(
 		}
 	});
 
-	const isSuccess = await destroyPM2Instance(streamPath);
+	const isSuccess = await destroyPM2Instance(path);
 
 	await redis.del(INSTANCE_CACHE_KEY);
 	await Bun.sleep(500);
 
-	await prisma.activeStreams.deleteMany({
+	await prisma.instance.deleteMany({
 		where: {
-			creatorName: streamPath
+			pathName: path
 		}
 	});
 
@@ -471,15 +467,15 @@ export async function updateInstanceStatus(
 ): Promise<boolean> {
 	switch (action) {
 		case 'Update':
-			await prisma.activeStreams.upsert({
+			await prisma.instance.upsert({
 				where: {
-					creatorName: name
+					pathName: name
 				},
 				update: {
 					status: status
 				},
 				create: {
-					creator: {
+					path: {
 						connectOrCreate: {
 							where: {
 								name: name
@@ -494,9 +490,9 @@ export async function updateInstanceStatus(
 			});
 			break;
 		case 'Delete':
-			await prisma.activeStreams.deleteMany({
+			await prisma.instance.deleteMany({
 				where: {
-					creatorName: name
+					pathName: name
 				}
 			});
 			break;

@@ -1,6 +1,6 @@
 import { wsResponse } from '@shared/utils/api';
 import { type wsActions } from '@shared/types/websocket';
-import { listActiveStreamsResponseSchema } from '@shared/schema/websocket';
+import { listInstancesResponseSchema } from '@shared/schema/websocket';
 import {
 	listStreamInstance,
 	deleteStoppedInstances
@@ -14,7 +14,7 @@ export const actions: wsActions = async () => {
 
 		await deleteStoppedInstances();
 
-		return wsResponse(listActiveStreamsResponseSchema, {
+		return wsResponse(listInstancesResponseSchema, {
 			success: true,
 			message: 'OK',
 			data: {
@@ -24,7 +24,7 @@ export const actions: wsActions = async () => {
 	} catch {
 		return wsResponse(null, {
 			success: false,
-			message: 'Internal Server Error.'
+			message: "There's an error fetching instance list. Internal Server Error."
 		});
 	}
 };

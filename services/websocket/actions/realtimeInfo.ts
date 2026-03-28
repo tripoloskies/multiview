@@ -1,25 +1,25 @@
 import { actions as talk } from './talk';
 import { actions as getServerTime } from './getServerTime';
-import { actions as listActiveStream } from './listActiveStream';
+import { actions as listInstance } from './listInstance';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
 import {
 	realtimeResponseSchema,
 	type getServerTimeResponseSchema,
-	type listActiveStreamsResponseSchema
+	type listInstancesResponseSchema
 } from '@shared/schema/websocket';
 
 export const actions: wsActions = async () => {
-	const talkRes = await talk({});
+	const talkResponse = await talk({});
 
-	if (!talkRes.success) {
-		return talkRes;
+	if (!talkResponse.success) {
+		return talkResponse;
 	}
 
-	const timeRes = await getServerTime({});
-	const streamRes = await listActiveStream({});
+	const serverTimeResponse = await getServerTime({});
+	const listInstanceResponse = await listInstance({});
 
-	if (!timeRes.success || !streamRes.success) {
+	if (!serverTimeResponse.success || !listInstanceResponse.success) {
 		console.error('[wsApi][realtimeInfo]: Internal Server Error.');
 		return wsResponse(null, {
 			success: false,
@@ -29,10 +29,10 @@ export const actions: wsActions = async () => {
 
 	return wsResponse(realtimeResponseSchema, {
 		success: true,
-		message: streamRes.message,
+		message: listInstanceResponse.message,
 		data: {
-			...(timeRes.data as getServerTimeResponseSchema),
-			...(streamRes.data as listActiveStreamsResponseSchema)
+			...(serverTimeResponse.data as getServerTimeResponseSchema),
+			...(listInstanceResponse.data as listInstancesResponseSchema)
 		}
 	});
 };

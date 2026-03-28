@@ -733,12 +733,12 @@ pathDefaults:
   # * RTSP_PORT: RTSP server port
   # * G1, G2, ...: regular expression groups, if path name is
   #   a regular expression.
-  runOnReady: '/scripts/updateStream.sh "$MTX_PATH" Online'
+  runOnReady: '/scripts/updateStatus.sh "$MTX_PATH" Online'
   # Restart the command if it exits.
   runOnReadyRestart: false
   # Command to run when the stream is not available anymore.
   # Environment variables are the same of runOnReady.
-  runOnNotReady: '/scripts/updateStream.sh "$MTX_PATH" Offline'
+  runOnNotReady: '/scripts/updateStatus.sh "$MTX_PATH" Offline'
 
   # Command to run when a client starts reading.
   # This is terminated with SIGINT when a client stops reading.

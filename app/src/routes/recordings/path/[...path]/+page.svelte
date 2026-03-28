@@ -3,5 +3,5 @@
 </script>
 
 <svelte:head>
-	<title>{data.pathInfo.name} - VOD</title>
+	<title>{data.pathInfo.name} | Recordings</title>
 </svelte:head>

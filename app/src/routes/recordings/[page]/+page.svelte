@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>VOD</title>
+	<title>Recordings</title>
 </svelte:head>
 
 <div id="main-menu">

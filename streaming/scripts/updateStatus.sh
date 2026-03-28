@@ -7,7 +7,7 @@ STREAM_PATH=$1
 STATUS=$2
 
 if [[ -z "$STREAM_PATH" || -z "$STATUS" ]]; then
-    echo "Script Usage: ./updateStream.sh <path> <status>"
+    echo "Script Usage: ./updateStatus.sh <path> <status>"
     exit 1
 fi
 

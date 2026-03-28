@@ -36,7 +36,8 @@ export const actions: wsActions = async (data) => {
 		}
 		return wsResponse(null, {
 			success: false,
-			message: "There's a problem when creating a stream information."
+			message:
+				"There's an error getting instance information. Internal Server Error."
 		});
 	}
 };

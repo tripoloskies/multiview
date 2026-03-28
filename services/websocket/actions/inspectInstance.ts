@@ -1,15 +1,14 @@
 import z from 'zod';
-import {
-	deleteStreamInstance,
-	getStreamInstance
-} from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
+import { streamEventResponseSchema } from '@shared/schema/websocket';
+import { getStreamInstance } from '$services/instance/client';
 
 export const actions: wsActions = async (data) => {
 	const schema = z.object({
 		path: z.string().min(1)
 	});
+
 	try {
 		const newData = await schema.parseAsync(data);
 
@@ -22,16 +21,17 @@ export const actions: wsActions = async (data) => {
 			});
 		}
 
-		await deleteStreamInstance(newData.path);
-
-		return wsResponse(null, {
+		return wsResponse(streamEventResponseSchema, {
 			success: true,
-			message: `Instance ${newData.path} deleted successfully.`
+			message: `Opening instance ${newData.path}...`,
+			data: {
+				eventUrl: `/events/log?path=${encodeURIComponent(newData.path)}`
+			}
 		});
-	} catch (error) {
-		if (error instanceof z.ZodError) {
+	} catch (event) {
+		if (event instanceof z.ZodError) {
 			const items: PropertyKey[] = [];
-			for (const issue of error.issues) {
+			for (const issue of event.issues) {
 				items.push(...issue.path);
 			}
 			return wsResponse(null, {
@@ -41,7 +41,7 @@ export const actions: wsActions = async (data) => {
 		}
 		return wsResponse(null, {
 			success: false,
-			message: "There's a problem when deleting instance."
+			message: 'Unknown Error. Internal Server Error.'
 		});
 	}
 };

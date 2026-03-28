@@ -52,8 +52,8 @@ module.exports = {
 			}
 		},
 		{
-			name: 'internal:vod-server',
-			script: './vod/server.ts',
+			name: 'internal:recording-server',
+			script: './recording/server.ts',
 			interpreter: 'bun',
 			watch: true,
 			ignore_watch: [
@@ -69,8 +69,8 @@ module.exports = {
 			}
 		},
 		{
-			name: 'internal:vod-internal-server',
-			script: './vod/internalServer.ts',
+			name: 'internal:recording-internal-server',
+			script: './recording/internalServer.ts',
 			interpreter: 'bun',
 			watch: true,
 			ignore_watch: [
@@ -92,9 +92,9 @@ module.exports = {
 			watch: false
 		},
 		{
-			name: 'internal:vod-cleaner',
+			name: 'internal:recording-cleaner',
 			script: 'bun',
-			args: '--bun ./cron/vodCleaner.ts',
+			args: '--bun ./cron/recordingCleaner.ts',
 			watch: false
 		}
 	]

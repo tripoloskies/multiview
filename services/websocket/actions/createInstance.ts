@@ -3,7 +3,7 @@ import { addStreamInstance } from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
 import { streamEventResponseSchema } from '@shared/schema/websocket';
-import { isActiveStreamOnline } from '@shared/utils/status';
+import { isInstanceOnline } from '@shared/utils/status';
 
 export const actions: wsActions = async (data) => {
 	const TWITCH_URL_REGEX: RegExp = /^(https?:\/\/)?([a-z0-9]+\.)?twitch\.tv/;
@@ -26,7 +26,7 @@ export const actions: wsActions = async (data) => {
 			newData.path = 'others/' + newData.path;
 		}
 
-		if (await isActiveStreamOnline(newData.path)) {
+		if (await isInstanceOnline(newData.path)) {
 			return {
 				success: false,
 				message: `Adding stream denied. Stream ${newData.path} is currently online.`
@@ -62,7 +62,8 @@ export const actions: wsActions = async (data) => {
 		}
 		return wsResponse(null, {
 			success: false,
-			message: "There's a problem when creating a stream instance."
+			message:
+				"There's a problem when creating a stream instance. Internal Server Error."
 		});
 	}
 };
