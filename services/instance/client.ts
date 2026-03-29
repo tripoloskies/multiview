@@ -9,7 +9,6 @@ type instance = instanceSchema;
 
 const INTERNAL_REGEX: RegExp = /^internal:\S*$/;
 const INSTANCE_CACHE_KEY: string = 'instance';
-
 const INSTANCE_CACHE_EXPIRE: number = 30;
 
 function isNameIllegal(name: string): boolean {
@@ -205,21 +204,21 @@ async function destroyPM2Instance(name: string | string[]): Promise<boolean> {
 	return false;
 }
 
-async function destroyStoppedPM2Instance(): Promise<boolean> {
-	let isSomeInstanceDeleted = false;
+async function destroyStoppedPM2Instance(name: string): Promise<boolean> {
 	try {
-		const lists = await pm2List();
+		let instance = await pm2Describe(name);
 
-		for (const list of lists) {
-			if (!list?.name) {
-				continue;
-			}
-			if (list.pm2_env?.status === 'stopped') {
-				await pm2Delete(list.name);
-				isSomeInstanceDeleted = true;
-			}
+		if (!instance.length) {
+			return false;
 		}
-		return isSomeInstanceDeleted;
+		if (instance[0] === undefined) {
+			return false;
+		}
+		if (!instance[0].pm2_env || instance[0].pm2_env.status !== 'stopped') {
+			return false;
+		}
+
+		return await pm2Delete(name);
 	} catch (err) {
 		console.error('PM2 Async Error:', err);
 		return false;
@@ -334,12 +333,33 @@ export async function listStreamInstance(): Promise<instance[]> {
 }
 
 export async function deleteStoppedInstances(): Promise<boolean> {
-	const isSuccess = await destroyStoppedPM2Instance();
+	let isSuccess: boolean = false;
+
+	let instances = await pm2List();
+
+	for (const { name, pm2_env } of instances) {
+		if (
+			pm2_env?.status === 'stopped' &&
+			!isNameIllegal(name || '') &&
+			name !== undefined
+		) {
+			if (!(await destroyStoppedPM2Instance(name))) {
+				continue;
+			}
+			await prisma.instance.deleteMany({
+				where: {
+					pathName: name
+				}
+			});
+			await redis.hdel(INSTANCE_CACHE_KEY, name);
+			isSuccess = true;
+		}
+	}
+
 	if (isSuccess) {
 		console.log(
-			'[instance][deleteStoppedInstance] Stopped Instance deleted successfully.'
+			'[instance][deleteStoppedInstance] Stopped Instances deleted successfully.'
 		);
-		await redis.del(INSTANCE_CACHE_KEY);
 	}
 	return isSuccess;
 }
