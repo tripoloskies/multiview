@@ -14,11 +14,9 @@
 		isSidebarOpen = false;
 	});
 
-	const INVALIDATE_DATA_DURATION = 2000;
-
 	onMount(async () => {
 		while (true) {
-			await sleep(INVALIDATE_DATA_DURATION);
+			await sleep(data.invalidateDataDuration);
 			await invalidateAll();
 		}
 	});
