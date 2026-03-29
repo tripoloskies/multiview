@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
 	let { path } = $props();
 	let iconTag: string = $state('others');
 	let pathName: string = $state('');

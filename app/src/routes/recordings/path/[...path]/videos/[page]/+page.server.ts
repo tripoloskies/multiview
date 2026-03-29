@@ -38,7 +38,13 @@ export const load: PageServerLoad = async ({ params }) => {
 	const { count, lists } = responseData.data as recordListsSchema;
 
 	if (!lists.length) {
-		error(404, `No recordings found on page "${page}" from "${path}".`);
+		if (page === 1) {
+			return {
+				lists: []
+			};
+		} else {
+			error(404, `No recordings found on page "${page}" from "${path}".`);
+		}
 	}
 
 	const pageCount = Math.ceil(count / ITEMS_PER_PAGE);
