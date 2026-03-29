@@ -62,6 +62,15 @@ module.exports = {
 			env: {
 				NODE_ENV: 'production'
 			}
+		},
+		{
+			name: 'internal:instance-cleaner',
+			script: 'bun',
+			args: '--bun ./cron/instanceCleaner.ts',
+			watch: false,
+			env: {
+				NODE_ENV: 'production'
+			}
 		}
 	]
 };

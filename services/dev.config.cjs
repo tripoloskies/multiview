@@ -96,6 +96,12 @@ module.exports = {
 			script: 'bun',
 			args: '--bun ./cron/recordingCleaner.ts',
 			watch: false
+		},
+		{
+			name: 'internal:instance-cleaner',
+			script: 'bun',
+			args: '--bun ./cron/instanceCleaner.ts',
+			watch: false
 		}
 	]
 };
