@@ -5,7 +5,12 @@
 	let iconTag: string = $state('others');
 	let pathName: string = $state('');
 
-	onMount(() => {
+	$effect(() => {
+		if (path) {
+			execute();
+		}
+	});
+	function execute() {
 		let currentPath: string = path;
 		let slicedPath = currentPath.split('/');
 		let platformName: string = slicedPath[0];
@@ -18,7 +23,7 @@
 			slicedPath.shift();
 		}
 		pathName = slicedPath.join('/');
-	});
+	}
 </script>
 
 <span class="platform-tag">
