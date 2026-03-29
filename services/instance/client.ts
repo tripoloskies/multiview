@@ -206,7 +206,7 @@ async function destroyPM2Instance(name: string | string[]): Promise<boolean> {
 
 async function destroyStoppedPM2Instance(name: string): Promise<boolean> {
 	try {
-		let instance = await pm2Describe(name);
+		const instance = await pm2Describe(name);
 
 		if (!instance.length) {
 			return false;
@@ -214,7 +214,10 @@ async function destroyStoppedPM2Instance(name: string): Promise<boolean> {
 		if (instance[0] === undefined) {
 			return false;
 		}
-		if (!instance[0].pm2_env || instance[0].pm2_env.status !== 'stopped') {
+		if (
+			instance[0].pm2_env === undefined ||
+			instance[0].pm2_env.status !== 'stopped'
+		) {
 			return false;
 		}
 
@@ -253,11 +256,6 @@ export async function invalidateInstanceCache(
 	const selectedInstance = await getPM2Instance(name);
 
 	if (!selectedInstance) {
-		await prisma.instance.deleteMany({
-			where: {
-				pathName: name
-			}
-		});
 		return null;
 	}
 
@@ -303,10 +301,11 @@ export async function invalidateAllInstanceCache(): Promise<instance[]> {
 		if (!list?.name?.length) {
 			continue;
 		}
-		const res = await invalidateInstanceCache(list.name);
 
-		if (res) {
-			instances.push(res);
+		const cachedInstance = await invalidateInstanceCache(list.name);
+
+		if (cachedInstance) {
+			instances.push(cachedInstance);
 		}
 	}
 
@@ -335,7 +334,7 @@ export async function listStreamInstance(): Promise<instance[]> {
 export async function deleteStoppedInstances(): Promise<boolean> {
 	let isSuccess: boolean = false;
 
-	let instances = await pm2List();
+	const instances = await pm2List();
 
 	for (const { name, pm2_env } of instances) {
 		if (
