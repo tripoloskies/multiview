@@ -4,12 +4,12 @@
 	import { info } from '$lib/stores/info.svelte';
 	import {
 		actions,
+		allowedBatchActions,
+		batchAction,
 		clearAction,
 		setAction,
 		viewState
 	} from '$lib/stores/multiview.svelte';
-
-	let activePaths = $derived(info.paths.filter((path) => path?.online)?.length);
 </script>
 
 <svelte:head>
@@ -19,6 +19,9 @@
 <Controls>
 	{#if viewState.action !== 'none'}
 		<Button onclick={() => clearAction()}>Cancel</Button>
+		{#if allowedBatchActions.includes(viewState.action) && info.instances.length > 0}
+			<Button onclick={() => batchAction()}>{viewState.action} all</Button>
+		{/if}
 	{:else}
 		<Button type="link" link="/add">Add</Button>
 		<Button type="button" onclick={() => setAction(actions.inspect)}
@@ -33,7 +36,7 @@
 	{/if}
 
 	{#snippet footer()}
-		<span><b>Active:</b> {activePaths}</span>
+		<span><b>Active:</b> {info.instances.length}</span>
 		<span><b>{info.serverTime}</b></span>
 		<div class="stats-buttons">
 			<Button type="link" link="/recordings">Recordings</Button>

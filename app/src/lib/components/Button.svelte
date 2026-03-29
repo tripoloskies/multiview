@@ -9,7 +9,8 @@
 
 	let submitButton: HTMLButtonElement | HTMLInputElement | undefined = $state();
 
-	function defaultClick(): void {
+	function defaultClick(event: Event): void {
+		event.preventDefault();
 		console.log(
 			'This is a default click behavior of a button. Maybe you forgot to set up? Right?'
 		);

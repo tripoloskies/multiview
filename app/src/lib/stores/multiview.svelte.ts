@@ -8,6 +8,8 @@ export const enum actions {
 	none = 'none'
 }
 
+export const allowedBatchActions: actions[] = [actions.delete, actions.restart];
+
 export const viewState = $state({
 	action: actions.none
 });
@@ -18,6 +20,29 @@ export function setAction(actionName: actions): void {
 
 export function clearAction() {
 	viewState.action = actions.none;
+}
+
+export function batchAction(): void {
+	const selectedAction = viewState.action;
+
+	clearAction();
+
+	if (selectedAction === actions.none) {
+		return undefined;
+	}
+
+	// SvelteKit's resolve does not like a path with template literals inside.
+	// So, I hardcoded per action.
+	switch (selectedAction) {
+		case actions.delete:
+			goto(resolve('/(view)/(multiview)/delete-all'));
+			break;
+		case actions.restart:
+			goto(resolve('/(view)/(multiview)/restart-all'));
+			break;
+		default:
+			return;
+	}
 }
 
 export function selectToAction(pathName: string): string | void {

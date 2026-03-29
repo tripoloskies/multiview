@@ -1,12 +1,12 @@
-import { actions as talk } from './api/talk';
-import { actions as addStream } from './api/addStream';
-import { actions as deleteStream } from './api/deleteStream';
-import { actions as restartStream } from './api/restartStream';
-import { actions as getServerTime } from './api/getServerTime';
-import { actions as inspectStream } from './api/inspectStream';
-import { actions as listActiveStream } from './api/listActiveStream';
-import { actions as realtimeInfo } from './api/realtimeInfo';
-import { actions as getStream } from './api/getStream';
+import { actions as talk } from './actions/talk';
+import { actions as createInstance } from './actions/createInstance';
+import { actions as deleteInstance } from './actions/deleteInstance';
+import { actions as restartInstance } from './actions/restartInstance';
+import { actions as getServerTime } from './actions/getServerTime';
+import { actions as inspectInstance } from './actions/inspectInstance';
+import { actions as listInstance } from './actions/listInstance';
+import { actions as realtimeInfo } from './actions/realtimeInfo';
+import { actions as getInstance } from './actions/getInstance';
 import {
 	wsMessageRequestSchema,
 	wsMessageResponseSchema
@@ -14,14 +14,14 @@ import {
 
 const lists = [
 	{ cmdName: 'talk', fn: talk },
-	{ cmdName: 'addStream', fn: addStream },
-	{ cmdName: 'deleteStream', fn: deleteStream },
-	{ cmdName: 'restartStream', fn: restartStream },
-	{ cmdName: 'inspectStream', fn: inspectStream },
+	{ cmdName: 'createInstance', fn: createInstance },
+	{ cmdName: 'deleteInstance', fn: deleteInstance },
+	{ cmdName: 'restartInstance', fn: restartInstance },
+	{ cmdName: 'inspectStream', fn: inspectInstance },
 	{ cmdName: 'getServerTime', fn: getServerTime },
-	{ cmdName: 'listActiveStream', fn: listActiveStream },
+	{ cmdName: 'listInstance', fn: listInstance },
 	{ cmdName: 'realtimeInfo', fn: realtimeInfo },
-	{ cmdName: 'getStream', fn: getStream }
+	{ cmdName: 'getInstance', fn: getInstance }
 ];
 
 const PERSIST_RATE_LIMIT: number = 10;

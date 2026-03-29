@@ -1,5 +1,5 @@
 import type { apiResponseSchema } from '@shared/schema';
-import type { vodListsPathSchema } from '@shared/schema/vod';
+import type { recordListsPathSchema } from '@shared/schema/record';
 import type { LayoutServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 
@@ -25,7 +25,7 @@ export const load: LayoutServerLoad = async () => {
 		error(500, 'Internal Backend Server is also down: ' + responseData.message);
 	}
 
-	const paths = responseData.data as vodListsPathSchema;
+	const paths = responseData.data as recordListsPathSchema;
 
 	return {
 		paths: paths.lists

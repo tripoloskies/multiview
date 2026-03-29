@@ -47,23 +47,21 @@
 	async function connectToLogs(eventUrl: string) {
 		if (eventSource) {
 			eventSource.close();
-			injectLogs('Closing Current Stream...');
+			injectLogs('Closing Current Instance...');
 			await sleep(500);
 			logs = [];
 		}
 
 		eventSource = new EventSource(eventUrl);
 
-		injectLogs('Stream instance is now open.');
+		injectLogs('Instance is now open.');
 
 		eventSource.onmessage = (event) => {
 			injectLogs(event.data);
 		};
 
 		eventSource.onerror = () => {
-			injectLogs(
-				"There's something wrong with the server. Don't try again, stop all PM2 tasks first."
-			);
+			injectLogs("There's something wrong with the server. Try again.");
 			if (eventSource) {
 				if (retryCount > MAX_RETRY_COUNT) {
 					eventSource.close();

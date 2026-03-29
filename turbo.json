@@ -16,7 +16,7 @@
 			"cache": false
 		},
 		"preview": {
-			"env": ["DATABASE_URL", "MEDIAMTX_HOST", "RECORD_PATH"],
+			"env": ["DATABASE_URL", "STREAMING_HOST", "RECORD_PATH", "VALKEY_URL"],
 			"cache": false,
 			"persistent": true
 		},
@@ -25,7 +25,7 @@
 			"cache": false
 		},
 		"dev": {
-			"env": ["DATABASE_URL", "MEDIAMTX_HOST", "RECORD_PATH"],
+			"env": ["DATABASE_URL", "STREAMING_HOST", "RECORD_PATH", "VALKEY_URL"],
 			"cache": false,
 			"persistent": true
 		}

@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-	<title>Settings - Multiview</title>
+	<title>Settings | Multiview</title>
 </svelte:head>
 <Container full={true}>
 	<Subcontainer front={true}>
@@ -30,8 +30,21 @@
 						}}
 					/>
 				</div>
+				<div class="form-group">
+					<label for="showSafeArea">Show Safe Area</label>
+					<input
+						type="checkbox"
+						checked={config.showSafeArea}
+						name="showSafeArea"
+						onclick={(event) => {
+							if (!(event.target instanceof HTMLInputElement)) {
+								return;
+							}
+							change('showSafeArea', Number(event.target.checked));
+						}}
+					/>
+				</div>
 			</div>
-			<hr />
 		</Prompt>
 	</Subcontainer>
 </Container>
@@ -40,7 +53,7 @@
 	@reference "tailwindcss";
 
 	#form {
-		@apply flex justify-between space-x-4;
+		@apply flex flex-col justify-between space-y-4 space-x-4;
 	}
 
 	.form-group {

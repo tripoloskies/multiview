@@ -1,10 +1,9 @@
 import z from 'zod';
-import { prisma } from '@shared/database';
 import { addStreamInstance } from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
 import { streamEventResponseSchema } from '@shared/schema/websocket';
-import { isActiveStreamOnline } from '@shared/utils/status';
+import { isInstanceOnline } from '@shared/utils/status';
 
 export const actions: wsActions = async (data) => {
 	const TWITCH_URL_REGEX: RegExp = /^(https?:\/\/)?([a-z0-9]+\.)?twitch\.tv/;
@@ -27,47 +26,25 @@ export const actions: wsActions = async (data) => {
 			newData.path = 'others/' + newData.path;
 		}
 
-		if (await isActiveStreamOnline(newData.path)) {
+		if (await isInstanceOnline(newData.path)) {
 			return {
 				success: false,
-				message: `Adding stream denied. Stream ${newData.path} is currently online.`
+				message: `Adding stream denied. Instance "${newData.path}" is currently online.`
 			};
 		}
 
 		if (!(await addStreamInstance(newData.url, newData.path))) {
 			return {
 				success: false,
-				message: `Adding stream denied.`
+				message: `Adding stream "${newData.path}" is denied.`
 			};
 		}
 
 		const newPath: string = newData.path;
 
-		await prisma.activeStreams.upsert({
-			where: {
-				creatorName: newData.path
-			},
-			update: {
-				status: 'Added'
-			},
-			create: {
-				creator: {
-					connectOrCreate: {
-						where: {
-							name: newData.path
-						},
-						create: {
-							name: newData.path
-						}
-					}
-				},
-				status: 'Added'
-			}
-		});
-
 		return wsResponse(streamEventResponseSchema, {
 			success: true,
-			message: 'Stream instance created successfully!',
+			message: `Stream ${newData.path} added successfully!`,
 			data: {
 				eventUrl: `/events/log?path=${encodeURIComponent(newPath)}`
 			}
@@ -85,7 +62,7 @@ export const actions: wsActions = async (data) => {
 		}
 		return wsResponse(null, {
 			success: false,
-			message: "There's a problem when creating a stream instance."
+			message: "There's a problem when adding a stream. Internal Server Error."
 		});
 	}
 };

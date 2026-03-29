@@ -1,11 +1,15 @@
-import { $ } from 'bun';
+import { $, redis } from 'bun';
 import pm2 from 'pm2';
 import { type instanceSchema } from '@shared/schema/instance';
+import { prisma } from '@shared/database';
+
 let isConnected: boolean = false;
 
 type instance = instanceSchema;
 
 const INTERNAL_REGEX: RegExp = /^internal:\S*$/;
+const INSTANCE_CACHE_KEY: string = 'instance';
+const INSTANCE_CACHE_EXPIRE: number = 30;
 
 function isNameIllegal(name: string): boolean {
 	return INTERNAL_REGEX.test(name) || !name.length;
@@ -134,6 +138,7 @@ async function restartPM2Instance(name: string): Promise<boolean> {
 	try {
 		await pm2Restart(name);
 		await Bun.sleep(500);
+		await invalidateInstanceCache(name);
 		return true;
 	} catch {
 		return false;
@@ -163,6 +168,19 @@ export async function listPM2Instance(): Promise<pm2.ProcessDescription[]> {
 	return lists.filter((list) => !isNameIllegal(list?.name || ''));
 }
 
+export async function getPM2Instance(
+	name: string
+): Promise<pm2.ProcessDescription | null> {
+	let lists: pm2.ProcessDescription[] = [];
+	try {
+		lists = await pm2Describe(name);
+	} catch (err) {
+		console.error('PM2 Async Error:', err);
+	}
+
+	return lists[0] || null;
+}
+
 async function destroyPM2Instance(name: string | string[]): Promise<boolean> {
 	try {
 		if (typeof name === 'string') {
@@ -186,19 +204,24 @@ async function destroyPM2Instance(name: string | string[]): Promise<boolean> {
 	return false;
 }
 
-async function destroyStoppedPM2Instance(): Promise<boolean> {
+async function destroyStoppedPM2Instance(name: string): Promise<boolean> {
 	try {
-		const lists = await pm2List();
+		const instance = await pm2Describe(name);
 
-		for (const list of lists) {
-			if (!list?.name) {
-				continue;
-			}
-			if (list.pm2_env?.status === 'stopped') {
-				await pm2Delete(list.name);
-			}
+		if (!instance.length) {
+			return false;
 		}
-		return true;
+		if (instance[0] === undefined) {
+			return false;
+		}
+		if (
+			instance[0].pm2_env === undefined ||
+			instance[0].pm2_env.status !== 'stopped'
+		) {
+			return false;
+		}
+
+		return await pm2Delete(name);
 	} catch (err) {
 		console.error('PM2 Async Error:', err);
 		return false;
@@ -208,7 +231,7 @@ async function destroyStoppedPM2Instance(): Promise<boolean> {
 // For later use....
 // export async function isStreamOnline(path: string): Promise<boolean> {
 // 	const pathRequest = await fetch(
-// 		`http:/${Bun.env.MEDIAMTX_HOST}:9997/v3/paths/get/${path}`
+// 		`http:/${Bun.env.STREAMING_HOST}:9997/v3/paths/get/${path}`
 // 	);
 // 	switch (pathRequest.status) {
 // 		case 200:
@@ -223,35 +246,126 @@ async function destroyStoppedPM2Instance(): Promise<boolean> {
 // 	}
 // }
 
-export async function listStreamInstance(): Promise<instance[]> {
-	const newLists: instance[] = [];
-	try {
-		const lists = await listPM2Instance();
-		if (lists?.length) {
-			for (const list of lists) {
-				if (!list?.name?.length) {
-					continue;
-				}
-				newLists.push({
-					name: list.name,
-					labelName: `${list.name} ${list?.pm2_env?.status}`,
-					active: list?.pm2_env?.status !== 'stopped'
-				});
-			}
-		}
-	} catch {
-		return [];
+export async function invalidateInstanceCache(
+	name: string
+): Promise<instance | null> {
+	if (!name.length) {
+		return null;
 	}
-	return newLists;
+
+	const selectedInstance = await getPM2Instance(name);
+
+	if (!selectedInstance) {
+		return null;
+	}
+
+	if (!selectedInstance.name?.length) {
+		return null;
+	}
+
+	if (await redis.hexists(INSTANCE_CACHE_KEY, name)) {
+		await redis.hdel(INSTANCE_CACHE_KEY, name);
+	}
+
+	const instances = await prisma.instance.findFirst({
+		select: {
+			status: true
+		},
+		where: {
+			pathName: name
+		}
+	});
+
+	const instanceInfo = {
+		name: name,
+		labelName: `${name} ${selectedInstance?.pm2_env?.status}`,
+		online: instances?.status.toLowerCase() === 'online',
+		active: selectedInstance?.pm2_env?.status !== 'stopped',
+		statusText: instances ? instances?.status : 'No Report',
+		mediaUrl: name
+	};
+
+	await redis.hset(INSTANCE_CACHE_KEY, name, JSON.stringify(instanceInfo));
+
+	return instanceInfo;
+}
+
+export async function invalidateAllInstanceCache(): Promise<instance[]> {
+	const instances: instance[] = [];
+	if (await redis.exists(INSTANCE_CACHE_KEY)) {
+		await redis.del(INSTANCE_CACHE_KEY);
+	}
+
+	const lists = await listPM2Instance();
+	for (const list of lists) {
+		if (!list?.name?.length) {
+			continue;
+		}
+
+		const cachedInstance = await invalidateInstanceCache(list.name);
+
+		if (cachedInstance) {
+			instances.push(cachedInstance);
+		}
+	}
+
+	return instances;
+}
+
+export async function listStreamInstance(): Promise<instance[]> {
+	let newLists: instance[] = [];
+
+	if ((await redis.ttl(INSTANCE_CACHE_KEY)) >= 2) {
+		const cachedData = await redis.hgetall(INSTANCE_CACHE_KEY);
+
+		for (const key in cachedData) {
+			if (!cachedData[key]) {
+				continue;
+			}
+			newLists.push(JSON.parse(cachedData[key]));
+		}
+	} else {
+		newLists = await invalidateAllInstanceCache();
+		await redis.expire(INSTANCE_CACHE_KEY, INSTANCE_CACHE_EXPIRE + 2);
+	}
+	return newLists.sort((a, b) => (a.name > b.name ? 1 : -1));
 }
 
 export async function deleteStoppedInstances(): Promise<boolean> {
-	return await destroyStoppedPM2Instance();
+	let isSuccess: boolean = false;
+
+	const instances = await pm2List();
+
+	for (const { name, pm2_env } of instances) {
+		if (
+			pm2_env?.status === 'stopped' &&
+			!isNameIllegal(name || '') &&
+			name !== undefined
+		) {
+			if (!(await destroyStoppedPM2Instance(name))) {
+				continue;
+			}
+			await prisma.instance.deleteMany({
+				where: {
+					pathName: name
+				}
+			});
+			await redis.hdel(INSTANCE_CACHE_KEY, name);
+			isSuccess = true;
+		}
+	}
+
+	if (isSuccess) {
+		console.log(
+			'[instance][deleteStoppedInstance] Stopped Instances deleted successfully.'
+		);
+	}
+	return isSuccess;
 }
 
 export async function addStreamInstance(
 	url: string,
-	streamPath: string
+	path: string
 ): Promise<boolean> {
 	let bunExecutablePath: string;
 	let ytdlpExecutablePath: string;
@@ -288,11 +402,15 @@ export async function addStreamInstance(
 	}
 
 	try {
-		return await createPM2Instance({
-			name: streamPath,
-			script: `bash ./workers/streamCreate.sh "${url}" "${streamPath}" ${Bun.env.RECORD_PATH || ''} "${bunExecutablePath}" "${ytdlpExecutablePath}" "${streamlinkExecutablePath}" ${Bun.env.MEDIAMTX_HOST || ''}`,
+		const status = await createPM2Instance({
+			name: path,
+			script: `bash ./instance/workers/create.sh "${url}" "${path}" ${Bun.env.RECORD_PATH || ''} "${bunExecutablePath}" "${ytdlpExecutablePath}" "${streamlinkExecutablePath}" ${Bun.env.STREAMING_HOST || ''}`,
 			autorestart: false
 		});
+
+		await updateInstanceStatus(path, 'Update', 'Added');
+
+		return status;
 	} catch (error) {
 		console.warn(
 			"[addStreamInstance:warning] There's a little bit of error creating PM2 instance. But it doesn't matter because the stream will be created anyway."
@@ -302,38 +420,104 @@ export async function addStreamInstance(
 	}
 }
 
-export async function checkStreamInstance(
-	streamPath: string
-): Promise<boolean> {
-	return await checkPM2Instance(streamPath);
+export async function checkStreamInstance(path: string): Promise<boolean> {
+	return await checkPM2Instance(path);
 }
 
 export async function getStreamInstance(
-	streamPath: string
+	path: string
 ): Promise<instance | null> {
-	const lists = await listPM2Instance();
+	const lists = await listStreamInstance();
+	const selectedInstance = lists?.find((list) => list.name === path);
 
-	const selectedInstance = lists?.find((list) => list.name === streamPath);
-
-	if (!selectedInstance || !selectedInstance.name?.length) {
+	if (!selectedInstance) {
 		return null;
 	}
 
-	return {
-		name: selectedInstance.name,
-		labelName: `${selectedInstance.name} ${selectedInstance?.pm2_env?.status}`,
-		active: selectedInstance?.pm2_env?.status !== 'stopped'
-	};
+	return selectedInstance;
 }
 
-export async function deleteStreamInstance(
-	streamPath: string
-): Promise<boolean> {
-	return await destroyPM2Instance(streamPath);
+export async function deleteStreamInstance(path: string): Promise<boolean> {
+	await prisma.instance.upsert({
+		where: {
+			pathName: path
+		},
+		update: {
+			status: 'Deleting...'
+		},
+		create: {
+			path: {
+				connectOrCreate: {
+					where: {
+						name: path
+					},
+					create: {
+						name: path
+					}
+				}
+			},
+			status: 'Deleting...'
+		}
+	});
+
+	const isSuccess = await destroyPM2Instance(path);
+
+	await redis.del(INSTANCE_CACHE_KEY);
+	await Bun.sleep(500);
+
+	await prisma.instance.deleteMany({
+		where: {
+			pathName: path
+		}
+	});
+
+	return isSuccess;
 }
 
-export async function restartStreamInstance(
-	streamPath: string
+export async function restartStreamInstance(name: string): Promise<boolean> {
+	await updateInstanceStatus(name, 'Update', 'Restarting');
+	return await restartPM2Instance(name);
+}
+
+export async function updateInstanceStatus(
+	name: string,
+	action: string,
+	status: string
 ): Promise<boolean> {
-	return await restartPM2Instance(streamPath);
+	switch (action) {
+		case 'Update':
+			await prisma.instance.upsert({
+				where: {
+					pathName: name
+				},
+				update: {
+					status: status
+				},
+				create: {
+					path: {
+						connectOrCreate: {
+							where: {
+								name: name
+							},
+							create: {
+								name: name
+							}
+						}
+					},
+					status: status
+				}
+			});
+			break;
+		case 'Delete':
+			await prisma.instance.deleteMany({
+				where: {
+					pathName: name
+				}
+			});
+			break;
+		default:
+			return false;
+	}
+	await invalidateInstanceCache(name);
+	return true;
 }

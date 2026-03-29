@@ -3,5 +3,5 @@
 </script>
 
 <svelte:head>
-	<title>{data?.path ?? 'Untitled'} - Live</title>
+	<title>{data?.path ?? 'Untitled'} | Multiview</title>
 </svelte:head>

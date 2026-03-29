@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { sleep } from '@shared/utils/timer';
 	import { invalidateAll, onNavigate } from '$app/navigation';
+	import PlatformTag from '$lib/components/PlatformTag.svelte';
 
 	let { data, children } = $props();
 
@@ -13,20 +14,18 @@
 		isSidebarOpen = false;
 	});
 
-	const INVALIDATE_DATA_DURATION = 2000;
-
 	onMount(async () => {
 		while (true) {
-			await sleep(INVALIDATE_DATA_DURATION);
+			await sleep(data.invalidateDataDuration);
 			await invalidateAll();
 		}
 	});
 </script>
 
 <svelte:head>
-	<title>VOD</title>
+	<title>Recordings</title>
 </svelte:head>
-<div id="vod">
+<div id="recordings">
 	<nav>
 		<div class="nav-items">
 			<Button type="button" onclick={() => (isSidebarOpen = !isSidebarOpen)}>
@@ -46,7 +45,7 @@
 				</svg>
 			</Button>
 			<a href={resolve('/recordings')}>
-				<h2>VOD</h2>
+				<h2>Recordings</h2>
 			</a>
 		</div>
 		<Button type="link" link={resolve('/(view)/(multiview)')}
@@ -63,8 +62,10 @@
 							href={resolve('/recordings/path/[...path]/videos/[page]', {
 								path: name,
 								page: '1'
-							})}>{name} {`(${items})`}</a
-						>
+							})}
+							><PlatformTag path={name} />
+							<span>{`(${items})`}</span>
+						</a>
 					{/each}
 				</div>
 			</aside>
@@ -90,7 +91,7 @@
 		@apply flex flex-col space-y-2;
 	}
 
-	#vod {
+	#recordings {
 		@apply flex h-screen max-h-screen w-full flex-col;
 	}
 

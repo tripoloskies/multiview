@@ -3,7 +3,6 @@
 	import { page } from '$app/state';
 	import type { ResolvedPathname } from '$app/types';
 	import Button from '$lib/components/Button.svelte';
-	import { onMount } from 'svelte';
 
 	let redirectUrl: ResolvedPathname | undefined = $state();
 	let redirectLabel: string | undefined = $state();

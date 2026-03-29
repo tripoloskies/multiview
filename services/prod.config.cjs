@@ -28,8 +28,8 @@ module.exports = {
 			}
 		},
 		{
-			name: 'internal:vod-server',
-			script: './vod/server.ts',
+			name: 'internal:recording-server',
+			script: './recording/server.ts',
 			interpreter: 'bun',
 			watch: false,
 			env: {
@@ -37,8 +37,8 @@ module.exports = {
 			}
 		},
 		{
-			name: 'internal:vod-internal-server',
-			script: './vod/internalServer.ts',
+			name: 'internal:recording-internal-server',
+			script: './recording/internalServer.ts',
 			interpreter: 'bun',
 			watch: false,
 			env: {
@@ -55,9 +55,18 @@ module.exports = {
 			}
 		},
 		{
-			name: 'internal:vod-cleaner',
+			name: 'internal:recording-cleaner',
 			script: 'bun',
-			args: '--bun ./cron/vodCleaner.ts',
+			args: '--bun ./cron/recordingCleaner.ts',
+			watch: false,
+			env: {
+				NODE_ENV: 'production'
+			}
+		},
+		{
+			name: 'internal:instance-cleaner',
+			script: 'bun',
+			args: '--bun ./cron/instanceCleaner.ts',
 			watch: false,
 			env: {
 				NODE_ENV: 'production'

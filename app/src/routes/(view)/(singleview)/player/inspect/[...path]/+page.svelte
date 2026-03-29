@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.path ?? 'Untitled'} - Inspector</title>
+	<title>Inspecting "{data.path ?? 'Untitled'}"" | Multiview</title>
 </svelte:head>
 <SidePlayerContainer>
 	<h2>Inspector</h2>

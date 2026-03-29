@@ -3,6 +3,8 @@
 	import Hls, { type ErrorTypes } from 'hls.js';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
+	import PlatformTag from './PlatformTag.svelte';
+	import { config } from '$lib/stores/config.svelte';
 
 	let {
 		path = '',
@@ -23,8 +25,8 @@
 	);
 
 	let player: HTMLVideoElement | undefined;
-	let margin: HTMLDivElement | undefined;
-	let marginAction: HTMLDivElement | undefined;
+	let margin: HTMLDivElement | undefined = $state();
+	let marginAction: HTMLDivElement | undefined = $state();
 
 	let errorType: ErrorTypes | null = $state(null);
 	let oldVisible: boolean = $state(false);
@@ -258,14 +260,16 @@
 					<b>Online</b>
 				{/if}
 			</div>
-			<div
-				bind:this={margin}
-				class={`safe-margin ${videoHeight > 0 ? '' : 'hidden'}`}
-			>
-				<div bind:this={marginAction} class="safe-margin-action">
-					<div class="safe-margin-title"></div>
+			{#if config.showSafeArea}
+				<div
+					bind:this={margin}
+					class={`safe-margin ${videoHeight > 0 ? '' : 'hidden'}`}
+				>
+					<div bind:this={marginAction} class="safe-margin-action">
+						<div class="safe-margin-title"></div>
+					</div>
 				</div>
-			</div>
+			{/if}
 			<video
 				bind:clientHeight={playerHeight}
 				bind:videoHeight
@@ -279,7 +283,9 @@
 			</video>
 		</div>
 		<span class="player-info">
-			<b>{path}</b>
+			<b>
+				<PlatformTag {path} />
+			</b>
 		</span>
 	</div>
 	{#if !muted}

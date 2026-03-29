@@ -1,6 +1,5 @@
 import z from 'zod';
 import { instanceSchema } from './instance';
-import { controlApiPathsList } from './mediamtx';
 
 export const wsMessageRequestSchema = z.object({
 	cmdName: z.string(),
@@ -38,25 +37,19 @@ export type getServerTimeResponseSchema = z.infer<
 	typeof getServerTimeResponseSchema
 >;
 
-export const getStreamResponseSchema = z.object({
-	status: z.string(),
-	url: z.string(),
-	online: z.boolean(),
-	instance: instanceSchema
-});
+export const getStreamResponseSchema = instanceSchema;
 
 export type getStreamResponseSchema = z.infer<typeof getStreamResponseSchema>;
 
-export const listActiveStreamsResponseSchema = z.object({
-	paths: z.array(controlApiPathsList),
+export const listInstancesResponseSchema = z.object({
 	instances: z.array(instanceSchema)
 });
 
-export type listActiveStreamsResponseSchema = z.infer<
-	typeof listActiveStreamsResponseSchema
+export type listInstancesResponseSchema = z.infer<
+	typeof listInstancesResponseSchema
 >;
 
-export const realtimeResponseSchema = listActiveStreamsResponseSchema.extend(
+export const realtimeResponseSchema = listInstancesResponseSchema.extend(
 	getServerTimeResponseSchema.shape
 );
 

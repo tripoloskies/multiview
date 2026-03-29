@@ -9,3 +9,12 @@ export function randomStringGenerator(): string {
 
 	return randomString;
 }
+
+export function ellipsisGenerator(
+	text: string,
+	textLengthThreshold: number = 10
+): string {
+	return text.length >= textLengthThreshold
+		? text.slice(0, textLengthThreshold - 1) + '...'
+		: text;
+}

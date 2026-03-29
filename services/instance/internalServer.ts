@@ -1,60 +1,32 @@
 import z from 'zod';
-import { prisma } from '@shared/database';
+import { updateInstanceStatus } from './client';
 
 const _server = Bun.serve({
 	port: 3001,
 	routes: {
 		'/inform': {
 			POST: async (request: Bun.BunRequest) => {
-				const data = Object.fromEntries((await request.formData()).entries());
+				const requestData = Object.fromEntries(
+					(await request.formData()).entries()
+				);
 				const schema = z.object({
 					path: z.string().min(1),
 					action: z.enum(['Update', 'Delete']),
 					status: z.string().min(1)
 				});
 
-				const result = await schema.safeParseAsync(data);
+				const { data, success } = await schema.safeParseAsync(requestData);
 
-				if (!result.success) {
+				if (!success) {
 					return new Response('1');
 				}
 
-				const newData = result.data;
-
-				switch (newData.action) {
-					case 'Update':
-						await prisma.activeStreams.upsert({
-							where: {
-								creatorName: newData.path
-							},
-							update: {
-								status: newData.status
-							},
-							create: {
-								creator: {
-									connectOrCreate: {
-										where: {
-											name: newData.path
-										},
-										create: {
-											name: newData.path
-										}
-									}
-								},
-								status: newData.status
-							}
-						});
-						break;
-					case 'Delete':
-						await prisma.activeStreams.deleteMany({
-							where: {
-								creatorName: newData.path
-							}
-						});
-						break;
-					default:
-						return new Response('2');
+				if (
+					!(await updateInstanceStatus(data.path, data.action, data.status))
+				) {
+					return new Response('2');
 				}
+
 				return new Response('0');
 			}
 		}

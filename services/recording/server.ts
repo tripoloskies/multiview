@@ -35,14 +35,14 @@ const _server = Bun.serve({
 					responseHeaders.set('Content-Type', 'image/jpg');
 				} else {
 					console.error(
-						`[VOD][fetch/:id/:filename]: Filename "${data.filename}" from VOD id "${data.id}" not found.`
+						`[Recordings][fetch/:id/:filename]: Filename "${data.filename}" from Record ID "${data.id}" not found.`
 					);
 					return new Response(null, { status: 404 });
 				}
 
 				if (!(await fp.exists())) {
 					console.error(
-						`[VOD][fetch/:id/:filename]: Filename "${data.filename}" from VOD id "${data.id}" not found.`
+						`[Recordings][fetch/:id/:filename]: Filename "${data.filename}" from Record ID "${data.id}" not found.`
 					);
 					return new Response(null, { status: 404 });
 				}
@@ -55,4 +55,6 @@ const _server = Bun.serve({
 	}
 });
 
-console.log(`VOD Service API: Listening ${_server.hostname}:${_server.port}`);
+console.log(
+	`Recording Service API: Listening ${_server.hostname}:${_server.port}`
+);

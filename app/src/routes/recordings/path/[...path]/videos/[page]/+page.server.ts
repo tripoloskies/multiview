@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import type { apiResponseSchema } from '@shared/schema';
-import type { vodListsSchema } from '@shared/schema/vod';
+import type { recordListsSchema } from '@shared/schema/record';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const path: string = params.path;
@@ -35,10 +35,16 @@ export const load: PageServerLoad = async ({ params }) => {
 		error(500, 'Internal Backend Server is also down: ' + responseData.message);
 	}
 
-	const { count, lists } = responseData.data as vodListsSchema;
+	const { count, lists } = responseData.data as recordListsSchema;
 
 	if (!lists.length) {
-		error(404, `No recordings found on page "${page}" from "${path}".`);
+		if (page === 1) {
+			return {
+				lists: []
+			};
+		} else {
+			error(404, `No recordings found on page "${page}" from "${path}".`);
+		}
 	}
 
 	const pageCount = Math.ceil(count / ITEMS_PER_PAGE);
@@ -71,8 +77,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		return {
 			id: list.id,
 			title: date,
-			author: list.creator.name,
-			thumbnail: `/api/vod/fetch/${list.id}/thumbnail.jpg`,
+			author: list.path.name,
+			thumbnail: `/api/recordings/fetch/${list.id}/thumbnail.jpg`,
 			link: `/recordings/play/${list.id}`
 		};
 	});

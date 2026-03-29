@@ -1,10 +1,8 @@
 import z from 'zod';
-import { prisma } from '@shared/database';
 import { getStreamInstance } from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
 import { getStreamResponseSchema } from '@shared/schema/websocket';
-import { isActiveStreamOnline } from '@shared/utils/status';
 
 export const actions: wsActions = async (data) => {
 	const schema = z.object({
@@ -13,8 +11,6 @@ export const actions: wsActions = async (data) => {
 	try {
 		const newData = await schema.parseAsync(data);
 		const instance = await getStreamInstance(newData.path);
-		const mediaUrl: string = `${newData.path}`;
-
 		if (!instance) {
 			return wsResponse(null, {
 				success: false,
@@ -22,31 +18,10 @@ export const actions: wsActions = async (data) => {
 			});
 		}
 
-		const activeStreamsData = await prisma.activeStreams.findFirst({
-			select: {
-				status: true
-			},
-			where: {
-				creatorName: newData.path
-			}
-		});
-
-		if (!activeStreamsData || !instance) {
-			return wsResponse(null, {
-				success: false,
-				message: 'No status for this?'
-			});
-		}
-
 		return wsResponse(getStreamResponseSchema, {
 			success: true,
 			message: `OK`,
-			data: {
-				status: activeStreamsData.status,
-				url: mediaUrl,
-				online: await isActiveStreamOnline(mediaUrl),
-				instance: instance
-			}
+			data: instance
 		});
 	} catch (error) {
 		if (error instanceof z.ZodError) {
@@ -61,7 +36,8 @@ export const actions: wsActions = async (data) => {
 		}
 		return wsResponse(null, {
 			success: false,
-			message: "There's a problem when creating a stream information."
+			message:
+				"There's an error getting instance information. Internal Server Error."
 		});
 	}
 };

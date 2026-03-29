@@ -1,8 +1,7 @@
 import z from 'zod';
-import { prisma } from '@shared/database';
 import {
-	deleteStreamInstance,
-	getStreamInstance
+	getStreamInstance,
+	restartStreamInstance
 } from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
@@ -22,41 +21,14 @@ export const actions: wsActions = async (data) => {
 				message: `Instance "${newData.path}" does not exist.`
 			});
 		}
-		await prisma.activeStreams.upsert({
-			where: {
-				creatorName: newData.path
-			},
-			update: {
-				status: 'Deleting...'
-			},
-			create: {
-				creator: {
-					connectOrCreate: {
-						where: {
-							name: newData.path
-						},
-						create: {
-							name: newData.path
-						}
-					}
-				},
-				status: 'Deleting...'
-			}
-		});
 
-		await deleteStreamInstance(newData.path);
+		await restartStreamInstance(newData.path);
 
-		await Bun.sleep(500);
-
-		await prisma.activeStreams.deleteMany({
-			where: {
-				creatorName: newData.path
-			}
-		});
+		await Bun.sleep(1000);
 
 		return wsResponse(null, {
 			success: true,
-			message: `Instance ${newData.path} deleted successfully.`
+			message: `Instance ${newData.path} restarted successfully.`
 		});
 	} catch (error) {
 		if (error instanceof z.ZodError) {
@@ -71,7 +43,7 @@ export const actions: wsActions = async (data) => {
 		}
 		return wsResponse(null, {
 			success: false,
-			message: "There's a problem when deleting instance."
+			message: "There's a problem when restarting a stream information."
 		});
 	}
 };

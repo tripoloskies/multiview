@@ -7,80 +7,220 @@
 	import Prompt from '$lib/components/Prompt.svelte';
 	import Subcontainer from '$lib/components/Subcontainer.svelte';
 	import { streamEventResponseSchema } from '@shared/schema/websocket.js';
-	import { onMount } from 'svelte';
+	import { ellipsisGenerator } from '@shared/utils/browser';
+	import { onMount, tick } from 'svelte';
+
+	type streamInputs = {
+		url: string;
+		path: string;
+	};
 
 	let { data } = $props();
-	let isStreamCreated: boolean = $state(false);
+	let isCreated: boolean = $state(false);
 	let targetInput: HTMLInputElement | undefined = $state();
 	let eventSrc: string = $state('');
 	let customLog: string = $state('');
+	let streamInputs: streamInputs[] = $state([]);
+	let streamInputsCount: number = $derived(streamInputs.length);
+	let component: HTMLElement | undefined = $state();
 
 	onMount(() => {
+		addAnotherInput();
+	});
+
+	$effect(() => {
 		if (targetInput) {
 			targetInput.focus();
 		}
+		if (streamInputs.length && component) {
+			component.scrollTop = component.scrollHeight;
+		}
 	});
+
+	function addAnotherInput() {
+		streamInputs.push({
+			url: '',
+			path: ''
+		});
+	}
+
+	function removeLastInput() {
+		if (streamInputsCount > 1) {
+			streamInputs.pop();
+		}
+	}
 </script>
 
 <svelte:head>
-	<title>Add Stream - Multiview</title>
+	<title>Add {streamInputsCount > 1 ? 'Multiple ' : ''}| Multiview</title>
 </svelte:head>
 
 <Container>
 	<Subcontainer front={true}>
 		<Prompt returnUrl={resolve('/(view)/(multiview)')}>
 			{#snippet header()}
-				<h2>Add Stream</h2>
+				<h2>Add</h2>
 			{/snippet}
-			{#if !isStreamCreated}
-				<form
-					onsubmit={async (event) => {
-						event.preventDefault();
-						if (!(event.target instanceof HTMLFormElement)) {
-							return;
-						}
-						const form: HTMLFormElement = event.target;
-						const formData: FormData = new FormData(form);
-						const responseData = Object.fromEntries(formData.entries());
+			{#if !isCreated}
+				<div class="control">
+					<form
+						bind:this={component}
+						onsubmit={async (event) => {
+							let isSuccess: boolean = true;
 
-						const response = await sendCommand('addStream', responseData);
-						customLog = response.message;
+							event.preventDefault();
+							if (!(event.target instanceof HTMLFormElement)) {
+								return;
+							}
 
-						if (!response.success) {
-							return;
-						}
+							let filteredStreamInputs =
+								streamInputs.length > 1
+									? streamInputs.filter(
+											({ path, url }) => path.length > 0 || url.length > 0
+										)
+									: streamInputs;
 
-						const { eventUrl } = response.data as streamEventResponseSchema;
+							if (!filteredStreamInputs.length) {
+								customLog =
+									'Please complete the field for at least 1 stream input.';
+								return;
+							}
 
-						isStreamCreated = true;
-						if (!eventUrl) {
-							customLog =
-								"No event URL? There's something wrong with the server.";
-							isStreamCreated = false;
-							return;
-						}
+							let failedStreamInputs: streamInputs[] = [];
+							let eventUrlFromLastInput: string = '';
 
-						eventSrc = `${data.eventRootUrl}${eventUrl}`;
-					}}
-				>
-					<div class="controls">
-						<div class="controls-input">
-							<span>
-								<label for="url">Stream URL</label>
-								<input
-									bind:this={targetInput}
-									name="url"
-									placeholder="Stream URL"
-								/>
-							</span>
-							<span>
-								<label for="path">Path</label>
-								<input name="path" placeholder="Path" />
-							</span>
-							<Button type="submit">Add</Button>
+							isCreated = true;
+							for (const { path, url } of filteredStreamInputs) {
+								await tick();
+								customLog = `Adding.... (Path: ${path || `blank`} | URL: ${ellipsisGenerator(url, 20) || 'blank'})`;
+								const response = await sendCommand('createInstance', {
+									url: url,
+									path: path
+								});
+								customLog = response.message;
+
+								if (!response.success) {
+									failedStreamInputs.push({ path, url });
+									isSuccess = false;
+									continue;
+								}
+
+								const { eventUrl } = response.data as streamEventResponseSchema;
+								if (!eventUrl) {
+									customLog =
+										"No event URL? There's something wrong with the server.";
+									eventUrlFromLastInput = '';
+									failedStreamInputs.push({ path, url });
+									isSuccess = false;
+									continue;
+								}
+
+								eventUrlFromLastInput = eventUrl;
+							}
+
+							if (streamInputs.length == 1 && isSuccess) {
+								eventSrc = `${data.eventRootUrl}${eventUrlFromLastInput}`;
+							} else {
+								isCreated = false;
+								if (isSuccess) {
+									streamInputs = [];
+									addAnotherInput();
+								} else {
+									streamInputs = failedStreamInputs;
+								}
+							}
+						}}
+					>
+						<div class="control-input-container">
+							{#each streamInputs as streamInput, index (index)}
+								<div class="control-input">
+									{#if streamInputsCount > 1}
+										<b>Stream {index + 1}</b>
+									{/if}
+									<div class="control-input-body">
+										{#if streamInputsCount - 1 == index}
+											<span>
+												<label for={`url${index}`}>Stream URL</label>
+												<input
+													bind:value={streamInput.url}
+													name={`url${index}`}
+													bind:this={targetInput}
+													placeholder="Stream URL"
+												/>
+											</span>
+										{:else}
+											<span>
+												<label for={`url${index}`}>Stream URL</label>
+												<input
+													bind:value={streamInput.url}
+													name={`url${index}`}
+													placeholder="Stream URL"
+												/>
+											</span>
+										{/if}
+
+										<span>
+											<label for={`path${index}`}>Path Name</label>
+											<input
+												bind:value={streamInput.path}
+												name={`path${index}`}
+												placeholder="Path Name"
+											/>
+										</span>
+									</div>
+								</div>
+							{/each}
 						</div>
-					</div>
-				</form>
+						<div class="control-buttons">
+							<Button type="submit">Add Stream</Button>
+							<div class="control-input-action">
+								<p>Input(s): {streamInputsCount}</p>
+								<Button
+									type="button"
+									onclick={(event) => {
+										event.preventDefault();
+										addAnotherInput();
+									}}
+									><svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="size-6"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M12 4.5v15m7.5-7.5h-15"
+										/>
+									</svg>
+								</Button>
+								<Button
+									type="button"
+									onclick={(event) => {
+										event.preventDefault();
+										removeLastInput();
+									}}
+									><svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="size-6"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M5 12h14"
+										/>
+									</svg>
+								</Button>
+							</div>
+						</div>
+					</form>
+				</div>
 			{/if}
 			<ConsoleLog eventUrl={eventSrc} {customLog} />
 		</Prompt>
@@ -99,11 +239,31 @@
 	span > input {
 		@apply grow;
 	}
-	.controls {
-		@apply relative flex w-full justify-between space-x-4;
+
+	form {
+		@apply max-h-60 space-y-4 overflow-y-auto;
 	}
 
-	.controls-input {
+	.control {
+		@apply relative flex w-full flex-col justify-between space-y-4;
+	}
+
+	.control-buttons {
+		@apply sticky bottom-0 flex w-full justify-between space-x-4 bg-white pt-2;
+	}
+
+	.control-input-action {
+		@apply flex items-center space-x-4;
+	}
+	.control-input {
+		@apply space-y-4;
+	}
+
+	.control-input-body {
 		@apply flex w-full flex-col space-y-4 xl:flex-row xl:space-y-0 xl:space-x-4;
+	}
+
+	.control-input-container {
+		@apply grid grid-cols-1 gap-y-2;
 	}
 </style>

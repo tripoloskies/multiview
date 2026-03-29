@@ -5,12 +5,12 @@ import { ytdlpMetadataSchema } from '@shared/schema/yt-dlp';
 import { randomStringGenerator } from '@shared/utils/browser';
 import { JSONResponse } from '@shared/utils/api';
 import {
-	vodGetVideoSchema,
-	vodGetPathSchema,
-	vodListsSchema,
-	vodListsPathSchema
-} from '@shared/schema/vod';
-import { isActiveStreamOnline } from '@shared/utils/status';
+	recordGetSchema,
+	recordGetPathSchema,
+	recordListsSchema,
+	recordListsPathSchema
+} from '@shared/schema/record';
+import { isInstanceOnline } from '@shared/utils/status';
 
 const _server = Bun.serve({
 	port: 3002,
@@ -29,7 +29,7 @@ const _server = Bun.serve({
 
 					if (newData.page < 1) {
 						console.error(
-							`[VOD][/list/videos]: Value of page must not lower than 1. Request data wants page=${newData.page}`
+							`[Recordings Internal][/list/videos]: Value of page must not lower than 1. Request data wants page=${newData.page}`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -39,7 +39,7 @@ const _server = Bun.serve({
 
 					if (newData.maxItems < 1) {
 						console.error(
-							`[VOD][/list/videos]: Value of Max Items must not lower than 1. Request data wants maxItems=${newData.maxItems}`
+							`[Recordings Internal][/list/videos]: Value of Max Items must not lower than 1. Request data wants maxItems=${newData.maxItems}`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -47,19 +47,19 @@ const _server = Bun.serve({
 						});
 					}
 
-					const itemCount = await prisma.vodProps.count();
-					const vodLists = await prisma.vodProps.findMany({
+					const itemCount = await prisma.record.count();
+					const recordings = await prisma.record.findMany({
 						select: {
 							id: true,
 							datePublished: true,
-							creator: {
+							path: {
 								select: {
 									name: true
 								}
 							}
 						},
 						where: {
-							creatorName: newData.path
+							pathName: newData.path
 						},
 						orderBy: {
 							datePublished: 'desc'
@@ -69,15 +69,15 @@ const _server = Bun.serve({
 					});
 
 					console.log(
-						`[VOD][/list/videos]: Retrieved items: ${vodLists.length}`
+						`[Recordings Internal][/list/videos]: Retrieved items: ${recordings.length}`
 					);
 
-					return JSONResponse(vodListsSchema, {
+					return JSONResponse(recordListsSchema, {
 						success: true,
 						message: 'OK',
 						data: {
 							count: itemCount,
-							lists: vodLists
+							lists: recordings
 						}
 					});
 				} catch (error) {
@@ -87,7 +87,7 @@ const _server = Bun.serve({
 							items.push(...issue.path);
 						}
 						console.error(
-							`[VOD][/list/videos]: Invalid data. Missing fields (${items.join(', ')})`
+							`[Recordings Internal][/list/videos]: Invalid data. Missing fields (${items.join(', ')})`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -98,7 +98,7 @@ const _server = Bun.serve({
 					console.error(error);
 					return JSONResponse(null, {
 						success: false,
-						message: "There's a problem when deleting a stream instance."
+						message: 'Internal Server Error.'
 					});
 				}
 			}
@@ -116,7 +116,7 @@ const _server = Bun.serve({
 
 					if (newData.page < 1) {
 						console.error(
-							`[VOD][/list/paths]: Value of page must not lower than 1. Request data wants page=${newData.page}`
+							`[Recordings Internal][/list/paths]: Value of page must not lower than 1. Request data wants page=${newData.page}`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -126,7 +126,7 @@ const _server = Bun.serve({
 
 					if (newData.maxItems < 1) {
 						console.error(
-							`[VOD][/list/paths]: Value of Max Items must not lower than 1. Request data wants maxItems=${newData.maxItems}`
+							`[Recordings Internal][/list/paths]: Value of Max Items must not lower than 1. Request data wants maxItems=${newData.maxItems}`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -134,17 +134,17 @@ const _server = Bun.serve({
 						});
 					}
 
-					const paths = await prisma.creator.findMany({
+					const paths = await prisma.path.findMany({
 						select: {
 							name: true,
 							_count: {
 								select: {
-									vodProps: true
+									record: true
 								}
 							}
 						},
 						orderBy: {
-							vodProps: {
+							record: {
 								_count: 'desc'
 							}
 						},
@@ -155,15 +155,15 @@ const _server = Bun.serve({
 					const formattedPaths = paths.map(({ name, _count }) => {
 						return {
 							name: name,
-							items: _count.vodProps
+							items: _count.record
 						};
 					});
 
 					console.log(
-						`[VOD][/list]: Retrieved items: ${formattedPaths.length}`
+						`[Recordings Internal][/list]: Retrieved items: ${formattedPaths.length}`
 					);
 
-					return JSONResponse(vodListsPathSchema, {
+					return JSONResponse(recordListsPathSchema, {
 						success: true,
 						message: 'OK',
 						data: {
@@ -177,7 +177,7 @@ const _server = Bun.serve({
 							items.push(...issue.path);
 						}
 						console.error(
-							`[VOD][/list]: Invalid data. Missing fields (${items.join(', ')})`
+							`[Recordings Internal][/list]: Invalid data. Missing fields (${items.join(', ')})`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -188,7 +188,7 @@ const _server = Bun.serve({
 					console.error(error);
 					return JSONResponse(null, {
 						success: false,
-						message: "There's a problem when deleting a stream instance."
+						message: 'Internal Server Error.'
 					});
 				}
 			}
@@ -208,17 +208,17 @@ const _server = Bun.serve({
 				try {
 					const newData = await schema.parse(data);
 
-					const info = await prisma.creator.findFirst({
+					const info = await prisma.path.findFirst({
 						select: {
 							name: true,
-							activeStreams: {
+							instance: {
 								select: {
 									status: true
 								}
 							},
 							_count: {
 								select: {
-									vodProps: true
+									record: true
 								}
 							}
 						},
@@ -229,7 +229,7 @@ const _server = Bun.serve({
 
 					if (!info) {
 						console.error(
-							`[VOD][/get/:path]: Path "${newData.path}" not found.`
+							`[Recordings Internal][/get/:path]: Path "${newData.path}" not found.`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -239,18 +239,18 @@ const _server = Bun.serve({
 
 					let liveStatus: string;
 
-					if (await isActiveStreamOnline(info.name)) {
+					if (await isInstanceOnline(info.name)) {
 						liveStatus = 'online';
 					} else {
-						liveStatus = info.activeStreams?.status || 'offline';
+						liveStatus = info.instance?.status || 'offline';
 					}
 
-					return JSONResponse(vodGetPathSchema, {
+					return JSONResponse(recordGetPathSchema, {
 						success: true,
 						message: 'OK',
 						data: {
 							name: info.name,
-							videoCount: info._count.vodProps,
+							videoCount: info._count.record,
 							liveStatus: liveStatus
 						}
 					});
@@ -261,7 +261,7 @@ const _server = Bun.serve({
 							items.push(...issue.path);
 						}
 						console.error(
-							`[VOD][/get/path/:path]: Invalid data. Missing fields (${items.join(', ')})`
+							`[Recordings Internal][/get/path/:path]: Invalid data. Missing fields (${items.join(', ')})`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -271,7 +271,7 @@ const _server = Bun.serve({
 					console.error(error);
 					return JSONResponse(null, {
 						success: false,
-						message: "There's a problem when deleting a stream instance."
+						message: 'Internal Server Error.'
 					});
 				}
 			}
@@ -286,49 +286,50 @@ const _server = Bun.serve({
 				try {
 					const newData = await schema.parse(data);
 
-					const vodInfo = await prisma.vodProps.findFirst({
+					const record = await prisma.record.findFirst({
 						where: {
 							id: newData.id
 						}
 					});
 
-					if (!vodInfo) {
+					if (!record) {
 						console.error(
-							`[VOD][/get/video/:id]: VOD id "${newData.id}" not found.`
+							`[Recordings Internal][/get/video/:id]: Record id "${newData.id}" not found.`
 						);
 						return JSONResponse(null, {
 							success: false,
-							message: 'VOD not found'
+							message: 'Record not found'
 						});
-					} else if (!vodInfo?.metadataId) {
+					} else if (!record?.sourceMetadataId) {
 						console.warn(
-							`[VOD][/get/video/:id]: VOD id "${newData.id}" contains no metadata. Continue.`
+							`[Recordings Internal][/get/video/:id]: Record id "${newData.id}" contains no metadata. Continue.`
 						);
-						return JSONResponse(vodGetVideoSchema, {
+						return JSONResponse(recordGetSchema, {
 							success: true,
 							message: 'OK',
 							data: {
-								info: vodInfo,
+								info: record,
 								metadata: null
 							}
 						});
 					}
 
-					const vodMetadata = await prisma.vodMetadata.findFirst({
-						where: {
-							streamId: vodInfo.metadataId
-						}
-					});
+					const recordSourceMetadata =
+						await prisma.recordSourceMetadata.findFirst({
+							where: {
+								recordId: record.sourceMetadataId
+							}
+						});
 
 					console.log(
-						`[VOD][/get/video/:id]: VOD id "${newData.id}" contains metadata. Continue.`
+						`[Recordings Internal][/get/video/:id]: Record id "${newData.id}" contains metadata. Continue.`
 					);
-					return JSONResponse(vodGetVideoSchema, {
+					return JSONResponse(recordGetSchema, {
 						success: true,
 						message: 'OK',
 						data: {
-							info: vodInfo,
-							metadata: vodMetadata
+							info: record,
+							metadata: recordSourceMetadata
 						}
 					});
 				} catch (error) {
@@ -338,7 +339,7 @@ const _server = Bun.serve({
 							items.push(...issue.path);
 						}
 						console.error(
-							`[VOD][/get/video/:id]: Invalid data. Missing fields (${items.join(', ')})`
+							`[Recordings Internal][/get/video/:id]: Invalid data. Missing fields (${items.join(', ')})`
 						);
 						return JSONResponse(null, {
 							success: false,
@@ -348,7 +349,7 @@ const _server = Bun.serve({
 					console.error(error);
 					return JSONResponse(null, {
 						success: false,
-						message: "There's a problem when deleting a stream instance."
+						message: 'Internal Server Error.'
 					});
 				}
 			}
@@ -357,36 +358,36 @@ const _server = Bun.serve({
 			POST: async (request: Bun.BunRequest) => {
 				const data = Object.fromEntries((await request.formData()).entries());
 				const schema = z.object({
-					vodId: z.string().min(1)
+					recordId: z.string().min(1)
 				});
 
 				const result = await schema.safeParseAsync(data);
 
 				if (!result.success) {
-					console.error('[VOD Internal][/verify]: Invalid data.');
+					console.error('[Recordings Internal][/verify]: Invalid data.');
 					return new Response('1');
 				}
 
 				const newData = result.data;
 
-				const vodData = await prisma.vodProps.findFirst({
+				const record = await prisma.record.findFirst({
 					select: {
 						id: true,
 						manifestPath: true
 					},
 					where: {
-						id: newData.vodId
+						id: newData.recordId
 					}
 				});
 
-				if (!vodData) {
+				if (!record) {
 					console.error(
-						`[VOD Internal][/verify]: No VOD information from ID "${newData.vodId}"`
+						`[Recordings Internal][/verify]: No Record information from ID "${newData.recordId}"`
 					);
 					return new Response('2');
 				}
 
-				const path = `${Bun.env.RECORD_PATH}/${vodData.manifestPath}`;
+				const path = `${Bun.env.RECORD_PATH}/${record.manifestPath}`;
 				const videoPath = `${path}/index.m3u8`;
 				const imagePath = `${path}/thumbnail.jpg`;
 
@@ -395,22 +396,22 @@ const _server = Bun.serve({
 					!(await Bun.file(imagePath).exists())
 				) {
 					console.warn(
-						`[VOD Internal][/verify]: Detected broken files from VOD id "${newData.vodId}". Deleting VOD information and its remaning files.`
+						`[Recordings Internal][/verify]: Detected broken files from Record id "${newData.recordId}". Deleting Record information and its remaning files.`
 					);
 
-					await prisma.vodProps.deleteMany({
+					await prisma.record.deleteMany({
 						where: {
-							id: vodData.id
+							id: record.id
 						}
 					});
 
 					await rm(path, { force: true, recursive: true });
 					console.log(
-						`[VOD Internal][/verify]: Files and information from VOD id "${newData.vodId}" are deleted successfully..`
+						`[Recordings Internal][/verify]: Files and information from Record ID "${newData.recordId}" are deleted successfully..`
 					);
 				} else {
 					console.log(
-						`[VOD Internal][/verify]: All files from VOD id "${newData.vodId}" exists.`
+						`[Recordings Internal][/verify]: All files from Record id "${newData.recordId}" exists.`
 					);
 				}
 				return new Response('0');
@@ -420,14 +421,14 @@ const _server = Bun.serve({
 			POST: async (request: Bun.BunRequest) => {
 				const data = Object.fromEntries((await request.formData()).entries());
 				const schema = z.object({
-					vodId: z.string().min(1),
+					recordId: z.string().min(1),
 					metadata: z.string().optional()
 				});
 
 				const result = await schema.safeParseAsync(data);
 
 				if (!result.success) {
-					console.error('[VOD Internal][/metadata]: Invalid data.');
+					console.error('[Recordings Internal][/metadata]: Invalid data.');
 					return new Response('1');
 				}
 
@@ -435,7 +436,7 @@ const _server = Bun.serve({
 
 				if (!newData.metadata?.length) {
 					console.error(
-						`[VOD Internal][/metadata]: No metadata from VOD id "${newData.vodId}".`
+						`[Recordings Internal][/metadata]: No metadata from Record id "${newData.recordId}".`
 					);
 					return new Response('2');
 				}
@@ -446,19 +447,19 @@ const _server = Bun.serve({
 
 				if (!resultMetadata.success) {
 					console.error(
-						`[VOD Internal][/metadata]: Invalid metadata from VOD id "${newData.vodId}".`
+						`[Recordings Internal][/metadata]: Invalid metadata from Record id "${newData.recordId}".`
 					);
 					return new Response('2');
 				}
 
 				const metadata = resultMetadata.data;
 
-				const vodMetadata = await prisma.vodMetadata.upsert({
+				const recordSourceMetadata = await prisma.recordSourceMetadata.upsert({
 					select: {
-						streamId: true
+						recordId: true
 					},
 					where: {
-						streamId: `${metadata.extractor}:${metadata.id}`
+						recordId: `${metadata.extractor}:${metadata.id}`
 					},
 					update: {
 						title: metadata.fulltitle,
@@ -466,7 +467,7 @@ const _server = Bun.serve({
 						webpageUrl: metadata.webpage_url
 					},
 					create: {
-						streamId: `${metadata.extractor}:${metadata.id}`,
+						recordId: `${metadata.extractor}:${metadata.id}`,
 						title: metadata.fulltitle,
 						description: metadata.description,
 						dateUploaded: new Date(metadata.timestamp * 1000).toISOString(),
@@ -475,16 +476,16 @@ const _server = Bun.serve({
 					}
 				});
 
-				await prisma.vodProps.updateMany({
+				await prisma.record.updateMany({
 					where: {
-						id: newData.vodId
+						id: newData.recordId
 					},
 					data: {
-						metadataId: vodMetadata.streamId
+						sourceMetadataId: recordSourceMetadata.recordId
 					}
 				});
 				console.log(
-					`[VOD Internal][/metadata]: Metadata from VOD id "${newData.vodId}" saved successfully.`
+					`[Recordings Internal][/metadata]: Metadata from Record id "${newData.recordId}" saved successfully.`
 				);
 				return new Response('0');
 			}
@@ -493,66 +494,66 @@ const _server = Bun.serve({
 			POST: async (request: Bun.BunRequest) => {
 				const data = Object.fromEntries((await request.formData()).entries());
 				const schema = z.object({
-					id: z.string().min(1)
+					path: z.string().min(1)
 				});
 
 				try {
 					const newData = await schema.parseAsync(data);
 
-					const creatorData = await prisma.creator.findFirst({
+					const pathData = await prisma.path.findFirst({
 						select: {
 							name: true
 						},
 						where: {
-							name: newData.id
+							name: newData.path
 						}
 					});
 
-					if (!creatorData) {
+					if (!pathData) {
 						console.error(
-							`[VOD Internal][/publish]: Path "${newData.id}" not found.`
+							`[Recordings Internal][/publish]: Path "${newData.path}" not found.`
 						);
 						return new Response('2');
 					}
 
-					let streamVodId: string = '';
+					let recordId: string = '';
 
 					while (true) {
-						streamVodId = randomStringGenerator();
-						const existingStream = await prisma.vodProps.findFirst({
+						recordId = randomStringGenerator();
+						const existingStream = await prisma.record.findFirst({
 							select: {
 								id: true
 							},
 							where: {
-								id: streamVodId
+								id: recordId
 							}
 						});
 
 						if (existingStream) {
 							console.warn(
-								`[VOD Internal][/publish]: VOD id "${streamVodId}" already taken. Retrying.`
+								`[Recordings Internal][/publish]: Record ID "${recordId}" already taken. Retrying.`
 							);
 							continue;
 						}
 						break;
 					}
 
-					const manifestPath = `${creatorData.name}/${streamVodId}`;
-					await prisma.vodProps.create({
+					const manifestPath = `${pathData.name}/${recordId}`;
+					await prisma.record.create({
 						data: {
-							id: streamVodId,
-							creatorName: creatorData.name,
+							id: recordId,
+							pathName: pathData.name,
 							manifestPath: manifestPath,
 							datePublished: new Date().toISOString()
 						}
 					});
 					console.log(
-						`[VOD Internal][/publish]: VOD id for path "${newData.id}" created successfully. (${streamVodId})`
+						`[Recordings Internal][/publish]: Record ID for path "${newData.path}" created successfully. (${recordId})`
 					);
-					return new Response(streamVodId);
+					return new Response(recordId);
 				} catch (error) {
 					if (error instanceof z.ZodError) {
-						console.error('[VOD Internal][/publish]: Invalid data.');
+						console.error('[Recordings Internal][/publish]: Invalid data.');
 						return new Response('1');
 					}
 					console.error(error);
@@ -564,5 +565,5 @@ const _server = Bun.serve({
 });
 
 console.log(
-	`VOD Internal Service API: Listening ${_server.hostname}:${_server.port}`
+	`Recordings Internal Service API: Listening ${_server.hostname}:${_server.port}`
 );
