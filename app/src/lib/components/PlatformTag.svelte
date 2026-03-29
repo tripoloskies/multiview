@@ -21,7 +21,7 @@
 	});
 </script>
 
-<p class="platform-tag">
+<span class="platform-tag">
 	{#if iconTag === 'yt'}
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -87,7 +87,7 @@
 	<span>
 		{pathName}
 	</span>
-</p>
+</span>
 
 <style lang="postcss">
 	@reference "tailwindcss";
