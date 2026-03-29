@@ -1,5 +1,6 @@
 export const config = $state({
-	showVideoMultiView: true
+	showVideoMultiView: true,
+	showSafeArea: false
 });
 
 export function load(): void {
@@ -7,6 +8,9 @@ export function load(): void {
 		Number(
 			localStorage.getItem('showVideoMultiView') || config.showVideoMultiView
 		)
+	);
+	config.showSafeArea = Boolean(
+		Number(localStorage.getItem('showSafeArea') || config.showSafeArea)
 	);
 }
 
