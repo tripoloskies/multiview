@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from '$lib/components/Button.svelte';
+	import PaginationSelector from '$lib/components/PaginationSelector.svelte';
 	import PlatformTag from '$lib/components/PlatformTag.svelte';
 
 	let { data } = $props();
@@ -12,26 +12,6 @@
 <div id="main-menu">
 	<div id="page-header">
 		<h1>Latest</h1>
-		{#if data.lists.length > 0 && data.currentPage && data.pageCount}
-			<div id="page-selectors-container">
-				<div>Go to Page</div>
-				<div id="page-selectors">
-					{#if data.currentPage > 3 && data.pageCount >= data.pageLimit}
-						<Button type="link" link="1">First</Button>
-					{/if}
-					{#each data?.visiblePages as page (page)}
-						{#if page == data.currentPage}
-							<div id="page-selected">{page}</div>
-						{:else}
-							<Button type="link" link={String(page)}>{page}</Button>
-						{/if}
-					{/each}
-					{#if data.currentPage < data.pageCount - 2 && data.pageCount >= data.pageLimit}
-						<Button type="link" link={String(data.pageCount)}>Last</Button>
-					{/if}
-				</div>
-			</div>
-		{/if}
 	</div>
 
 	{#if data.lists.length}
@@ -71,6 +51,13 @@
 	{:else}
 		<h2 class="error-message">No Videos</h2>
 	{/if}
+
+	<div id="page-footer">
+		<PaginationSelector
+			page={data.currentPage || 0}
+			totalPage={data.totalPage || 0}
+		/>
+	</div>
 </div>
 
 <style lang="postcss">
@@ -100,18 +87,10 @@
 	}
 
 	#page-header {
-		@apply flex items-center justify-between px-2;
+		@apply flex items-center justify-between py-4;
 	}
 
-	#page-selectors {
-		@apply flex;
-	}
-
-	#page-selectors-container {
-		@apply flex items-center space-x-4;
-	}
-
-	#page-selected {
-		@apply border-2 border-neutral-500 bg-neutral-500 px-4 py-2 font-bold;
+	#page-footer {
+		@apply sticky bottom-0 w-full bg-black py-2;
 	}
 </style>

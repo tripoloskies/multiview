@@ -6,9 +6,7 @@ import type { recordListsSchema } from '@shared/schema/record';
 export const load: PageServerLoad = async ({ params }) => {
 	const path: string = params.path;
 	const page: number = Number(params.page);
-	const visiblePages = [];
 	const ITEMS_PER_PAGE = 9;
-	const VISIBLE_PAGE_LIMIT = 4;
 
 	if (isNaN(page)) {
 		error(400, 'Bad Request. Please check if the page is a number or not.');
@@ -47,31 +45,6 @@ export const load: PageServerLoad = async ({ params }) => {
 		}
 	}
 
-	const pageCount = Math.ceil(count / ITEMS_PER_PAGE);
-
-	if (page <= VISIBLE_PAGE_LIMIT - 2) {
-		for (let x = 1; x <= VISIBLE_PAGE_LIMIT; x++) {
-			if (x > pageCount) {
-				break;
-			}
-			visiblePages.push(x);
-		}
-	} else {
-		if (pageCount - page < 2) {
-			for (let x = pageCount - VISIBLE_PAGE_LIMIT; x <= pageCount; x++) {
-				if (x <= 0) continue;
-				visiblePages.push(x);
-			}
-		} else {
-			for (let x = page - 2; x <= page + 2; x++) {
-				if (x > pageCount) {
-					break;
-				}
-				visiblePages.push(x);
-			}
-		}
-	}
-
 	const list = lists.map((list) => {
 		const date = new Date(list.datePublished).toUTCString();
 		return {
@@ -82,12 +55,11 @@ export const load: PageServerLoad = async ({ params }) => {
 			link: `/recordings/play/${list.id}`
 		};
 	});
+
 	return {
-		visiblePages: visiblePages,
 		currentPage: page,
-		pageCount: pageCount,
-		pageLimit: VISIBLE_PAGE_LIMIT,
 		itemCount: count,
-		lists: list
+		lists: list,
+		totalPage: Math.ceil(count / ITEMS_PER_PAGE)
 	};
 };
