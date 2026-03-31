@@ -4,10 +4,9 @@
 	let pathName: string = $state('');
 
 	$effect(() => {
-		if (path) {
-			execute();
-		}
+		execute();
 	});
+
 	function execute() {
 		let currentPath: string = path;
 		let slicedPath = currentPath.split('/');
@@ -22,6 +21,8 @@
 		}
 		pathName = slicedPath.join('/');
 	}
+
+	execute();
 </script>
 
 <span class="platform-tag">
