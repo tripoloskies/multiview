@@ -6,13 +6,26 @@
 	import PlatformTag from './PlatformTag.svelte';
 	import { config } from '$lib/stores/config.svelte';
 
+	export type ViewerIndicatorStatus = 'ok' | 'warning' | 'danger';
+	type ViewerType = {
+		path: string;
+		muted: boolean;
+		online: boolean;
+		visible: boolean;
+		status: string;
+		indicatorStatus?: ViewerIndicatorStatus;
+		indicatorStatusText?: string;
+	};
+
 	let {
 		path = '',
 		muted = true,
 		online = false,
 		visible = true,
-		status = 'Empty'
-	} = $props();
+		status = 'Empty',
+		indicatorStatus = 'ok',
+		indicatorStatusText = ''
+	}: ViewerType = $props();
 
 	let source: MediaElementAudioSourceNode;
 	let audioContext: AudioContext;
@@ -40,7 +53,6 @@
 	let playerHeight: number = $state(0);
 	let videoHeight: number = $state(0);
 	let videoWidth: number = $state(0);
-
 	onMount(() => {
 		if (!player) {
 			return;
@@ -71,6 +83,7 @@
 			else instance.stopLoad();
 		}
 	});
+
 	onDestroy(() => {
 		destroyView();
 	});
@@ -282,9 +295,10 @@
 				<b>Dog</b>
 			</video>
 		</div>
-		<span class="player-info">
+		<span class={`player-info ${indicatorStatus}`}>
 			<b>
 				<PlatformTag {path} />
+				{indicatorStatusText.length ? `[${indicatorStatusText}]` : ''}
 			</b>
 		</span>
 	</div>
@@ -305,25 +319,59 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 
+	@keyframes danger {
+		0%,
+		100% {
+			background-color: var(--color-red-500);
+		}
+		50% {
+			background-color: initial;
+		}
+	}
+
+	@keyframes warning {
+		0%,
+		100% {
+			background-color: var(--color-yellow-400);
+		}
+		50% {
+			background-color: initial;
+		}
+	}
+
+	.danger {
+		animation: danger 0.5s infinite;
+	}
+
+	.warning {
+		animation: warning 1s infinite;
+	}
+
 	.safe-margin-action,
 	.safe-margin-title {
 		@apply h-full w-full border border-white;
 	}
+
 	.safe-margin {
 		@apply absolute z-10;
 	}
+
 	button {
 		@apply flex h-full w-full flex-1 cursor-pointer;
 	}
+
 	.viewer-player-notice > * {
 		@apply bg-white p-2 text-black;
 	}
+
 	.viewer-player-container {
 		@apply relative flex h-full w-full flex-1 items-center justify-center;
 	}
+
 	.player-info {
 		@apply block w-full bg-neutral-800 px-4 py-2 text-white;
 	}
+
 	.viewer-main {
 		@apply relative flex flex-1 flex-col items-center justify-between;
 	}
@@ -339,12 +387,15 @@
 	.audio-meter-label {
 		@apply rotate-180 text-white;
 	}
+
 	.audio-meter-content.safe {
 		@apply bg-blue-500;
 	}
+
 	.audio-meter-content.warning {
 		@apply bg-orange-500;
 	}
+
 	.audio-meter-content.oopsie {
 		@apply bg-red-500;
 	}
