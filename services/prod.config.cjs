@@ -48,7 +48,7 @@ module.exports = {
 		{
 			name: 'internal:renew-cookies',
 			script: 'bun',
-			args: '--bun ./cron/renewCookies.ts',
+			args: '--bun ./instance/workers/renewCookies.ts',
 			watch: false,
 			env: {
 				NODE_ENV: 'production'
@@ -57,7 +57,7 @@ module.exports = {
 		{
 			name: 'internal:recording-cleaner',
 			script: 'bun',
-			args: '--bun ./cron/recordingCleaner.ts',
+			args: '--bun ./recording/workers/cleaner.ts',
 			watch: false,
 			env: {
 				NODE_ENV: 'production'
@@ -66,7 +66,7 @@ module.exports = {
 		{
 			name: 'internal:instance-cleaner',
 			script: 'bun',
-			args: '--bun ./cron/instanceCleaner.ts',
+			args: '--bun ./instance/workers/cleaner.ts',
 			watch: false,
 			env: {
 				NODE_ENV: 'production'
@@ -75,7 +75,7 @@ module.exports = {
 		{
 			name: 'internal:recording-watcher',
 			script: 'bun',
-			args: '--bun ./cron/recordingWatcher.ts',
+			args: '--bun ./recording/workers/watcher.ts',
 			watch: false,
 			env: {
 				NODE_ENV: 'production'

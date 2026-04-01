@@ -5,7 +5,7 @@ import {
 import { getRecordingDiskStatus } from '$services/recording/stats';
 
 async function execute(): Promise<void> {
-	console.log('Recording Watcher started.');
+	console.log('[Recording Worker][watcher] Recording Watcher started.');
 	while (true) {
 		const diskStatus = await getRecordingDiskStatus();
 		const instances = await listStreamInstance();

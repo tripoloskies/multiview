@@ -146,17 +146,17 @@ async function execute(): Promise<void> {
 			await tempFile.write(netscapeNewCookies);
 
 			console.log(
-				'[cron][renewCookies] Renewing cookies completed. See you in another time.'
+				'[Instance Worker][renewCookies] Renewing cookies completed. See you in another time.'
 			);
 			await Bun.sleep(1000 * 60 * 45);
 			console.log('Renewed once again. ');
 		} catch (error) {
 			console.error(error);
 			console.warn(
-				`[cron][renewCookies] Internal Error detected. Please check file "RootDir/config/cookies.txt". If the cookie file is broken or not valid, renew manually`
+				`[Instance Worker][renewCookies] Internal Error detected. Please check file "RootDir/config/cookies.txt". If the cookie file is broken or not valid, renew manually`
 			);
 
-			console.warn('[cron][renewCookies] Restarting in 60s');
+			console.warn('[Instance Worker][renewCookies] Restarting in 60s');
 			await Bun.sleep(1000 * 60);
 		}
 	}
