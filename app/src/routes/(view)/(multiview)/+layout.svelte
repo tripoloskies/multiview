@@ -1,22 +1,37 @@
 <script lang="ts">
 	import { selectToAction, viewState } from '$lib/stores/multiview.svelte';
-	import { removePersistCommand } from '$lib/api/websocket.svelte';
-	import Viewer from '$lib/components/Viewer.svelte';
+	import Viewer, {
+		type ViewerIndicatorStatus
+	} from '$lib/components/Viewer.svelte';
 	import Multiview from '$lib/layouts/Multiview.svelte';
 	import { config } from '$lib/stores/config.svelte';
-	import { info, infoStart } from '$lib/stores/info.svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { info } from '$lib/stores/info.svelte';
 	import Button from '$lib/components/Button.svelte';
 
 	let { children } = $props();
-	let transactionId: string = $state('');
 
-	onMount(async () => {
-		transactionId = infoStart();
-	});
+	let indicatorStatus: ViewerIndicatorStatus = $state('ok');
+	let indicatorStatusText: string = $state('');
 
-	onDestroy(async () => {
-		removePersistCommand(transactionId);
+	$effect(() => {
+		switch (info.diskStatus) {
+			case 'ok':
+				indicatorStatus = 'ok';
+				indicatorStatusText = '';
+				break;
+			case 'low_space':
+				indicatorStatus = 'warning';
+				indicatorStatusText = 'Disk Low Space';
+				break;
+			case 'full':
+				indicatorStatus = 'danger';
+				indicatorStatusText = 'Disk Full';
+				break;
+			case 'critical_low_space':
+				indicatorStatus = 'danger';
+				indicatorStatusText = 'Disk Critically Low';
+				break;
+		}
 	});
 </script>
 
@@ -32,11 +47,13 @@
 					</div>
 				{/if}
 				<Viewer
-					path={instance?.name}
+					path={instance.name}
 					muted={true}
-					online={instance?.online}
+					online={instance.online}
 					visible={config.showVideoMultiView}
 					status={instance.statusText}
+					{indicatorStatus}
+					{indicatorStatusText}
 				></Viewer>
 			</div>
 		{/each}

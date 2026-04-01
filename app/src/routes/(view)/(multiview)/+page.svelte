@@ -36,6 +36,7 @@
 	{/if}
 
 	{#snippet footer()}
+		<span><b>Disk Space:</b> {info.diskSpace}</span>
 		<span><b>Active:</b> {info.instances.length}</span>
 		<span><b>{info.serverTime}</b></span>
 		<div class="stats-buttons">
