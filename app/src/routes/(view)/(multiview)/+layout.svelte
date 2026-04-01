@@ -21,7 +21,7 @@
 				break;
 			case 'low_space':
 				indicatorStatus = 'warning';
-				indicatorStatusText = 'Disk Low Space';
+				indicatorStatusText = 'Low Disk Space';
 				break;
 			case 'full':
 				indicatorStatus = 'danger';
