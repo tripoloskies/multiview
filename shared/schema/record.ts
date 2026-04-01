@@ -57,3 +57,14 @@ export const recordListsPathSchema = z.object({
 });
 
 export type recordListsPathSchema = z.infer<typeof recordListsPathSchema>;
+
+export const recordGetDiskStatus = z.enum([
+	'ok',
+	'low_space',
+	'critical_low_space',
+	'insufficient_min_size',
+	'full',
+	'error'
+]);
+
+export type recordGetDiskStatus = z.infer<typeof recordGetDiskStatus>;

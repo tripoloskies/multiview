@@ -11,6 +11,7 @@ import {
 	recordListsPathSchema
 } from '@shared/schema/record';
 import { isInstanceOnline } from '@shared/utils/status';
+import { getRecordingDiskStatus } from './stats';
 
 const _server = Bun.serve({
 	port: 3002,
@@ -273,6 +274,22 @@ const _server = Bun.serve({
 						success: false,
 						message: 'Internal Server Error.'
 					});
+				}
+			}
+		},
+		'/get/stats/disk': {
+			GET: async () => {
+				const result = await getRecordingDiskStatus();
+				switch (result) {
+					case 'ok':
+					case 'low_space':
+						return new Response('0');
+					case 'critical_low_space':
+						return new Response('1');
+					case 'full':
+						return new Response('2');
+					default:
+						return new Response('-1`');
 				}
 			}
 		},

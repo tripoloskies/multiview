@@ -102,6 +102,12 @@ module.exports = {
 			script: 'bun',
 			args: '--bun ./cron/instanceCleaner.ts',
 			watch: false
+		},
+		{
+			name: 'internal:recording-watcher',
+			script: 'bun',
+			args: '--bun ./cron/recordingWatcher.ts',
+			watch: false
 		}
 	]
 };

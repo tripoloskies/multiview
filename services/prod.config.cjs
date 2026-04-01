@@ -71,6 +71,15 @@ module.exports = {
 			env: {
 				NODE_ENV: 'production'
 			}
+		},
+		{
+			name: 'internal:recording-watcher',
+			script: 'bun',
+			args: '--bun ./cron/recordingWatcher.ts',
+			watch: false,
+			env: {
+				NODE_ENV: 'production'
+			}
 		}
 	]
 };

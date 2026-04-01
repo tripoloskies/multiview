@@ -6,6 +6,7 @@ WORK_DIR=$(pwd)
 # Network/Hostname Variables
 HOST="localhost"
 USE_COOKIES="1"
+DISK_SPACE_WARN_FLAG="0"
 
 # Params
 SOURCE_URL="$1"
@@ -95,6 +96,9 @@ getrecordId() {
     curl -s -X POST http://$HOST:3002/publish -F "path=$STREAM_PATH" 2>&1
 }
 
+diskStatus() {
+    curl -s -X GET http://$HOST:3002/get/stats/disk 2>&1
+}
 
 checkStreamIfBroken() {
     curl -s -X POST http://$HOST:3002/verify -F "recordId=$RECORD_ID" 2>&1
@@ -382,6 +386,40 @@ othersCheckStatus() {
 
 main() {
     while true; do
+        local DISK_STATUS=$(diskStatus)
+        if [[ "$DISK_STATUS" == "0" ]]; then
+            if [[ "$DISK_SPACE_WARN_FLAG" == "1" ]]; then
+                DISK_SPACE_WARN_FLAG="0"
+            fi
+        elif [[ "$DISK_STATUS" == "1" ]]; then
+            if [[ "$DISK_SPACE_WARN_FLAG" == "1" ]]; then
+                inform_update "Recording Disk Space Critically Low!"
+                echo "Recording Disk space critically low! Closing the stream..."
+                exit 1
+            else
+                DISK_SPACE_WARN_FLAG="1"
+                inform_update "Recording Disk Space Critically Low!"
+                echo "Recording disk space critically low! Retrying for 30 seconds. Free disk space to resume recording."
+                sleep 30
+                continue
+            fi
+        elif [[ "$DISK_STATUS" == "2" ]]; then
+            if [[ "$DISK_SPACE_WARN_FLAG" == "1" ]]; then
+                inform_update "Recording Disk Full!"
+                echo "Recording Disk Full! Closing the stream..."
+                exit 1
+            else
+                DISK_SPACE_WARN_FLAG="1"
+                inform_update "Recording Disk Full!"
+                echo "Recording disk full! Retrying for 30 seconds. Free disk space to resume recording."
+                sleep 30
+                continue
+            fi
+        else
+            echo "Bad Recording Path or Disk! Closing the stream..."
+            exit 1
+        fi
+
         inform_update "Checking"
         echo "Checking status..."
 
