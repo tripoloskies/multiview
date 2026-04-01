@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { info, infoStart, talkStart } from '$lib/stores/info.svelte';
-	import { removePersistCommand, start } from '$lib/api/websocket.svelte';
+	import { end, removePersistCommand, start } from '$lib/api/websocket.svelte';
 
 	let { data, children } = $props();
 	let talkTransactionId: string = $state('');
@@ -14,8 +14,7 @@
 	});
 
 	onDestroy(() => {
-		removePersistCommand(talkTransactionId);
-		removePersistCommand(realtimeTransactionId);
+		end();
 	});
 </script>
 
