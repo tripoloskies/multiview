@@ -1,20 +1,36 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import Hls from 'hls.js';
-	import { onMount } from 'svelte';
-	let { data } = $props();
 
+	let { data } = $props();
 	let player: HTMLVideoElement | undefined = $state();
-	let hls = new Hls();
+	let hls: Hls = $state(new Hls());
 
 	onMount(() => {
+		switch (data.mediaType) {
+			case 'hls':
+				playHls();
+				break;
+		}
+	});
+
+	async function playHls() {
 		if (!player || !Hls.isSupported()) {
 			return;
 		}
 		hls.attachMedia(player);
 		hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+			if (!hls) {
+				return;
+			}
 			hls.loadSource(data.mediaUrl);
 		});
+	}
+
+	onDestroy(() => {
+		hls.detachMedia();
+		hls.destroy();
 	});
 </script>
 

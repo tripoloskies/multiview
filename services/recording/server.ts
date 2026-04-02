@@ -1,6 +1,6 @@
 import { Glob } from 'bun';
 import { dirname } from 'node:path';
-import { SEGMENT_REGEX } from '@shared/utils/browser';
+import { SEGMENT_TS_REGEX } from '@shared/utils/browser';
 
 const _server = Bun.serve({
 	port: 3003,
@@ -23,7 +23,7 @@ const _server = Bun.serve({
 					break;
 				}
 
-				if (SEGMENT_REGEX.test(data?.filename || '')) {
+				if (SEGMENT_TS_REGEX.test(data?.filename || '')) {
 					fp = Bun.file(`${path}/segments/${data.filename}`);
 					responseHeaders.set('Content-Type', 'video/m2ts');
 				} else if (data.filename === 'index.m3u8') {

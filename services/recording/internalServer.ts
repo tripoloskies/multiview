@@ -8,10 +8,12 @@ import {
 	recordGetSchema,
 	recordGetPathSchema,
 	recordListsSchema,
-	recordListsPathSchema
+	recordListsPathSchema,
+	recordManifestType
 } from '@shared/schema/record';
 import { isInstanceOnline } from '@shared/utils/status';
 import { getRecordingDiskStatus } from './stats';
+import { file } from 'bun';
 
 const _server = Bun.serve({
 	port: 3002,
@@ -317,35 +319,43 @@ const _server = Bun.serve({
 							success: false,
 							message: 'Record not found'
 						});
-					} else if (!record?.sourceMetadataId) {
-						console.warn(
-							`[Recordings Internal][/get/video/:id]: Record id "${newData.id}" contains no metadata. Continue.`
+					}
+
+					const recordSourceMetadata = record.sourceMetadataId
+						? await prisma.recordSourceMetadata.findFirst({
+								where: {
+									recordId: record.sourceMetadataId
+								}
+							})
+						: null;
+
+					const fullManifestPath: string = `${Bun.env.RECORD_PATH}/${record.manifestPath}`;
+
+					let manifestFile: string;
+					let manifestType: recordManifestType;
+
+					if (await file(`${fullManifestPath}/index.m3u8`).exists()) {
+						manifestFile = `/api/recordings/fetch/${newData.id}/index.m3u8`;
+						manifestType = 'hls';
+					} else {
+						console.error(
+							`[Recordings Internal][/get/video/:id]: Missing manifest file from Record id "${newData.id}".`
 						);
-						return JSONResponse(recordGetSchema, {
-							success: true,
-							message: 'OK',
-							data: {
-								info: record,
-								metadata: null
-							}
+						return JSONResponse(null, {
+							success: false,
+							message: 'Record Manifest file not found.'
 						});
 					}
 
-					const recordSourceMetadata =
-						await prisma.recordSourceMetadata.findFirst({
-							where: {
-								recordId: record.sourceMetadataId
-							}
-						});
-
-					console.log(
-						`[Recordings Internal][/get/video/:id]: Record id "${newData.id}" contains metadata. Continue.`
-					);
 					return JSONResponse(recordGetSchema, {
 						success: true,
 						message: 'OK',
 						data: {
-							info: record,
+							info: {
+								...record,
+								manifestUrl: manifestFile,
+								manifestType: manifestType
+							},
 							metadata: recordSourceMetadata
 						}
 					});
@@ -405,7 +415,7 @@ const _server = Bun.serve({
 				}
 
 				const path = `${Bun.env.RECORD_PATH}/${record.manifestPath}`;
-				const videoPath = `${path}/index.m3u8`;
+				const videoPath = `${path}/index.mpd`;
 				const imagePath = `${path}/thumbnail.jpg`;
 
 				if (

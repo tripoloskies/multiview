@@ -1,11 +1,17 @@
 import z from 'zod';
 
+export const recordManifestType = z.enum(['hls']);
+
+export type recordManifestType = z.infer<typeof recordManifestType>;
+
 export const recordGetSchema = z.object({
 	info: z.object({
 		id: z.string().min(1),
 		pathName: z.string().min(1),
 		sourceMetadataId: z.string().nullable(),
 		manifestPath: z.string().min(1),
+		manifestUrl: z.string().min(1),
+		manifestType: recordManifestType,
 		datePublished: z.date()
 	}),
 	metadata: z
