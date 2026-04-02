@@ -13,13 +13,13 @@
 		"format": "prettier --write ."
 	},
 	"devDependencies": {
-		"@shared/types": "workspace:*",
-		"@shared/utils": "workspace:*",
-		"@shared/schema": "workspace:*",
-		"@shared/config": "workspace:*",
 		"@eslint/compat": "^2.0.2",
 		"@eslint/js": "^10.0.1",
 		"@fontsource/ibm-plex-sans": "^5.2.8",
+		"@shared/config": "workspace:*",
+		"@shared/schema": "workspace:*",
+		"@shared/types": "workspace:*",
+		"@shared/utils": "workspace:*",
 		"@sveltejs/adapter-auto": "^7.0.0",
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
