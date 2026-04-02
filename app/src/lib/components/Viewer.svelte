@@ -72,8 +72,8 @@
 		} else {
 			instance.stopLoad();
 			oldSource = '';
-			instance.loadSource('');
 		}
+
 		if (oldVisible !== visible) {
 			oldVisible = visible;
 
