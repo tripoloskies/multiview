@@ -17,6 +17,7 @@ YTDLP_PATH="$5"
 STREAMLINK_PATH="$6"
 STREAMING_HOST="$7"
 LOG_DL_PROGRESS="$8"
+LOW_LATENCY_STREAM="$9"
 
 # Background PID's to close in case of nasty moments while this script was running.
 PUBLISHER_PID=""
@@ -34,6 +35,8 @@ echo "JS Runtime Path: $RUNTIME_PATH"
 echo "yt-dlp Path: $YTDLP_PATH"
 echo "streamlink Path: $STREAMLINK_PATH"
 echo "Mediamtx Host: $STREAMING_HOST"
+echo "Download Progress Logging: $LOG_DL_PROGRESS"
+echo "Low Latency Stream: $LOW_LATENCY_STREAM"
 echo "------------------"
 
 
@@ -84,6 +87,13 @@ elif [[ "$LOG_DL_PROGRESS" != "1" && "$LOG_DL_PROGRESS" != "0" ]]; then
     exit 1
 fi
 
+if [[ -z "$LOW_LATENCY_STREAM" ]]; then
+    LOW_LATENCY_STREAM="0"
+elif [[ "$LOW_LATENCY_STREAM" != "1" && "$LOW_LATENCY_STREAM" != "0" ]]; then
+    echo "Invalid low latency stream value. Value must be 1 (enabled) or 0 (disabled)"
+    exit 1
+fi
+
 getytdlpCookieArgs() {
     if [[ "$USE_COOKIES" == "1" ]]; then
         echo "--js-runtimes bun:$RUNTIME_PATH --cookies "$WORK_DIR/config/cookies.txt""
@@ -127,27 +137,6 @@ parseStreamMetadata() {
     fi
 }
 
-
-getStreamTags() {
-    local URL=$1
-    local CODEC_LISTS
-    CODEC_LISTS=$($STREAMLINK_PATH --loglevel none --stdout "$URL" best 2> /dev/null | ffprobe -loglevel quiet -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 -analyzeduration 2k -probesize 2k -i -)
-
-    if [[ "$CODEC_LISTS" == *"h264"* ]]; then
-        echo "avc1"
-    elif [[ "$CODEC_LISTS" == *"h265"* ]]; then
-        echo "hvc1"
-    else
-        return 1
-    fi
-
-    if [[ "$CODEC_LISTS" == *"aac"* || "$CODEC_LISTS" == *"mp3"* || "$CODEC_LISTS" == *"opus"* || "$CODEC_LISTS" == *"ac3"* ]]; then
-        return 0
-    else
-        return 2
-    fi
-}
-
 publish() {
     local URL=$1
     local BUFFER_SIZE=$2
@@ -188,7 +177,7 @@ publish() {
     mkdir -p "$A_DIR"
     mkdir -p "$A_DIR/segments"
 
-    if [[ $LOG_DL_PROGRESS == "1" ]]; then
+    if [[ "$LOG_DL_PROGRESS" == "1" ]]; then
         echo "Downloading progress logging enabled."
         local LOG_ARGS="--logfile "$A_DIR/logs.txt" --loglevel all"
     else
@@ -196,33 +185,33 @@ publish() {
         local LOG_ARGS=""
     fi
 
-    $STREAMLINK_PATH --loglevel none --http-cookies-file "$WORK_DIR/config/cookies.txt" $LOG_ARGS --stream-segment-threads 2 $ARGS --ringbuffer-size 64M --stdout "$URL" best | \
-    mbuffer -q -m "$BUFFER_SIZE" -P 60 > "$TMPDIR/filter1" &
-    
-    MBUFFER_PID=$!
-
-    TAG=$(getStreamTags "$URL")
-    local CODEC_STATUS=$?
-    
-    if [[ $CODEC_STATUS == 0 ]]; then
-        local FFMPEG_MAP="-map 0:v -map 0:a"
-    elif [[ $CODEC_STATUS == 1 ]]; then
-        inform_status "No Video"
-        echo "Error: No Video. Exiting..."
-        exit 1
-    elif [[ $CODEC_STATUS == 2 ]]; then
-        echo "Warning: Unknown or no Audio Codec. Disabling audio..."
-        local FFMPEG_MAP="-map 0:v"
+    if [[ "$LOW_LATENCY_STREAM" == "1" ]]; then
+        echo "Low Latency Streaming is on."
+        local BUFFER_CMD=(cat)
+        local FFLAGS="-fflags +nobuffer+flush_packets+genpts"
+        local FLAGS="-flags +low_delay+global_header"
+        local SEGMENT_THREADS=5
+        local RINGBUFFER_SIZE="8M"
     else
-       echo "Unknown Error: Exiting..."
+        echo "Low Latency Streaming is off"
+        local BUFFER_CMD=(mbuffer -q -m "$BUFFER_SIZE" -P 60)
+        local FFLAGS="-fflags +genpts"
+        local FLAGS="-flags +global_header"
+        local SEGMENT_THREADS=2
+        local RINGBUFFER_SIZE="64M"
     fi
 
+    $STREAMLINK_PATH --loglevel none \
+    --http-cookies-file "$WORK_DIR/config/cookies.txt" $LOG_ARGS \
+    --stream-segment-threads "$SEGMENT_THREADS" $ARGS --ringbuffer-size "$RINGBUFFER_SIZE" \
+    --stdout "$URL" best | \
+    "${BUFFER_CMD[@]}" | \
     ffmpeg -hide_banner -loglevel quiet -stats -stats_period 5 \
-    -thread_queue_size 8192 -fflags +genpts -re \
-    -i "$TMPDIR/filter1" \
+    -thread_queue_size 2048 $FFLAGS -tag 0 -re \
+    -i - \
     -c:v copy \
-    -flags +global_header \
-    $FFMPEG_MAP \
+    $FLAGS \
+    -map 0:v -map 0:a \
     -af "aresample=async=1:first_pts=0" \
     -c:a aac \
     -b:a 192k \
@@ -233,10 +222,9 @@ publish() {
     -aac_is false \
     -aac_pns false \
     -aac_tns false \
-    -tag:v "$TAG" \
     -sn -dn \
     -avoid_negative_ts make_zero \
-    -muxdelay 0.5 \
+    -muxdelay 0.1 \
     -f tee " \
         [f=rtsp:onfail=abort:rtpflags=latm]rtsp://$STREAMING_HOST:8554/$STREAM_PATH| \
         [f=hls:onfail=abort:hls_time=5:hls_segment_filename=$A_DIR/segments/segment%d.ts:hls_playlist_type=event]$A_DIR/index.m3u8" &
@@ -245,7 +233,7 @@ publish() {
     
     while true; do
         echo "Thumbnail......"
-        if ! kill -0 $MBUFFER_PID 2>/dev/null && ! kill -0 $PUBLISHER_PID 2>/dev/null ; then
+        if ! kill -0 $PUBLISHER_PID 2>/dev/null ; then
             echo "The publisher was dead. Skipping..."
             break
         fi
@@ -440,9 +428,15 @@ main() {
                 inform_update "Get Manifest URL using proxy."
                 echo "Get Manifest URL using proxy."
                 
+                if [[ "$LOW_LATENCY_STREAM" == "1" ]]; then
+                    local LLS_LIVE_EDGE="1"
+                else
+                    local LLS_LIVE_EDGE="10"
+                fi
+
                 local MANIFEST=$(twitchGetStreamManifest)
                 local BUFFER="12M"
-                local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
+                local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge $LLS_LIVE_EDGE --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
                 local ADD_METADATA="yes"
 
             # Youtube
@@ -460,9 +454,15 @@ main() {
                 inform_update "Get Manifest URL"
                 echo "Get Manifest URL."
                 
+                if [[ "$LOW_LATENCY_STREAM" == "1" ]]; then
+                    local LLS_LIVE_EDGE="1"
+                else
+                    local LLS_LIVE_EDGE="10"
+                fi
+
                 local MANIFEST=$(ytGetStreamManifest)
                 local BUFFER="12M"
-                local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 10 --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
+                local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge $LLS_LIVE_EDGE --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
                 local ADD_METADATA="yes"
 
             # Others
@@ -478,9 +478,15 @@ main() {
                     break
                 fi 
 
+                if [[ "$LOW_LATENCY_STREAM" == "1" ]]; then
+                    local LLS_LIVE_EDGE="2"
+                else
+                    local LLS_LIVE_EDGE="5"
+                fi
+                
                 local MANIFEST="$SOURCE_URL"
                 local BUFFER="12M"
-                local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge 5 --stream-segment-timeout 1 --stream-segment-attempts 50"
+                local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge $LLS_LIVE_EDGE --stream-segment-timeout 1 --stream-segment-attempts 50"
                 local ADD_METADATA="no"
             fi
 

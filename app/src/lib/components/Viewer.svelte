@@ -32,8 +32,8 @@
 
 	let instance: Hls = $state(
 		new Hls({
-			startFragPrefetch: true,
-			maxLiveSyncPlaybackRate: 1.5
+			lowLatencyMode: true,
+			maxLiveSyncPlaybackRate: 5
 		})
 	);
 

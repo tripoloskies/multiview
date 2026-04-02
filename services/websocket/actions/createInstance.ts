@@ -12,7 +12,8 @@ export const actions: wsActions = async (data) => {
 
 	const schema = z.object({
 		url: z.string().min(1),
-		path: z.string().min(1).toLowerCase()
+		path: z.string().min(1).toLowerCase(),
+		lowLatency: z.boolean()
 	});
 
 	try {
@@ -33,7 +34,9 @@ export const actions: wsActions = async (data) => {
 			};
 		}
 
-		if (!(await addStreamInstance(newData.url, newData.path))) {
+		if (
+			!(await addStreamInstance(newData.url, newData.path, newData.lowLatency))
+		) {
 			return {
 				success: false,
 				message: `Adding stream "${newData.path}" is denied.`
