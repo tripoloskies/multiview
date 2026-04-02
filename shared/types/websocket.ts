@@ -7,3 +7,8 @@ export type apiResponse = {
 export type wsActions = (
 	data?: Record<string, unknown>
 ) => Promise<apiResponse>;
+
+export type wsData = {
+	sessionId: string;
+	cacheKey: string;
+};

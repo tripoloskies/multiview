@@ -11,6 +11,8 @@ import {
 	wsMessageRequestSchema,
 	wsMessageResponseSchema
 } from '@shared/schema/websocket';
+import type { wsData } from '@shared/types/websocket';
+import { redis } from 'bun';
 
 const lists = [
 	{ cmdName: 'talk', fn: talk },
@@ -27,8 +29,8 @@ const lists = [
 const PERSIST_RATE_LIMIT: number = 10;
 const PERSIST_REFRESH_DURATION: number = 500;
 
-export const sockets: Bun.WebSocketHandler<undefined> = {
-	open(ws) {
+export const sockets: Bun.WebSocketHandler<wsData> = {
+	async open(ws) {
 		console.log(`[Websocket]: Connection added.`);
 		ws.sendText(
 			JSON.stringify({
@@ -36,12 +38,20 @@ export const sockets: Bun.WebSocketHandler<undefined> = {
 				message: 'Welcome to the portal. '
 			})
 		);
+		if (await redis.exists(ws.data.cacheKey)) {
+			await redis.del(ws.data.cacheKey);
+		}
+	},
+
+	async close(ws) {
+		if (await redis.exists(ws.data.cacheKey)) {
+			await redis.del(ws.data.cacheKey);
+		}
 	},
 
 	// this is called when a message is received
 	async message(ws, message) {
 		let transactionId: string = '';
-
 		const send = (data: wsMessageResponseSchema) => {
 			const response = wsMessageResponseSchema.safeParse(data);
 
@@ -59,7 +69,7 @@ export const sockets: Bun.WebSocketHandler<undefined> = {
 			ws.sendText(JSON.stringify(response.data));
 		};
 
-		// Prevents other message from sending junk to here.
+		// Prevents other message from sending junk here.
 		if (typeof message !== 'string') {
 			console.error(`[Websocket][${transactionId}]: Invalid request format.`);
 			send({
@@ -104,10 +114,22 @@ export const sockets: Bun.WebSocketHandler<undefined> = {
 			}
 
 			if (newData.persist) {
+				if (await redis.hexists(ws.data.cacheKey, transactionId)) {
+					console.log(
+						`[Websocket][${transactionId}]: Duplicate Persistent request. Transaction ID: ${transactionId}`
+					);
+					break;
+				}
 				console.log(
 					`[Websocket][${transactionId}]: Persistent response activated. Command name: ${list.cmdName}, limit: ${PERSIST_RATE_LIMIT}`
 				);
+
+				await redis.hset(ws.data.cacheKey, transactionId, list.cmdName);
+
 				for (let x = 1; x <= PERSIST_RATE_LIMIT; x++) {
+					if (x == PERSIST_RATE_LIMIT) {
+						await redis.hdel(ws.data.cacheKey, transactionId);
+					}
 					const _data = {
 						...(await list.fn(newData.data)),
 						finished: x == PERSIST_RATE_LIMIT
