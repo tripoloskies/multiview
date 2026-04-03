@@ -53,6 +53,7 @@
 	let playerHeight: number = $state(0);
 	let videoHeight: number = $state(0);
 	let videoWidth: number = $state(0);
+
 	onMount(() => {
 		if (!player) {
 			return;
@@ -125,15 +126,13 @@
 		marginAction.style.paddingTop = `${realHeight * 0.015}px`;
 		marginAction.style.paddingBottom = `${realHeight * 0.015}px`;
 	});
-	async function loadMeter() {
+	async function loadAudioMeter() {
 		if (!player) {
 			return;
 		}
 
-		if (audioContext) {
-			if (audioContext.state === 'closed') {
-				await audioContext.resume();
-			}
+		if (audioContext && audioContext.state === 'closed') {
+			await audioContext.resume();
 			return;
 		}
 
@@ -155,25 +154,30 @@
 			// Calculate average volume (RMS-like)
 			let sum = 0;
 
-			for (let i = 0; i < bufferLength; i++) {
-				sum += dataArray[i];
+			for (let index = 0; index < bufferLength; index++) {
+				sum += dataArray[index];
 			}
-			// 1. Get the average (0 - 255)
+			// 2. Get the average (0 - 255)
 			const average = sum / bufferLength;
 
-			// 2. Normalize to a scale of 0 to 1
+			// 3. Normalize to a scale of 0 to 1
 			const normalized = average / 255;
 
-			// 3. Calculate dB
+			// 4. Calculate rounded dB
 			// We use -100 as a "floor" so we don't get -Infinity
-			const roundedDB = normalized > 0 ? 20 * Math.log10(normalized) : -100;
-			// 3. Calculate dB
-			// We use -100 as a "floor" so we don't get -Infinity
-			const labelDB = normalized > 0 ? 20 * Math.log10(normalized) : -100;
+			// Then round off the value.
+			const roundedDB = Math.round(
+				normalized > 0 ? 20 * Math.log10(normalized) : -100
+			);
 
-			meterLabel = Math.round(labelDB);
+			// 5. Use roundedDB as a label for audio meter.
+			meterLabel = roundedDB;
+
+			// 6. Convert DB to percentage for audio meter height.
+			// (<=-40 dB is 0% to 0 dB is 100%)
 			meterPercent = (1 - Math.abs(roundedDB) / 40) * 100;
 
+			// 7. Update audio meter indicator based on dB threshold.
 			if (meterLabel >= -6) {
 				meterColorIndicator = 'oopsie';
 			} else if (meterLabel >= -12 && meterLabel <= -7) {
@@ -181,6 +185,12 @@
 			} else {
 				meterColorIndicator = 'safe';
 			}
+
+			// 8. Schedule next frame with more or less than 30ms delay.
+			// We don't want an audio meter running at a gazillion FPS.
+			// If you want uncapped FPS, just delete the timeout and uncommit this code below:
+
+			// requestAnimationFrame(update);
 
 			setTimeout(() => {
 				requestAnimationFrame(update);
@@ -206,6 +216,7 @@
 
 		instance.destroy();
 	}
+
 	async function renderView() {
 		if (!player) {
 			return;
@@ -233,16 +244,15 @@
 				errorType = data.type;
 			}
 		});
+
 		instance.on(Hls.Events.MANIFEST_LOADED, () => {
 			errorType = null;
 			isReady = true;
 		});
 
-		if (instance.media) {
-			return;
+		if (!instance.media) {
+			instance.attachMedia(player);
 		}
-
-		instance.attachMedia(player);
 	}
 </script>
 
@@ -258,19 +268,20 @@
 			);
 			return;
 		}
+
 		if (!muted && isReady && player.muted) {
 			player.muted = false;
-			loadMeter();
+			loadAudioMeter();
 		}
 	}}
 >
 	<div class="viewer-main">
 		<div class="viewer-player-container">
 			<div class="viewer-player-notice">
-				{#if errorType}
-					<b>{status}</b>
-				{:else}
-					<b>Online</b>
+				<b>{status}</b>
+				{#if online && errorType}
+					<br />
+					<b>{errorType}</b>
 				{/if}
 			</div>
 			{#if config.showSafeArea}
@@ -288,11 +299,10 @@
 				bind:videoHeight
 				bind:videoWidth
 				bind:clientWidth={playerWidth}
-				class={!visible ? 'hidden' : ''}
+				class={!visible || !online ? 'hidden' : ''}
 				bind:this={player}
 				autoplay
 			>
-				<b>Dog</b>
 			</video>
 		</div>
 		<span class={`player-info ${indicatorStatus}`}>
