@@ -1,24 +1,27 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
 	import { resolve } from '$app/paths';
-	import { onMount } from 'svelte';
-	import { sleep } from '@shared/utils/timer';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { invalidateAll, onNavigate } from '$app/navigation';
 	import PlatformTag from '$lib/components/PlatformTag.svelte';
 
 	let { data, children } = $props();
 
 	let isSidebarOpen: boolean = $state(false);
-
+	let invalidationIntervalId: NodeJS.Timeout | undefined = $state();
 	onNavigate(() => {
 		isSidebarOpen = false;
 	});
 
-	onMount(async () => {
-		while (true) {
-			await sleep(data.invalidateDataDuration);
+	onMount(() => {
+		invalidationIntervalId = setInterval(async () => {
+			await tick();
 			await invalidateAll();
-		}
+		}, data.invalidateDataDuration);
+	});
+
+	onDestroy(() => {
+		clearInterval(invalidationIntervalId);
 	});
 </script>
 
