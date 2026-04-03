@@ -30,7 +30,7 @@
 	let source: MediaElementAudioSourceNode;
 	let audioContext: AudioContext;
 
-	let instance: Hls = $state(
+	let hls: Hls = $state(
 		new Hls({
 			lowLatencyMode: true,
 			maxLiveSyncPlaybackRate: 5
@@ -42,8 +42,8 @@
 	let marginAction: HTMLDivElement | undefined = $state();
 
 	let errorType: ErrorTypes | null = $state(null);
-	let oldVisible: boolean = $state(false);
-	let oldSource: string = $state('');
+	let isVisible: boolean = $state(false);
+	let manifestUrl: string = $state('');
 	let isReady: boolean = $state(false);
 	let meterPercent: number = $state(0);
 	let meterLabel: number = $state(-40);
@@ -63,25 +63,29 @@
 	});
 
 	$effect(() => {
-		if (online) {
-			const newSource: string = `/api/live/${path}/index.m3u8`;
-			if (oldSource !== newSource) {
-				oldSource = newSource;
-				instance.loadSource(newSource);
+		if (online && player) {
+			const _manifestUrl: string = `/api/live/${path}/index.m3u8`;
+			if (manifestUrl !== _manifestUrl) {
+				manifestUrl = _manifestUrl;
+				hls.attachMedia(player);
+				hls.loadSource(_manifestUrl);
 				return;
 			}
 		} else {
-			instance.stopLoad();
-			oldSource = '';
+			hls.stopLoad();
+			manifestUrl = '';
+			hls.detachMedia();
 		}
+	});
 
-		if (oldVisible !== visible) {
-			oldVisible = visible;
+	$effect(() => {
+		if (isVisible !== visible) {
+			isVisible = visible;
 
 			if (!online) return;
 
-			if (visible) instance.startLoad();
-			else instance.stopLoad();
+			if (visible) hls.startLoad();
+			else hls.stopLoad();
 		}
 	});
 
@@ -214,7 +218,7 @@
 			await audioContext.close();
 		}
 
-		instance.destroy();
+		hls.destroy();
 	}
 
 	async function renderView() {
@@ -233,26 +237,29 @@
 		}
 
 		player.onplay = () => {
-			if (!player || !instance.liveSyncPosition) {
+			if (!player || !hls.liveSyncPosition) {
 				return;
 			}
-			player.currentTime = instance.liveSyncPosition;
+			player.currentTime = hls.liveSyncPosition;
 		};
 
-		instance.on(Hls.Events.ERROR, (_event, data) => {
+		player.onpause = () => {
+			if (!player || !online) {
+				return;
+			}
+			player.play();
+		};
+
+		hls.on(Hls.Events.ERROR, (_event, data) => {
 			if (data.fatal) {
 				errorType = data.type;
 			}
 		});
 
-		instance.on(Hls.Events.MANIFEST_LOADED, () => {
+		hls.on(Hls.Events.MANIFEST_LOADED, () => {
 			errorType = null;
 			isReady = true;
 		});
-
-		if (!instance.media) {
-			instance.attachMedia(player);
-		}
 	}
 </script>
 
