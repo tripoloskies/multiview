@@ -172,10 +172,7 @@
 											<label for={`lls${index}`}>Low Latency</label>
 											<div>
 												<input
-													onchange={(event) => {
-														streamInput.lowLatency =
-															event.currentTarget.checked;
-													}}
+													bind:checked={streamInput.lowLatency}
 													name={`lls${index}`}
 													type="checkbox"
 													placeholder="Path Name"
