@@ -415,7 +415,7 @@ const _server = Bun.serve({
 				}
 
 				const path = `${Bun.env.RECORD_PATH}/${record.manifestPath}`;
-				const videoPath = `${path}/index.mpd`;
+				const videoPath = `${path}/index.m3u8`;
 				const imagePath = `${path}/thumbnail.jpg`;
 
 				if (
