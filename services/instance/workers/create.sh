@@ -179,10 +179,14 @@ publish() {
 
     if [[ "$LOG_DL_PROGRESS" == "1" ]]; then
         echo "Downloading progress logging enabled."
-        local LOG_ARGS="--logfile "$A_DIR/logs.txt" --loglevel all"
+        local STREAMLINK_LOG_ARGS="--logfile "$A_DIR/streamlink.log" --loglevel all"
+        local FFREPORT_PATH="$A_DIR/ffreport.log"
+        local FFREPORT_LVL="40"
     else
         echo "Downloading progress logging disabled."
-        local LOG_ARGS=""
+        local STREAMLINK_LOG_ARGS=""
+        local FFREPORT_PATH="/dev/null"
+        local FFREPORT_LVL="-8"
     fi
 
     if [[ "$LOW_LATENCY_STREAM" == "1" ]]; then
@@ -194,7 +198,11 @@ publish() {
         local RINGBUFFER_SIZE="8M"
     else
         echo "Low Latency Streaming is off"
-        local BUFFER_CMD=(mbuffer -q -m "$BUFFER_SIZE" -P 60)
+        if [[ "$LOG_DL_PROGRESS" == "1" ]]; then
+            local BUFFER_CMD=(mbuffer -q -l "$A_DIR/mbuffer.log" -m "$BUFFER_SIZE" -P 60)
+        else
+            local BUFFER_CMD=(mbuffer -q -m "$BUFFER_SIZE" -P 60)
+        fi
         local FFLAGS="-fflags +genpts"
         local FLAGS="-flags +global_header"
         local SEGMENT_THREADS=2
@@ -202,11 +210,11 @@ publish() {
     fi
 
     $STREAMLINK_PATH --loglevel none \
-    --http-cookies-file "$WORK_DIR/config/cookies.txt" $LOG_ARGS \
+    --http-cookies-file "$WORK_DIR/config/cookies.txt" $STREAMLINK_LOG_ARGS \
     --stream-segment-threads "$SEGMENT_THREADS" $ARGS --ringbuffer-size "$RINGBUFFER_SIZE" \
     --stdout "$URL" best | \
     "${BUFFER_CMD[@]}" | \
-    ffmpeg -hide_banner -loglevel quiet -stats -stats_period 5 \
+    FFREPORT=file="$FFREPORT_PATH":level="$FFREPORT_LVL" ffmpeg -hide_banner -loglevel quiet -stats -stats_period 5 \
     -thread_queue_size 2048 $FFLAGS -tag 0 -re \
     -i - \
     -c:v copy \
