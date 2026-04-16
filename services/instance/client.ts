@@ -2,6 +2,7 @@ import { $, redis } from 'bun';
 import pm2 from 'pm2';
 import { type instanceSchema } from '@shared/schema/instance';
 import { prisma } from '@shared/database';
+import { PrismaClientKnownRequestError } from '@shared/database/generated/prisma/internal/prismaNamespace';
 
 let isConnected: boolean = false;
 
@@ -485,39 +486,52 @@ export async function updateInstanceStatus(
 	action: string,
 	status: string
 ): Promise<boolean> {
-	switch (action) {
-		case 'Update':
-			await prisma.instance.upsert({
-				where: {
-					pathName: name
-				},
-				update: {
-					status: status
-				},
-				create: {
-					path: {
-						connectOrCreate: {
-							where: {
-								name: name
-							},
-							create: {
-								name: name
-							}
-						}
+	try {
+		switch (action) {
+			case 'Update':
+				await prisma.instance.upsert({
+					where: {
+						pathName: name
 					},
-					status: status
-				}
-			});
-			break;
-		case 'Delete':
-			await prisma.instance.deleteMany({
-				where: {
-					pathName: name
-				}
-			});
-			break;
-		default:
-			return false;
+					update: {
+						status: status
+					},
+					create: {
+						path: {
+							connectOrCreate: {
+								where: {
+									name: name
+								},
+								create: {
+									name: name
+								}
+							}
+						},
+						status: status
+					}
+				});
+				break;
+			case 'Delete':
+				await prisma.instance.deleteMany({
+					where: {
+						pathName: name
+					}
+				});
+				break;
+			default:
+				return false;
+		}
+	} catch (error) {
+		if (error instanceof PrismaClientKnownRequestError) {
+			console.error(
+				`[updateInstanceStatus:error] The operation cannot proceed at this time. [DBError-${error.code}] (name=${name}, action=${action}, status=${status}).`
+			);
+		} else {
+			console.error(
+				`[updateInstanceStatus:error] Internal Server Error. (name=${name}, action=${action}, status=${status}).`
+			);
+		}
+		return false;
 	}
 	await invalidateInstanceCache(name);
 	return true;
