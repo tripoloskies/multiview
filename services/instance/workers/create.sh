@@ -286,7 +286,7 @@ close() {
 ytCheckStatus() {
     local STATUS
 
-    STATUS=$($YTDLP_PATH $(getytdlpCookieArgs) --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
+    STATUS=$($YTDLP_PATH $(getytdlpCookieArgs) --extractor-args "youtubepot-bgutilhttp:base_url=http://potoken:4416" --extractor-args "youtube:skip=dash,translated_subs" --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
     if [[ "$STATUS" == "is_live" ]]; then
         inform_update "Live Detected"
         return 0
@@ -319,7 +319,7 @@ ytCheckStatus() {
 }
 
 ytGetStreamManifest() {
-    $YTDLP_PATH $(getytdlpCookieArgs) -f "b" --no-warnings --print "url" "$SOURCE_URL" 1>&1
+    $YTDLP_PATH $(getytdlpCookieArgs) -f "b" --extractor-args "youtubepot-bgutilhttp:base_url=http://potoken:4416" --extractor-args "youtube:skip=dash,translated_subs" --no-warnings --print "url" "$SOURCE_URL" 1>&1
 }
 
 twitchCheckStatus() {

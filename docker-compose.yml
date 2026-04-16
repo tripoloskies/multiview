@@ -2,9 +2,14 @@ services:
   cache:
     hostname: cache
     image: valkey/valkey:9-alpine
+
+  potoken:
+    hostname: potoken
+    image: brainicism/bgutil-ytdlp-pot-provider:latest
+
   nginx:
     hostname: nginx
-    image: nginx:1.29
+    image: nginx:1.30
     ports:
       - '80:80'
     volumes:

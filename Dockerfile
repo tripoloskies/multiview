@@ -40,6 +40,8 @@ RUN apt update && apt install -y --no-install-recommends \
 RUN pipx ensurepath --global
 
 RUN pipx install yt-dlp[default] streamlink --global
+ 
+RUN pipx inject yt-dlp bgutil-ytdlp-pot-provider --global
 
 ENV RECORD_PATH=/recordings
 ENV TURBO_TELEMETRY_DISABLED=1
