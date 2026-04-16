@@ -33,7 +33,8 @@
 	let hls: Hls = $state(
 		new Hls({
 			lowLatencyMode: true,
-			maxLiveSyncPlaybackRate: 5
+			maxLiveSyncPlaybackRate: 5,
+			liveSyncDurationCount: 2
 		})
 	);
 
