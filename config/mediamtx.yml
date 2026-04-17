@@ -20,9 +20,9 @@ sysLogPrefix: mediamtx
 dumpPackets: false
 
 # Timeout of read operations.
-readTimeout: 12s
+readTimeout: 30s
 # Timeout of write operations.
-writeTimeout: 12s
+writeTimeout: 30s
 # Size of the queue of outgoing packets.
 # A higher value allows to increase throughput, a lower value allows to save RAM.
 writeQueueSize: 16384
