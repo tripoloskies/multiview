@@ -9,7 +9,7 @@
 		clearAction,
 		setAction,
 		viewState
-	} from '$lib/stores/multiview.svelte';
+	} from '$lib/actions/multiview.svelte';
 </script>
 
 <svelte:head>

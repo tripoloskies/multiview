@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { selectToAction, viewState } from '$lib/stores/multiview.svelte';
+	import { selectToAction, viewState } from '$lib/actions/multiview.svelte';
 	import Viewer, {
 		type ViewerIndicatorStatus
 	} from '$lib/components/Viewer.svelte';
