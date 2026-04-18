@@ -125,10 +125,6 @@
 		@apply flex aspect-square min-w-12 items-center justify-center text-center;
 	}
 
-	h2 {
-		@apply text-center;
-	}
-
 	.page-selector {
 		@apply flex w-full justify-center space-x-2;
 	}
