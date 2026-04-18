@@ -1,10 +1,80 @@
 import { Glob } from 'bun';
 import { dirname } from 'node:path';
 import { SEGMENT_TS_REGEX } from '@shared/utils/browser';
+import z from 'zod';
+import { prisma } from '@shared/database';
+import { JSONResponse } from '@shared/utils/api';
+import { rm } from 'node:fs/promises';
 
 const _server = Bun.serve({
 	port: 3003,
 	routes: {
+		'/delete/:id': {
+			POST: async (request: Bun.BunRequest) => {
+				const data = { ...request.params };
+				const schema = z.object({
+					id: z.string().min(1)
+				});
+
+				try {
+					const newData = await schema.parse(data);
+
+					const record = await prisma.record.findFirst({
+						where: {
+							id: newData.id
+						}
+					});
+
+					if (!record) {
+						console.error(
+							`[Recordings Internal][/delete/video/:id]: Record id "${newData.id}" not found.`
+						);
+						return JSONResponse(null, {
+							success: false,
+							message: 'Record not found'
+						});
+					}
+
+					const fullManifestPath: string = `${Bun.env.RECORD_PATH}/${record.manifestPath}`;
+
+					await prisma.record.deleteMany({
+						where: {
+							id: {
+								in: [newData.id]
+							}
+						}
+					});
+					await rm(fullManifestPath, {
+						force: true,
+						recursive: true
+					});
+
+					return JSONResponse(null, {
+						success: true,
+						message: `Record ID "${newData.id}" deleted successfully.`
+					});
+				} catch (error) {
+					if (error instanceof z.ZodError) {
+						const items: PropertyKey[] = [];
+						for (const issue of error.issues) {
+							items.push(...issue.path);
+						}
+						console.error(
+							`[Recordings Internal][/delete/video/:id]: Invalid data. Missing fields (${items.join(', ')})`
+						);
+						return JSONResponse(null, {
+							success: false,
+							message: `Please complete the fields. ${items.join(', ')}`
+						});
+					}
+					console.error(error);
+					return JSONResponse(null, {
+						success: false,
+						message: 'Internal Server Error.'
+					});
+				}
+			}
+		},
 		'/fetch/:id/:filename': {
 			GET: async (request: Bun.BunRequest) => {
 				let fp: Bun.BunFile;
