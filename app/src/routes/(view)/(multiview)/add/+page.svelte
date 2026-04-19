@@ -14,6 +14,7 @@
 		url: string;
 		path: string;
 		lowLatency: boolean;
+		log: boolean;
 	};
 
 	let { data } = $props();
@@ -42,7 +43,8 @@
 		streamInputs.push({
 			url: '',
 			path: '',
-			lowLatency: false
+			lowLatency: false,
+			log: false
 		});
 	}
 
@@ -92,18 +94,24 @@
 							let eventUrlFromLastInput: string = '';
 
 							isCreated = true;
-							for (const { path, url, lowLatency } of filteredStreamInputs) {
+							for (const {
+								path,
+								url,
+								lowLatency,
+								log
+							} of filteredStreamInputs) {
 								await tick();
 								customLog = `Adding.... (Path: ${path || `blank`} | URL: ${ellipsisGenerator(url, 20) || 'blank'})`;
 								const response = await sendCommand('createInstance', {
 									url: url,
 									path: path,
-									lowLatency: lowLatency
+									lowLatency: lowLatency,
+									log: log
 								});
 								customLog = response.message;
 
 								if (!response.success) {
-									failedStreamInputs.push({ path, url, lowLatency });
+									failedStreamInputs.push({ path, url, lowLatency, log });
 									isSuccess = false;
 									continue;
 								}
@@ -113,7 +121,7 @@
 									customLog =
 										"No event URL? There's something wrong with the server.";
 									eventUrlFromLastInput = '';
-									failedStreamInputs.push({ path, url, lowLatency });
+									failedStreamInputs.push({ path, url, lowLatency, log });
 									isSuccess = false;
 									continue;
 								}
@@ -176,6 +184,15 @@
 													name={`lls${index}`}
 													type="checkbox"
 													placeholder="Path Name"
+												/>
+											</div>
+											<label for={`log${index}`}>Enable Logging</label>
+											<div>
+												<input
+													bind:checked={streamInput.log}
+													name={`log${index}`}
+													type="checkbox"
+													placeholder="Enable Logging"
 												/>
 											</div>
 										</span>

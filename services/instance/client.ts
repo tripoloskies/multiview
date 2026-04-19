@@ -367,7 +367,8 @@ export async function deleteStoppedInstances(): Promise<boolean> {
 export async function addStreamInstance(
 	url: string,
 	path: string,
-	lowLatency: boolean = false
+	lowLatency: boolean = false,
+	log: boolean = false
 ): Promise<boolean> {
 	let bunExecutablePath: string;
 	let ytdlpExecutablePath: string;
@@ -406,7 +407,7 @@ export async function addStreamInstance(
 	try {
 		const status = await createPM2Instance({
 			name: path,
-			script: `bash ./instance/workers/create.sh "${url}" "${path}" ${Bun.env.RECORD_PATH || ''} "${bunExecutablePath}" "${ytdlpExecutablePath}" "${streamlinkExecutablePath}" ${Bun.env.STREAMING_HOST || ''} "0" ${lowLatency ? '1' : '0'}`,
+			script: `bash ./instance/workers/create.sh "${url}" "${path}" ${Bun.env.RECORD_PATH || ''} "${bunExecutablePath}" "${ytdlpExecutablePath}" "${streamlinkExecutablePath}" ${Bun.env.STREAMING_HOST || ''} ${log ? '1' : '0'} ${lowLatency ? '1' : '0'}`,
 			autorestart: false
 		});
 
