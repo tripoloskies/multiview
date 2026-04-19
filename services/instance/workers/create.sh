@@ -306,6 +306,10 @@ ytCheckStatus() {
         inform_update "Offline"
         echo "Stream has ended. Exiting...."
         return 2
+    elif [[ "$STATUS" == *"Private video"* ]]; then
+        inform_update "Private Stream"
+        echo "Private Stream. Exiting...."
+        return 2
     elif [[ "$STATUS" == *"The page needs to be reloaded"* ]]; then
         inform_update "YouTube caught it. yt-dlp #16212"
         echo "YouTube caught it. Retrying in 5s..."
