@@ -42,7 +42,7 @@ export function infoStart(): string {
 				data as realtimeResponseSchema;
 
 			info.serverTime = String(serverTime || '00:00:00.000000');
-			info.instances = [...instances];
+			info.instances = instances;
 			info.diskSpace = diskSpace;
 			info.diskStatus = diskStatus;
 		}
