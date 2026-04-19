@@ -4,12 +4,14 @@ import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
 import { streamEventResponseSchema } from '@shared/schema/websocket';
 import { isInstanceOnline } from '@shared/utils/status';
+import {
+	TWITCH_URL_REGEX,
+	YT_URL_REGEX,
+	PATH_REGEX,
+	TRIM_LEAD_TRAIL_SLASH_REGEX
+} from '@shared/utils/regex';
 
 export const actions: wsActions = async (data) => {
-	const TWITCH_URL_REGEX: RegExp = /^(https?:\/\/)?([a-z0-9]+\.)?twitch\.tv/;
-	const YT_URL_REGEX: RegExp =
-		/^(https?:\/\/)?([a-z0-9]+\.)?(youtube\.com|youtu\.be)/;
-
 	const schema = z.object({
 		url: z.string().min(1),
 		path: z.string().min(1).toLowerCase(),
@@ -19,7 +21,9 @@ export const actions: wsActions = async (data) => {
 
 	try {
 		const newData = await schema.parseAsync(data);
-
+		newData.path = decodeURIComponent(newData.path)
+			.replace(TRIM_LEAD_TRAIL_SLASH_REGEX, '')
+			.replace(PATH_REGEX, '_');
 		if (YT_URL_REGEX.test(newData.url)) {
 			newData.path = 'yt/' + newData.path;
 		} else if (TWITCH_URL_REGEX.test(newData.url)) {

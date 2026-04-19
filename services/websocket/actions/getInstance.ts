@@ -3,6 +3,7 @@ import { getStreamInstance } from '$services/instance/client';
 import { type wsActions } from '@shared/types/websocket';
 import { wsResponse } from '@shared/utils/api';
 import { getStreamResponseSchema } from '@shared/schema/websocket';
+import { TRIM_LEAD_TRAIL_SLASH_REGEX, PATH_REGEX } from '@shared/utils/regex';
 
 export const actions: wsActions = async (data) => {
 	const schema = z.object({
@@ -10,6 +11,10 @@ export const actions: wsActions = async (data) => {
 	});
 	try {
 		const newData = await schema.parseAsync(data);
+		newData.path = decodeURIComponent(newData.path)
+			.replace(TRIM_LEAD_TRAIL_SLASH_REGEX, '')
+			.replace(PATH_REGEX, '_');
+
 		const instance = await getStreamInstance(newData.path);
 		if (!instance) {
 			return wsResponse(null, {
