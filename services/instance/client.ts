@@ -270,7 +270,8 @@ export async function invalidateInstanceCache(
 
 	const instances = await prisma.instance.findFirst({
 		select: {
-			status: true
+			status: true,
+			dateCreated: true
 		},
 		where: {
 			pathName: name
@@ -283,6 +284,7 @@ export async function invalidateInstanceCache(
 		online: instances?.status.toLowerCase() === 'online',
 		active: selectedInstance?.pm2_env?.status !== 'stopped',
 		statusText: instances ? instances?.status : 'No Report',
+		dateCreated: instances?.dateCreated.getTime() || 0,
 		mediaUrl: name
 	};
 
@@ -316,7 +318,7 @@ export async function invalidateAllInstanceCache(): Promise<instance[]> {
 export async function listStreamInstance(): Promise<instance[]> {
 	let newLists: instance[] = [];
 
-	if ((await redis.ttl(INSTANCE_CACHE_KEY)) >= 2) {
+	if ((await redis.ttl(INSTANCE_CACHE_KEY)) > 2) {
 		const cachedData = await redis.hgetall(INSTANCE_CACHE_KEY);
 
 		for (const key in cachedData) {
@@ -329,7 +331,13 @@ export async function listStreamInstance(): Promise<instance[]> {
 		newLists = await invalidateAllInstanceCache();
 		await redis.expire(INSTANCE_CACHE_KEY, INSTANCE_CACHE_EXPIRE + 2);
 	}
-	return newLists.sort((a, b) => (a.name > b.name ? 1 : -1));
+	return newLists.sort((a, b) => {
+		if (a.dateCreated === b.dateCreated) {
+			return a.name > b.name ? 1 : -1;
+		} else {
+			return a.dateCreated > b.dateCreated ? 1 : -1;
+		}
+	});
 }
 
 export async function deleteStoppedInstances(): Promise<boolean> {

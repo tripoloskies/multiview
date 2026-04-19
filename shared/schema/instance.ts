@@ -6,7 +6,8 @@ export const instanceSchema = z.object({
 	active: z.boolean(),
 	online: z.boolean(),
 	statusText: z.string(),
-	mediaUrl: z.string().optional()
+	mediaUrl: z.string().optional(),
+	dateCreated: z.number()
 });
 
 export type instanceSchema = z.infer<typeof instanceSchema>;
