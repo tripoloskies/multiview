@@ -5,10 +5,12 @@ import {
 import { prisma } from '@shared/database';
 
 async function execute(): Promise<void> {
-	console.log('Instance cleaner started.');
+	console.log('[Instance Worker][cleaner] Instance cleaner started.');
 	while (true) {
 		if (await deleteStoppedInstances()) {
-			console.log('Stopped instances deleted successfully.');
+			console.log(
+				'[Instance Worker][cleaner] Stopped instances deleted successfully.'
+			);
 		}
 
 		const currentActiveInstances = (await listPM2Instance())

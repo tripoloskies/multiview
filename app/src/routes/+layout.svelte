@@ -1,15 +1,17 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
 	import { load } from '$lib/stores/config.svelte';
+	import Toast from '$lib/components/Toast.svelte';
+
 	let { children } = $props();
+
 	onMount(() => {
 		load();
 	});
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
 {@render children()}
+<Toast />
 
 <style lang="postcss">
 	@import '@fontsource/ibm-plex-sans';

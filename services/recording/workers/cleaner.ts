@@ -55,7 +55,9 @@ async function execute(): Promise<void> {
 			});
 		}
 
-		console.log('Autocleaning job completed! See you in 5 minutes.');
+		console.log(
+			'[Recording Worker][cleaner] Autocleaning job completed! See you in 5 minutes.'
+		);
 		await Bun.sleep(1000 * 60 * 5);
 	}
 }

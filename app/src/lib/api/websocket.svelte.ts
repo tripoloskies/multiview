@@ -12,16 +12,21 @@ export type wsApiPersistOptions = {
 const persistIds: SvelteMap<string, wsApiPersistOptions> = new SvelteMap();
 
 let socket: WebSocket;
-
+let isStared: boolean = $state(false);
+let isFirstTime: boolean = $state(true);
 let timeoutId: NodeJS.Timeout;
 
 export function start(hostUrl: string): void {
 	socket = new WebSocket(hostUrl);
-
+	isStared = true;
 	socket.onopen = () => {
 		clearTimeout(timeoutId);
-		for (const [key, data] of persistIds) {
-			_sendCommand(data.cmdName, data.data, key, true);
+		if (!isFirstTime) {
+			for (const [key, data] of persistIds) {
+				_sendCommand(data.cmdName, data.data, key, true);
+			}
+		} else {
+			isFirstTime = false;
 		}
 	};
 
@@ -51,10 +56,21 @@ export function start(hostUrl: string): void {
 	};
 
 	socket.onclose = () => {
-		timeoutId = setTimeout(() => {
-			start(hostUrl);
-		}, 500);
+		if (isStared) {
+			timeoutId = setTimeout(() => {
+				start(hostUrl);
+			}, 500);
+		}
 	};
+}
+
+export function end() {
+	isFirstTime = true;
+	persistIds.clear();
+	isStared = false;
+	if (socket && socket.OPEN) {
+		socket.close();
+	}
 }
 
 function isReady(): Promise<boolean> {
@@ -92,11 +108,7 @@ async function _sendCommand(
 
 			socket.removeEventListener('message', func);
 
-			resolve({
-				success: result.success,
-				message: result.message,
-				data: result.data
-			});
+			resolve(result);
 		}
 
 		try {

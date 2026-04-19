@@ -88,20 +88,38 @@ module.exports = {
 		{
 			name: 'internal:renew-cookies',
 			script: 'bun',
-			args: '--bun ./cron/renewCookies.ts',
-			watch: false
+			args: '--bun ./instance/workers/renewCookies.ts',
+			watch: false,
+			env: {
+				NODE_ENV: 'development'
+			}
 		},
 		{
 			name: 'internal:recording-cleaner',
 			script: 'bun',
-			args: '--bun ./cron/recordingCleaner.ts',
-			watch: false
+			args: '--bun ./recording/workers/cleaner.ts',
+			watch: false,
+			env: {
+				NODE_ENV: 'development'
+			}
 		},
 		{
 			name: 'internal:instance-cleaner',
 			script: 'bun',
-			args: '--bun ./cron/instanceCleaner.ts',
-			watch: false
+			args: '--bun ./instance/workers/cleaner.ts',
+			watch: false,
+			env: {
+				NODE_ENV: 'development'
+			}
+		},
+		{
+			name: 'internal:recording-watcher',
+			script: 'bun',
+			args: '--bun ./recording/workers/watcher.ts',
+			watch: false,
+			env: {
+				NODE_ENV: 'development'
+			}
 		}
 	]
 };

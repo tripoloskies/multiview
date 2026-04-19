@@ -6,21 +6,35 @@
 	import PlatformTag from './PlatformTag.svelte';
 	import { config } from '$lib/stores/config.svelte';
 
+	export type ViewerIndicatorStatus = 'ok' | 'warning' | 'danger';
+	type ViewerType = {
+		path: string;
+		muted: boolean;
+		online: boolean;
+		visible: boolean;
+		status: string;
+		indicatorStatus?: ViewerIndicatorStatus;
+		indicatorStatusText?: string;
+	};
+
 	let {
 		path = '',
 		muted = true,
 		online = false,
 		visible = true,
-		status = 'Empty'
-	} = $props();
+		status = 'Empty',
+		indicatorStatus = 'ok',
+		indicatorStatusText = ''
+	}: ViewerType = $props();
 
 	let source: MediaElementAudioSourceNode;
 	let audioContext: AudioContext;
 
-	let instance: Hls = $state(
+	let hls: Hls = $state(
 		new Hls({
-			startFragPrefetch: true,
-			maxLiveSyncPlaybackRate: 1.5
+			lowLatencyMode: true,
+			maxLiveSyncPlaybackRate: 5,
+			liveSyncDurationCount: 2
 		})
 	);
 
@@ -29,8 +43,8 @@
 	let marginAction: HTMLDivElement | undefined = $state();
 
 	let errorType: ErrorTypes | null = $state(null);
-	let oldVisible: boolean = $state(false);
-	let oldSource: string = $state('');
+	let isVisible: boolean = $state(false);
+	let manifestUrl: string = $state('');
 	let isReady: boolean = $state(false);
 	let meterPercent: number = $state(0);
 	let meterLabel: number = $state(-40);
@@ -50,27 +64,32 @@
 	});
 
 	$effect(() => {
-		if (online) {
-			const newSource: string = `/api/live/${path}/index.m3u8`;
-			if (oldSource !== newSource) {
-				oldSource = newSource;
-				instance.loadSource(newSource);
+		if (online && player) {
+			const _manifestUrl: string = `/api/live/${path}/index.m3u8`;
+			if (manifestUrl !== _manifestUrl) {
+				manifestUrl = _manifestUrl;
+				hls.attachMedia(player);
+				hls.loadSource(_manifestUrl);
 				return;
 			}
 		} else {
-			instance.stopLoad();
-			oldSource = '';
-			instance.loadSource('');
+			hls.stopLoad();
+			manifestUrl = '';
+			hls.detachMedia();
 		}
-		if (oldVisible !== visible) {
-			oldVisible = visible;
+	});
+
+	$effect(() => {
+		if (isVisible !== visible) {
+			isVisible = visible;
 
 			if (!online) return;
 
-			if (visible) instance.startLoad();
-			else instance.stopLoad();
+			if (visible) hls.startLoad();
+			else hls.stopLoad();
 		}
 	});
+
 	onDestroy(() => {
 		destroyView();
 	});
@@ -112,15 +131,13 @@
 		marginAction.style.paddingTop = `${realHeight * 0.015}px`;
 		marginAction.style.paddingBottom = `${realHeight * 0.015}px`;
 	});
-	async function loadMeter() {
+	async function loadAudioMeter() {
 		if (!player) {
 			return;
 		}
 
-		if (audioContext) {
-			if (audioContext.state === 'closed') {
-				await audioContext.resume();
-			}
+		if (audioContext && audioContext.state === 'closed') {
+			await audioContext.resume();
 			return;
 		}
 
@@ -142,25 +159,30 @@
 			// Calculate average volume (RMS-like)
 			let sum = 0;
 
-			for (let i = 0; i < bufferLength; i++) {
-				sum += dataArray[i];
+			for (let index = 0; index < bufferLength; index++) {
+				sum += dataArray[index];
 			}
-			// 1. Get the average (0 - 255)
+			// 2. Get the average (0 - 255)
 			const average = sum / bufferLength;
 
-			// 2. Normalize to a scale of 0 to 1
+			// 3. Normalize to a scale of 0 to 1
 			const normalized = average / 255;
 
-			// 3. Calculate dB
+			// 4. Calculate rounded dB
 			// We use -100 as a "floor" so we don't get -Infinity
-			const roundedDB = normalized > 0 ? 20 * Math.log10(normalized) : -100;
-			// 3. Calculate dB
-			// We use -100 as a "floor" so we don't get -Infinity
-			const labelDB = normalized > 0 ? 20 * Math.log10(normalized) : -100;
+			// Then round off the value.
+			const roundedDB = Math.round(
+				normalized > 0 ? 20 * Math.log10(normalized) : -100
+			);
 
-			meterLabel = Math.round(labelDB);
+			// 5. Use roundedDB as a label for audio meter.
+			meterLabel = roundedDB;
+
+			// 6. Convert DB to percentage for audio meter height.
+			// (<=-40 dB is 0% to 0 dB is 100%)
 			meterPercent = (1 - Math.abs(roundedDB) / 40) * 100;
 
+			// 7. Update audio meter indicator based on dB threshold.
 			if (meterLabel >= -6) {
 				meterColorIndicator = 'oopsie';
 			} else if (meterLabel >= -12 && meterLabel <= -7) {
@@ -168,6 +190,12 @@
 			} else {
 				meterColorIndicator = 'safe';
 			}
+
+			// 8. Schedule next frame with more or less than 30ms delay.
+			// We don't want an audio meter running at a gazillion FPS.
+			// If you want uncapped FPS, just delete the timeout and uncommit this code below:
+
+			// requestAnimationFrame(update);
 
 			setTimeout(() => {
 				requestAnimationFrame(update);
@@ -191,8 +219,9 @@
 			await audioContext.close();
 		}
 
-		instance.destroy();
+		hls.destroy();
 	}
+
 	async function renderView() {
 		if (!player) {
 			return;
@@ -209,27 +238,29 @@
 		}
 
 		player.onplay = () => {
-			if (!player || !instance.liveSyncPosition) {
+			if (!player || !hls.liveSyncPosition) {
 				return;
 			}
-			player.currentTime = instance.liveSyncPosition;
+			player.currentTime = hls.liveSyncPosition;
 		};
 
-		instance.on(Hls.Events.ERROR, (_event, data) => {
+		player.onpause = () => {
+			if (!player || !online) {
+				return;
+			}
+			player.play();
+		};
+
+		hls.on(Hls.Events.ERROR, (_event, data) => {
 			if (data.fatal) {
 				errorType = data.type;
 			}
 		});
-		instance.on(Hls.Events.MANIFEST_LOADED, () => {
+
+		hls.on(Hls.Events.MANIFEST_LOADED, () => {
 			errorType = null;
 			isReady = true;
 		});
-
-		if (instance.media) {
-			return;
-		}
-
-		instance.attachMedia(player);
 	}
 </script>
 
@@ -245,19 +276,20 @@
 			);
 			return;
 		}
+
 		if (!muted && isReady && player.muted) {
 			player.muted = false;
-			loadMeter();
+			loadAudioMeter();
 		}
 	}}
 >
 	<div class="viewer-main">
 		<div class="viewer-player-container">
 			<div class="viewer-player-notice">
-				{#if errorType}
-					<b>{status}</b>
-				{:else}
-					<b>Online</b>
+				<b>{status}</b>
+				{#if online && errorType}
+					<br />
+					<b>{errorType}</b>
 				{/if}
 			</div>
 			{#if config.showSafeArea}
@@ -275,16 +307,16 @@
 				bind:videoHeight
 				bind:videoWidth
 				bind:clientWidth={playerWidth}
-				class={!visible ? 'hidden' : ''}
+				class={!visible || !online ? 'hidden' : ''}
 				bind:this={player}
 				autoplay
 			>
-				<b>Dog</b>
 			</video>
 		</div>
-		<span class="player-info">
+		<span class={`player-info ${indicatorStatus}`}>
 			<b>
 				<PlatformTag {path} />
+				{indicatorStatusText.length ? `[${indicatorStatusText}]` : ''}
 			</b>
 		</span>
 	</div>
@@ -305,25 +337,59 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 
+	@keyframes danger {
+		0%,
+		100% {
+			background-color: var(--color-red-500);
+		}
+		50% {
+			background-color: initial;
+		}
+	}
+
+	@keyframes warning {
+		0%,
+		100% {
+			background-color: var(--color-yellow-400);
+		}
+		50% {
+			background-color: initial;
+		}
+	}
+
+	.danger {
+		animation: danger 0.5s infinite;
+	}
+
+	.warning {
+		animation: warning 1s infinite;
+	}
+
 	.safe-margin-action,
 	.safe-margin-title {
 		@apply h-full w-full border border-white;
 	}
+
 	.safe-margin {
 		@apply absolute z-10;
 	}
+
 	button {
 		@apply flex h-full w-full flex-1 cursor-pointer;
 	}
+
 	.viewer-player-notice > * {
 		@apply bg-white p-2 text-black;
 	}
+
 	.viewer-player-container {
 		@apply relative flex h-full w-full flex-1 items-center justify-center;
 	}
+
 	.player-info {
 		@apply block w-full bg-neutral-800 px-4 py-2 text-white;
 	}
+
 	.viewer-main {
 		@apply relative flex flex-1 flex-col items-center justify-between;
 	}
@@ -339,12 +405,15 @@
 	.audio-meter-label {
 		@apply rotate-180 text-white;
 	}
+
 	.audio-meter-content.safe {
 		@apply bg-blue-500;
 	}
+
 	.audio-meter-content.warning {
 		@apply bg-orange-500;
 	}
+
 	.audio-meter-content.oopsie {
 		@apply bg-red-500;
 	}

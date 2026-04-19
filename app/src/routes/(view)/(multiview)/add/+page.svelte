@@ -13,6 +13,8 @@
 	type streamInputs = {
 		url: string;
 		path: string;
+		lowLatency: boolean;
+		log: boolean;
 	};
 
 	let { data } = $props();
@@ -40,7 +42,9 @@
 	function addAnotherInput() {
 		streamInputs.push({
 			url: '',
-			path: ''
+			path: '',
+			lowLatency: false,
+			log: false
 		});
 	}
 
@@ -90,17 +94,24 @@
 							let eventUrlFromLastInput: string = '';
 
 							isCreated = true;
-							for (const { path, url } of filteredStreamInputs) {
+							for (const {
+								path,
+								url,
+								lowLatency,
+								log
+							} of filteredStreamInputs) {
 								await tick();
 								customLog = `Adding.... (Path: ${path || `blank`} | URL: ${ellipsisGenerator(url, 20) || 'blank'})`;
 								const response = await sendCommand('createInstance', {
 									url: url,
-									path: path
+									path: path,
+									lowLatency: lowLatency,
+									log: log
 								});
 								customLog = response.message;
 
 								if (!response.success) {
-									failedStreamInputs.push({ path, url });
+									failedStreamInputs.push({ path, url, lowLatency, log });
 									isSuccess = false;
 									continue;
 								}
@@ -110,7 +121,7 @@
 									customLog =
 										"No event URL? There's something wrong with the server.";
 									eventUrlFromLastInput = '';
-									failedStreamInputs.push({ path, url });
+									failedStreamInputs.push({ path, url, lowLatency, log });
 									isSuccess = false;
 									continue;
 								}
@@ -166,7 +177,26 @@
 												name={`path${index}`}
 												placeholder="Path Name"
 											/>
+											<label for={`lls${index}`}>Low Latency</label>
+											<div>
+												<input
+													bind:checked={streamInput.lowLatency}
+													name={`lls${index}`}
+													type="checkbox"
+													placeholder="Path Name"
+												/>
+											</div>
+											<label for={`log${index}`}>Enable Logging</label>
+											<div>
+												<input
+													bind:checked={streamInput.log}
+													name={`log${index}`}
+													type="checkbox"
+													placeholder="Enable Logging"
+												/>
+											</div>
 										</span>
+										<span> </span>
 									</div>
 								</div>
 							{/each}
@@ -260,7 +290,7 @@
 	}
 
 	.control-input-body {
-		@apply flex w-full flex-col space-y-4 xl:flex-row xl:space-y-0 xl:space-x-4;
+		@apply flex w-full flex-col space-y-4;
 	}
 
 	.control-input-container {

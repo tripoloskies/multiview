@@ -9,7 +9,7 @@
 		clearAction,
 		setAction,
 		viewState
-	} from '$lib/stores/multiview.svelte';
+	} from '$lib/actions/multiview.svelte';
 </script>
 
 <svelte:head>
@@ -36,6 +36,7 @@
 	{/if}
 
 	{#snippet footer()}
+		<span><b>Disk Space:</b> {info.diskSpace}</span>
 		<span><b>Active:</b> {info.instances.length}</span>
 		<span><b>{info.serverTime}</b></span>
 		<div class="stats-buttons">

@@ -8,9 +8,12 @@ import {
 	recordGetSchema,
 	recordGetPathSchema,
 	recordListsSchema,
-	recordListsPathSchema
+	recordListsPathSchema,
+	recordManifestType
 } from '@shared/schema/record';
 import { isInstanceOnline } from '@shared/utils/status';
+import { getRecordingDiskStatus } from './stats';
+import { file } from 'bun';
 
 const _server = Bun.serve({
 	port: 3002,
@@ -276,6 +279,22 @@ const _server = Bun.serve({
 				}
 			}
 		},
+		'/get/stats/disk': {
+			GET: async () => {
+				const result = await getRecordingDiskStatus();
+				switch (result) {
+					case 'ok':
+					case 'low_space':
+						return new Response('0');
+					case 'critical_low_space':
+						return new Response('1');
+					case 'full':
+						return new Response('2');
+					default:
+						return new Response('-1`');
+				}
+			}
+		},
 		'/get/video/:id': {
 			GET: async (request: Bun.BunRequest) => {
 				const data = { ...request.params };
@@ -300,35 +319,43 @@ const _server = Bun.serve({
 							success: false,
 							message: 'Record not found'
 						});
-					} else if (!record?.sourceMetadataId) {
-						console.warn(
-							`[Recordings Internal][/get/video/:id]: Record id "${newData.id}" contains no metadata. Continue.`
+					}
+
+					const recordSourceMetadata = record.sourceMetadataId
+						? await prisma.recordSourceMetadata.findFirst({
+								where: {
+									recordId: record.sourceMetadataId
+								}
+							})
+						: null;
+
+					const fullManifestPath: string = `${Bun.env.RECORD_PATH}/${record.manifestPath}`;
+
+					let manifestFile: string;
+					let manifestType: recordManifestType;
+
+					if (await file(`${fullManifestPath}/index.m3u8`).exists()) {
+						manifestFile = `/api/recordings/fetch/${newData.id}/index.m3u8`;
+						manifestType = 'hls';
+					} else {
+						console.error(
+							`[Recordings Internal][/get/video/:id]: Missing manifest file from Record id "${newData.id}".`
 						);
-						return JSONResponse(recordGetSchema, {
-							success: true,
-							message: 'OK',
-							data: {
-								info: record,
-								metadata: null
-							}
+						return JSONResponse(null, {
+							success: false,
+							message: 'Record Manifest file not found.'
 						});
 					}
 
-					const recordSourceMetadata =
-						await prisma.recordSourceMetadata.findFirst({
-							where: {
-								recordId: record.sourceMetadataId
-							}
-						});
-
-					console.log(
-						`[Recordings Internal][/get/video/:id]: Record id "${newData.id}" contains metadata. Continue.`
-					);
 					return JSONResponse(recordGetSchema, {
 						success: true,
 						message: 'OK',
 						data: {
-							info: record,
+							info: {
+								...record,
+								manifestUrl: manifestFile,
+								manifestType: manifestType
+							},
 							metadata: recordSourceMetadata
 						}
 					});

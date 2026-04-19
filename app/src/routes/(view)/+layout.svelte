@@ -1,16 +1,18 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { info, talkStart } from '$lib/stores/info.svelte';
-	import { removePersistCommand, start } from '$lib/api/websocket.svelte';
+	import { info, infoStart, talkStart } from '$lib/stores/info.svelte';
+	import { end, start } from '$lib/api/websocket.svelte';
+
 	let { data, children } = $props();
-	let transactionId: string = $state('');
+
 	onMount(async () => {
 		start(data.wsRootUrl);
-		transactionId = talkStart();
+		talkStart();
+		infoStart();
 	});
 
-	onDestroy(async () => {
-		removePersistCommand(transactionId);
+	onDestroy(() => {
+		end();
 	});
 </script>
 

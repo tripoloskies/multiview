@@ -1,4 +1,4 @@
-export const SEGMENT_REGEX = /^segment\d+\.ts$/;
+export const SEGMENT_TS_REGEX = /^segment\d+\.ts$/;
 
 export function randomStringGenerator(): string {
 	const chars: string =

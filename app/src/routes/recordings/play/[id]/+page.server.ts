@@ -36,7 +36,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		return {
 			id: info.id,
 			title: metadata?.title || new Date(info.datePublished).toUTCString(),
-			mediaUrl: `/api/recordings/fetch/${info.id}/index.m3u8`,
+			mediaUrl: info.manifestUrl,
+			mediaType: info.manifestType,
 			webpageUrl: metadata?.webpageUrl,
 			uploader: metadata?.uploader || info.pathName,
 			description: metadata?.description || 'None'

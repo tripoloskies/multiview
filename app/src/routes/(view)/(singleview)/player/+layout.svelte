@@ -5,13 +5,16 @@
 		sendCommand,
 		sendPersistCommand
 	} from '$lib/api/websocket.svelte';
+	import Viewer, {
+		type ViewerIndicatorStatus
+	} from '$lib/components/Viewer.svelte';
 	import type { getStreamResponseSchema } from '@shared/schema/websocket';
 	import Button from '$lib/components/Button.svelte';
-	import Viewer from '$lib/components/Viewer.svelte';
 	import Multiview from '$lib/layouts/Multiview.svelte';
 	import { resolve } from '$app/paths';
 	import { onDestroy, onMount } from 'svelte';
 	import Controls from '$lib/layouts/Controls.svelte';
+	import { info } from '$lib/stores/info.svelte.js';
 
 	let { data, children } = $props();
 
@@ -20,6 +23,8 @@
 	let online: boolean | null = $state(null);
 	let status: string = $state('');
 	let transactionId: string = $state('');
+	let indicatorStatus: ViewerIndicatorStatus = $state('ok');
+	let indicatorStatusText: string = $state('');
 
 	onMount(async () => {
 		transactionId = await sendPersistCommand({
@@ -41,6 +46,26 @@
 		serverMessage = 'Ready';
 	});
 
+	$effect(() => {
+		switch (info.diskStatus) {
+			case 'ok':
+				indicatorStatus = 'ok';
+				indicatorStatusText = '';
+				break;
+			case 'low_space':
+				indicatorStatus = 'warning';
+				indicatorStatusText = 'Low Disk Space';
+				break;
+			case 'full':
+				indicatorStatus = 'danger';
+				indicatorStatusText = 'Disk Full';
+				break;
+			case 'critical_low_space':
+				indicatorStatus = 'danger';
+				indicatorStatusText = 'Disk Critically Low';
+				break;
+		}
+	});
 	onDestroy(() => {
 		removePersistCommand(transactionId);
 	});
@@ -54,7 +79,14 @@
 					{@render children()}
 				</div>
 			{/if}
-			<Viewer path={data.path} online={online || false} {status} muted={false}
+			<Viewer
+				path={data.path}
+				online={online || false}
+				{status}
+				muted={false}
+				visible={true}
+				{indicatorStatus}
+				{indicatorStatusText}
 			></Viewer>
 		{/if}
 	</div>

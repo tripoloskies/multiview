@@ -1,5 +1,6 @@
 import z from 'zod';
 import { instanceSchema } from './instance';
+import { recordGetDiskStatus } from './record';
 
 export const wsMessageRequestSchema = z.object({
 	cmdName: z.string(),
@@ -29,6 +30,15 @@ export type streamEventResponseSchema = z.infer<
 	typeof streamEventResponseSchema
 >;
 
+export const getRecordingStatsResponseSchema = z.object({
+	diskSpace: z.string(),
+	diskStatus: recordGetDiskStatus
+});
+
+export type getRecordingStatsResponseSchema = z.infer<
+	typeof getRecordingStatsResponseSchema
+>;
+
 export const getServerTimeResponseSchema = z.object({
 	serverTime: z.string()
 });
@@ -49,8 +59,8 @@ export type listInstancesResponseSchema = z.infer<
 	typeof listInstancesResponseSchema
 >;
 
-export const realtimeResponseSchema = listInstancesResponseSchema.extend(
-	getServerTimeResponseSchema.shape
-);
+export const realtimeResponseSchema = listInstancesResponseSchema
+	.extend(getServerTimeResponseSchema.shape)
+	.extend(getRecordingStatsResponseSchema.shape);
 
 export type realtimeResponseSchema = z.infer<typeof realtimeResponseSchema>;

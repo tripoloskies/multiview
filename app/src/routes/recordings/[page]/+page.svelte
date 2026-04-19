@@ -1,6 +1,10 @@
 <script lang="ts">
+	import { state, deleteRecording } from '$lib/actions/recordings.svelte';
+	import PaginationSelector from '$lib/components/PaginationSelector.svelte';
+	import VideoCard from '$lib/components/VideoCard.svelte';
+	import VideoCardContainer from '$lib/layouts/VideoCardContainer.svelte';
 	import Button from '$lib/components/Button.svelte';
-	import PlatformTag from '$lib/components/PlatformTag.svelte';
+	import { invalidateAll } from '$app/navigation';
 
 	let { data } = $props();
 </script>
@@ -12,106 +16,69 @@
 <div id="main-menu">
 	<div id="page-header">
 		<h1>Latest</h1>
-		{#if data.lists.length > 0 && data.currentPage && data.pageCount}
-			<div id="page-selectors-container">
-				<div>Go to Page</div>
-				<div id="page-selectors">
-					{#if data.currentPage > 3 && data.pageCount >= data.pageLimit}
-						<Button type="link" link="1">First</Button>
-					{/if}
-					{#each data?.visiblePages as page (page)}
-						{#if page == data.currentPage}
-							<div id="page-selected">{page}</div>
-						{:else}
-							<Button type="link" link={String(page)}>{page}</Button>
-						{/if}
-					{/each}
-					{#if data.currentPage < data.pageCount - 2 && data.pageCount >= data.pageLimit}
-						<Button type="link" link={String(data.pageCount)}>Last</Button>
-					{/if}
-				</div>
-			</div>
-		{/if}
 	</div>
 
 	{#if data.lists.length}
-		<div class="front">
-			{#each data.lists as item (item.id)}
-				<a class="list-box" href={`${item.link}`} title={item.title.toString()}>
-					<div class="list-image">
-						<img src={item.thumbnail} alt={item.title.toString()} />
-					</div>
-					<div class="list-bottom">
-						<div class="list-icon-movie">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke-width="1.5"
-								stroke="currentColor"
-								class="size-8"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0 1 18 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m1.5-3.75C5.496 8.25 6 7.746 6 7.125v-1.5M4.875 8.25C5.496 8.25 6 8.754 6 9.375v1.5m0-5.25v5.25m0-5.25C6 5.004 6.504 4.5 7.125 4.5h9.75c.621 0 1.125.504 1.125 1.125m1.125 2.625h1.5m-1.5 0A1.125 1.125 0 0 1 18 7.125v-1.5m1.125 2.625c-.621 0-1.125.504-1.125 1.125v1.5m2.625-2.625c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125M18 5.625v5.25M7.125 12h9.75m-9.75 0A1.125 1.125 0 0 1 6 10.875M7.125 12C6.504 12 6 12.504 6 13.125m0-2.25C6 11.496 5.496 12 4.875 12M18 10.875c0 .621-.504 1.125-1.125 1.125M18 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m-12 5.25v-5.25m0 5.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125m-12 0v-1.5c0-.621-.504-1.125-1.125-1.125M18 18.375v-5.25m0 5.25v-1.5c0-.621.504-1.125 1.125-1.125M18 13.125v1.5c0 .621.504 1.125 1.125 1.125M18 13.125c0-.621.504-1.125 1.125-1.125M6 13.125v1.5c0 .621-.504 1.125-1.125 1.125M6 13.125C6 12.504 5.496 12 4.875 12m-1.5 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M19.125 12h1.5m0 0c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h1.5m14.25 0h1.5"
-								/>
-							</svg>
-						</div>
-						<div class="list-description">
-							<b>{item.title}</b>
-							<p>
-								<PlatformTag path={item.author} />
-							</p>
-						</div>
-					</div>
-				</a>
+		<VideoCardContainer>
+			{#each data.lists as list (list.id)}
+				<VideoCard
+					author={list.author}
+					link={list.link}
+					thumbnail={list.thumbnail}
+					title={list.title}
+				>
+					<span>Actions</span>
+					<Button
+						onclick={async () => {
+							await deleteRecording(list.id);
+							invalidateAll();
+						}}
+						disabled={state.running}
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke-width="1.5"
+							stroke="currentColor"
+							class="size-6"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+							/>
+						</svg>
+
+						<span>Delete</span>
+					</Button>
+				</VideoCard>
 			{/each}
-		</div>
+		</VideoCardContainer>
 	{:else}
 		<h2 class="error-message">No Videos</h2>
 	{/if}
+
+	<div id="page-footer">
+		<PaginationSelector
+			page={data.currentPage || 0}
+			totalPage={data.totalPage || 0}
+		/>
+	</div>
 </div>
 
 <style lang="postcss">
 	@reference "tailwindcss";
+
 	.error-message {
 		@apply py-4 text-center;
 	}
 
-	.front {
-		@apply grid grid-cols-1 gap-4 lg:grid-cols-3;
-	}
-
-	.list-box {
-		@apply overflow-hidden bg-neutral-700;
-	}
-
-	.list-image {
-		@apply flex aspect-video items-center justify-center;
-	}
-
-	.list-bottom {
-		@apply flex space-x-4 p-4;
-	}
-
-	.list-icon-movie {
-		@apply flex items-center justify-center;
-	}
-
 	#page-header {
-		@apply flex items-center justify-between px-2;
+		@apply flex items-center justify-between py-4;
 	}
 
-	#page-selectors {
-		@apply flex;
-	}
-
-	#page-selectors-container {
-		@apply flex items-center space-x-4;
-	}
-
-	#page-selected {
-		@apply border-2 border-neutral-500 bg-neutral-500 px-4 py-2 font-bold;
+	#page-footer {
+		@apply sticky bottom-0 w-full bg-black py-2;
 	}
 </style>

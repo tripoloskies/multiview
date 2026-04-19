@@ -9,7 +9,12 @@ const _server = Bun.serve({
 			return new Response('Request not allowed!');
 		}
 
-		const success = server.upgrade(request);
+		const success = server.upgrade(request, {
+			data: {
+				sessionId: cookies,
+				cacheKey: `ws:${cookies}`
+			}
+		});
 
 		if (success) {
 			console.log(`[Websocket]: Upgrade success.`);
