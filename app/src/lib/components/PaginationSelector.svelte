@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve */
 	import Button from './Button.svelte';
 
 	const MAX_VISIBLE_PAGES: number = 5;

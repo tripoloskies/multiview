@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve */
 	let {
 		onclick = defaultClick,
 		type = 'button',
