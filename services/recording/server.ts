@@ -1,6 +1,6 @@
 import { Glob } from 'bun';
 import { dirname } from 'node:path';
-import { SEGMENT_TS_REGEX } from '@shared/utils/browser';
+import { SEGMENT_TS_REGEX } from '@shared/utils/regex';
 import z from 'zod';
 import { prisma } from '@shared/database';
 import { JSONResponse } from '@shared/utils/api';

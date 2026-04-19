@@ -1,5 +1,3 @@
-export const SEGMENT_TS_REGEX = /^segment\d+\.ts$/;
-
 export function randomStringGenerator(): string {
 	const chars: string =
 		'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
