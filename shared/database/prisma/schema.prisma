@@ -11,21 +11,22 @@ datasource db {
 }
 
 model Instance {
-  status   String
-  path     Path   @relation(fields: [pathName], references: [name])
-  pathName String @id
+  status      String
+  path        Path     @relation(fields: [pathName], references: [name])
+  pathName    String   @id
+  dateCreated DateTime @default(now())
 }
 
 model Path {
-  name     String     @id
-  created  DateTime   @default(now())
-  record   Record[]
-  instance Instance?
+  name        String    @id
+  dateCreated DateTime  @default(now())
+  record      Record[]
+  instance    Instance?
 }
 
 model RecordSourceMetadata {
   recordId     String   @id
-  record          Record[]
+  record       Record[]
   title        String
   uploader     String
   dateUploaded DateTime
@@ -40,7 +41,5 @@ model Record {
   sourceMetadata   RecordSourceMetadata? @relation(fields: [sourceMetadataId], references: [recordId], onDelete: SetNull, onUpdate: Cascade)
   sourceMetadataId String?
   manifestPath     String
-  datePublished    DateTime @map("publishedDate")
-
-  @@map("RecordProps")
+  datePublished    DateTime              @default(now())
 }

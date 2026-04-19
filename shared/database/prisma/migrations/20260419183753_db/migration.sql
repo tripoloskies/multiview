@@ -2,6 +2,7 @@
 CREATE TABLE "Instance" (
     "status" TEXT NOT NULL,
     "pathName" TEXT NOT NULL,
+    "dateCreated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Instance_pkey" PRIMARY KEY ("pathName")
 );
@@ -9,7 +10,7 @@ CREATE TABLE "Instance" (
 -- CreateTable
 CREATE TABLE "Path" (
     "name" TEXT NOT NULL,
-    "created" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "dateCreated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Path_pkey" PRIMARY KEY ("name")
 );
@@ -27,21 +28,21 @@ CREATE TABLE "RecordSourceMetadata" (
 );
 
 -- CreateTable
-CREATE TABLE "RecordProps" (
+CREATE TABLE "Record" (
     "id" TEXT NOT NULL,
     "pathName" TEXT NOT NULL,
     "sourceMetadataId" TEXT,
     "manifestPath" TEXT NOT NULL,
-    "publishedDate" TIMESTAMP(3) NOT NULL,
+    "datePublished" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "RecordProps_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Record_pkey" PRIMARY KEY ("id")
 );
 
 -- AddForeignKey
 ALTER TABLE "Instance" ADD CONSTRAINT "Instance_pathName_fkey" FOREIGN KEY ("pathName") REFERENCES "Path"("name") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "RecordProps" ADD CONSTRAINT "RecordProps_pathName_fkey" FOREIGN KEY ("pathName") REFERENCES "Path"("name") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Record" ADD CONSTRAINT "Record_pathName_fkey" FOREIGN KEY ("pathName") REFERENCES "Path"("name") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "RecordProps" ADD CONSTRAINT "RecordProps_sourceMetadataId_fkey" FOREIGN KEY ("sourceMetadataId") REFERENCES "RecordSourceMetadata"("recordId") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Record" ADD CONSTRAINT "Record_sourceMetadataId_fkey" FOREIGN KEY ("sourceMetadataId") REFERENCES "RecordSourceMetadata"("recordId") ON DELETE SET NULL ON UPDATE CASCADE;
