@@ -302,7 +302,7 @@ ytCheckStatus() {
         inform_update "Error URL"
         echo "Bummer! This link is a VOD!. Exiting..."
         return 2
-    elif [[ "$STATUS" == "post_live" || "$STATUS" == "not_live" || "$STATUS" == *"not currently live"* ]]; then
+    elif [[ "$STATUS" == "post_live" || "$STATUS" == "not_live" || "$STATUS" == *"not currently live"* || "$STATUS" == *"live event has ended"* ]]; then
         inform_update "Offline"
         echo "Stream has ended. Exiting...."
         return 2
