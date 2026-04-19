@@ -3,5 +3,6 @@ export const TWITCH_URL_REGEX: RegExp =
 	/^(https?:\/\/)?([a-z0-9]+\.)?twitch\.tv/;
 export const YT_URL_REGEX: RegExp =
 	/^(https?:\/\/)?([a-z0-9]+\.)?(youtube\.com|youtu\.be)/;
+export const KICK_URL_REGEX: RegExp = /^(https?:\/\/)?(www\.)?kick\.com/;
 export const PATH_REGEX: RegExp = /[^A-Za-z0-9/_-]+/g;
 export const TRIM_LEAD_TRAIL_SLASH_REGEX: RegExp = /^[\\/]+|[\\/]+$/g;

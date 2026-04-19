@@ -370,6 +370,34 @@ twitchGetStreamManifest() {
     $YTDLP_PATH -q --print "url" "https://$PROXY_HOSTNAME/live/$CH_NAME?allow_source=true&allow_audio_only=true&fast_bread=true" 1>&1
 }
 
+kickCheckStatus() {
+    local STATUS
+
+    STATUS=$($YTDLP_PATH --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
+
+    if [[ "$STATUS" == "is_live" ]]; then
+        inform_update "Live Detected"
+        return 0
+    elif [[ "$STATUS" == "not_live" || "$STATUS" == *"not currently live"* ]]; then
+        inform_update "Offline"
+        echo "Stream has ended. Exiting...."
+        return 2
+    elif [[ "$STATUS" == "NA" || "$STATUS" == *"not a valid URL"* ]]; then
+        inform_update "Unknown URL"
+        echo "Unknown URL. Exiting..."
+        return 2
+    else
+        inform_update "$STATUS"
+        echo "Unknown ($STATUS). Retrying in 15s..."
+        sleep 15
+        return 1
+    fi
+}
+
+kickGetStreamManifest() {
+    $YTDLP_PATH -q --print "url" "$SOURCE_URL" >&1
+}
+
 othersCheckStatus() {
     local STATUS
 
@@ -473,6 +501,32 @@ main() {
                 fi
 
                 local MANIFEST=$(ytGetStreamManifest)
+                local BUFFER="12M"
+                local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge $LLS_LIVE_EDGE --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
+                local ADD_METADATA="yes"
+
+            # Kick
+            elif [[ "$SOURCE_URL" =~ ^(https?:\/\/)?(www\.)?kick\.com ]]; then
+                echo "Kick URL detected."
+
+                kickCheckStatus
+                local CHECK_STATUS=$?
+                if [[ $CHECK_STATUS == 1 ]]; then
+                    continue
+                elif [[ $CHECK_STATUS == 2 ]]; then
+                    break
+                fi 
+
+                inform_update "Get Manifest URL"
+                echo "Get Manifest URL."
+                
+                if [[ "$LOW_LATENCY_STREAM" == "1" ]]; then
+                    local LLS_LIVE_EDGE="1"
+                else
+                    local LLS_LIVE_EDGE="10"
+                fi
+
+                local MANIFEST=$(kickGetStreamManifest)
                 local BUFFER="12M"
                 local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge $LLS_LIVE_EDGE --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
                 local ADD_METADATA="yes"

@@ -39,7 +39,7 @@ RUN apt update && apt install -y --no-install-recommends \
 
 RUN pipx ensurepath --global
 
-RUN pipx install yt-dlp[default] streamlink --global
+RUN pipx install yt-dlp[default,curl-cffi] streamlink --global
  
 RUN pipx inject yt-dlp bgutil-ytdlp-pot-provider --global
 

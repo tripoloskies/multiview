@@ -8,7 +8,8 @@ import {
 	TWITCH_URL_REGEX,
 	YT_URL_REGEX,
 	PATH_REGEX,
-	TRIM_LEAD_TRAIL_SLASH_REGEX
+	TRIM_LEAD_TRAIL_SLASH_REGEX,
+	KICK_URL_REGEX
 } from '@shared/utils/regex';
 
 export const actions: wsActions = async (data) => {
@@ -28,6 +29,8 @@ export const actions: wsActions = async (data) => {
 			newData.path = 'yt/' + newData.path;
 		} else if (TWITCH_URL_REGEX.test(newData.url)) {
 			newData.path = 'twitch/' + newData.path;
+		} else if (KICK_URL_REGEX.test(newData.url)) {
+			newData.path = 'kick/' + newData.path;
 		} else {
 			newData.path = 'others/' + newData.path;
 		}
