@@ -12,20 +12,13 @@
 	let customLog: string = $state('');
 
 	onMount(async () => {
-		let instances = [...info.instances];
-
-		if (!instances) {
+		if (!info.instances) {
 			return;
 		}
-
-		for (const instance of instances) {
-			customLog = `Deleting "${instance.name}"...`;
-			const response = await sendCommand('deleteInstance', {
-				path: instance.name
-			});
-			await tick();
-			customLog = response.message;
-		}
+		customLog = `Deleting all instances...`;
+		const response = await sendCommand('deleteAllInstance');
+		await tick();
+		customLog = response.message;
 
 		await goto(resolve('/(view)/(multiview)'));
 	});

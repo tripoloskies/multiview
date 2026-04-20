@@ -12,20 +12,13 @@
 	let customLog: string = $state('');
 
 	onMount(async () => {
-		let instances = [...info.instances];
-
-		if (!instances) {
+		if (!info.instances) {
 			return;
 		}
-
-		for (const instance of instances) {
-			customLog = `Restarting "${instance.name}"...`;
-			const response = await sendCommand('restartInstance', {
-				path: instance.name
-			});
-			await tick();
-			customLog = response.message;
-		}
+		customLog = `Restarting all instances...`;
+		const response = await sendCommand('restartAllInstance');
+		await tick();
+		customLog = response.message;
 
 		await goto(resolve('/(view)/(multiview)'));
 	});

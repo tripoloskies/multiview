@@ -1,7 +1,9 @@
 import { actions as talk } from './actions/talk';
 import { actions as createInstance } from './actions/createInstance';
 import { actions as deleteInstance } from './actions/deleteInstance';
+import { actions as deleteAllInstance } from './actions/deleteAllInstance';
 import { actions as restartInstance } from './actions/restartInstance';
+import { actions as restartAllInstance } from './actions/restartAllInstance';
 import { actions as getServerTime } from './actions/getServerTime';
 import { actions as inspectInstance } from './actions/inspectInstance';
 import { actions as listInstance } from './actions/listInstance';
@@ -18,7 +20,9 @@ const lists = [
 	{ cmdName: 'talk', fn: talk },
 	{ cmdName: 'createInstance', fn: createInstance },
 	{ cmdName: 'deleteInstance', fn: deleteInstance },
+	{ cmdName: 'deleteAllInstance', fn: deleteAllInstance },
 	{ cmdName: 'restartInstance', fn: restartInstance },
+	{ cmdName: 'restartAllInstance', fn: restartAllInstance },
 	{ cmdName: 'inspectStream', fn: inspectInstance },
 	{ cmdName: 'getServerTime', fn: getServerTime },
 	{ cmdName: 'listInstance', fn: listInstance },

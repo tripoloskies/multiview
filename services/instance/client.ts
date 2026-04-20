@@ -77,7 +77,7 @@ const pm2Delete = (process: string | number): Promise<boolean> => {
 					return;
 				}
 				resolve(true);
-			}, 1000);
+			}, 50);
 		});
 	});
 };
@@ -99,11 +99,13 @@ const pm2Describe = (
 const pm2Restart = (process: string | number): Promise<true> => {
 	return new Promise((resolve, reject) => {
 		pm2.restart(process, (error) => {
-			if (error) {
-				reject(error);
-				return;
-			}
-			resolve(true);
+			setTimeout(() => {
+				if (error) {
+					reject(error);
+					return;
+				}
+				resolve(true);
+			}, 50);
 		});
 	});
 };
@@ -138,7 +140,6 @@ async function restartPM2Instance(name: string): Promise<boolean> {
 
 	try {
 		await pm2Restart(name);
-		await Bun.sleep(500);
 		await invalidateInstanceCache(name);
 		return true;
 	} catch {
@@ -448,46 +449,89 @@ export async function getStreamInstance(
 	return selectedInstance;
 }
 
-export async function deleteStreamInstance(path: string): Promise<boolean> {
-	await prisma.instance.upsert({
-		where: {
-			pathName: path
-		},
-		update: {
-			status: 'Deleting...'
-		},
-		create: {
-			path: {
-				connectOrCreate: {
-					where: {
-						name: path
-					},
-					create: {
-						name: path
-					}
-				}
-			},
-			status: 'Deleting...'
-		}
-	});
+export async function deleteStreamInstance(
+	path: string | string[]
+): Promise<boolean> {
+	let paths: string[];
+	const faiiledPaths: string[] = [];
+	let isSuccess: boolean = true;
 
-	const isSuccess = await destroyPM2Instance(path);
+	if (typeof path === 'string') {
+		paths = [path];
+	} else if (Array.isArray(path)) {
+		paths = path;
+	} else {
+		return false;
+	}
+
+	for (const _path of paths) {
+		await prisma.instance.upsert({
+			where: {
+				pathName: _path
+			},
+			update: {
+				status: 'Deleting...'
+			},
+			create: {
+				path: {
+					connectOrCreate: {
+						where: {
+							name: _path
+						},
+						create: {
+							name: _path
+						}
+					}
+				},
+				status: 'Deleting...'
+			}
+		});
+
+		const isDeletePathSuccess = await destroyPM2Instance(_path);
+
+		if (!isDeletePathSuccess) {
+			isSuccess = false;
+			faiiledPaths.push(_path);
+		}
+	}
 
 	await redis.del(INSTANCE_CACHE_KEY);
-	await Bun.sleep(500);
+
+	paths = paths.filter((_path) => !faiiledPaths.includes(_path));
 
 	await prisma.instance.deleteMany({
 		where: {
-			pathName: path
+			pathName: {
+				in: paths
+			}
 		}
 	});
-
 	return isSuccess;
 }
 
-export async function restartStreamInstance(name: string): Promise<boolean> {
-	await updateInstanceStatus(name, 'Update', 'Restarting');
-	return await restartPM2Instance(name);
+export async function restartStreamInstance(
+	path: string | string[]
+): Promise<boolean> {
+	let paths: string[];
+	let isSuccess: boolean = true;
+
+	if (typeof path === 'string') {
+		paths = [path];
+	} else if (Array.isArray(path)) {
+		paths = path;
+	} else {
+		return false;
+	}
+
+	for (const _path of paths) {
+		await updateInstanceStatus(_path, 'Update', 'Restarting');
+		const isRestartPathSuccess = await restartPM2Instance(_path);
+		if (!isRestartPathSuccess) {
+			isSuccess = false;
+		}
+	}
+
+	return isSuccess;
 }
 
 export async function updateInstanceStatus(

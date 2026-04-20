@@ -23,7 +23,7 @@ export function start(hostUrl: string): void {
 		clearTimeout(timeoutId);
 		if (!isFirstTime) {
 			for (const [key, data] of persistIds) {
-				_sendCommand(data.cmdName, data.data, key, true);
+				_sendCommand(data.cmdName, key, true, data.data);
 			}
 		} else {
 			isFirstTime = false;
@@ -43,7 +43,7 @@ export function start(hostUrl: string): void {
 			});
 
 			if (data.finished) {
-				await _sendCommand(props.cmdName, props.data, transactionId, true);
+				await _sendCommand(props.cmdName, transactionId, true, props.data);
 			}
 		}
 	};
@@ -90,9 +90,9 @@ function isReady(): Promise<boolean> {
 
 async function _sendCommand(
 	cmdName: string,
-	data: Record<string, unknown>,
 	transactionId: string,
-	persist: boolean = false
+	persist: boolean = false,
+	data?: Record<string, unknown>
 ): Promise<apiResponseSchema> {
 	await isReady();
 	return new Promise((resolve) => {
@@ -131,10 +131,10 @@ async function _sendCommand(
 
 export function sendCommand(
 	cmdName: string,
-	data: Record<string, unknown>
+	data?: Record<string, unknown>
 ): Promise<apiResponseSchema> {
 	const transactionId: string = uuidv4();
-	return _sendCommand(cmdName, data, transactionId);
+	return _sendCommand(cmdName, transactionId, false, data);
 }
 
 export function sendPersistCommand(options: wsApiPersistOptions): string {
@@ -144,7 +144,7 @@ export function sendPersistCommand(options: wsApiPersistOptions): string {
 		data: options.data,
 		callback: options.callback
 	});
-	_sendCommand(options.cmdName, options.data, transactionId, true);
+	_sendCommand(options.cmdName, transactionId, true, options.data);
 
 	return transactionId;
 }
