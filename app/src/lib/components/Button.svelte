@@ -6,7 +6,8 @@
 		link = '',
 		children,
 		preloadDataPolicy = '',
-		disabled = false
+		disabled = false,
+		align = ''
 	} = $props();
 
 	const availablePreloadDataPolicy = ['tap', 'hover'];
@@ -36,14 +37,18 @@
 </script>
 
 {#if type == 'link'}
-	<a href={link} {...otherAttributes}>{@render children?.()}</a>
+	<a href={link} {...otherAttributes} class={align}>{@render children?.()}</a>
 {:else if type == 'submit'}
 	<input bind:this={submitButton} type="submit" class="hidden" />
-	<button {type} onclick={submitClick} {disabled} {...otherAttributes}
-		>{@render children?.()}</button
+	<button
+		{type}
+		onclick={submitClick}
+		class={align}
+		{disabled}
+		{...otherAttributes}>{@render children?.()}</button
 	>
 {:else}
-	<button {onclick} {disabled} {...otherAttributes}
+	<button {onclick} {disabled} class={align} {...otherAttributes}
 		>{@render children?.()}</button
 	>
 {/if}
@@ -54,5 +59,15 @@
 	button,
 	a {
 		@apply flex cursor-pointer space-x-2 border-2 border-neutral-800 bg-neutral-800 px-4 py-2 text-center font-bold text-white;
+	}
+
+	a.center,
+	button.center {
+		@apply justify-center;
+	}
+
+	a.right,
+	button.right {
+		@apply justify-end;
 	}
 </style>
