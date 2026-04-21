@@ -33,12 +33,12 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 	.prompt {
-		@apply flex w-3/4 flex-col space-y-2 rounded bg-white p-2;
+		@apply mx-4 flex max-h-[90%] w-full flex-col space-y-2 rounded bg-white p-2 text-black lg:mx-0 lg:w-3/4;
 	}
 	.prompt-header {
 		@apply flex w-full items-center justify-between;
 	}
 	.prompt-body {
-		@apply relative flex w-full flex-col space-y-2;
+		@apply relative flex w-full grow flex-col space-y-2;
 	}
 </style>

@@ -2,6 +2,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import Hls from 'hls.js';
+	import Accordion from '$lib/components/Accordion.svelte';
 
 	let { data } = $props();
 	let player: HTMLVideoElement | undefined = $state();
@@ -72,12 +73,16 @@
 						</Button>
 					{/if}
 				</div>
-				<b>Description</b>
-				<p>{data.description}</p>
+				<Accordion>
+					{#snippet header()}
+						<b>Description</b>
+					{/snippet}
+					<p>{data.description}</p>
+				</Accordion>
 			</div>
 		{:else}
 			<div class="error">
-				<h1>Timeline not found.</h1>
+				<h1>Recording not found.</h1>
 			</div>
 		{/if}
 	</div>
@@ -85,19 +90,24 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
+
 	.playback-container-header {
 		@apply flex justify-between bg-neutral-600 px-2 py-2;
 	}
+
 	.playback-metadata {
 		@apply space-y-4 py-4;
 	}
+
 	.playback-metadata-header {
-		@apply flex justify-between;
+		@apply flex flex-col justify-between space-y-4 md:flex-row md:space-y-0;
 	}
+
 	.error {
 		@apply flex items-center justify-center pt-4;
 	}
+
 	video {
-		@apply aspect-video;
+		@apply aspect-video w-full;
 	}
 </style>

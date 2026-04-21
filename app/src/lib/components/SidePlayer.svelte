@@ -9,6 +9,6 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 	div {
-		@apply flex h-full w-full flex-col space-y-4 bg-neutral-700 p-4 text-white md:w-md;
+		@apply flex h-full w-full flex-col space-y-4 bg-neutral-800 p-4 text-white;
 	}
 </style>

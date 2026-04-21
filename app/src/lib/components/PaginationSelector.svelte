@@ -1,9 +1,8 @@
 <script lang="ts">
 	/* eslint-disable svelte/no-navigation-without-resolve */
+	import { tick } from 'svelte';
 	import Button from './Button.svelte';
-
-	const MAX_VISIBLE_PAGES: number = 5;
-
+	let MAX_VISIBLE_PAGES: number = 4;
 	type ScrollabelPageSelectorType = {
 		page: number;
 		totalPage: number;
@@ -12,7 +11,7 @@
 	let { page, totalPage }: ScrollabelPageSelectorType = $props();
 	let visiblePages: number[] = $state([]);
 	let isBackNextButtonAllowed: boolean = $state(false);
-
+	let innerWidth: number = $state(0);
 	let isFirstPageNumberMustVisible: boolean = $derived(
 		!visiblePages.includes(1) && isBackNextButtonAllowed
 	);
@@ -28,6 +27,11 @@
 		page != totalPage ? (page + 1).toString() : totalPage.toString()
 	);
 
+	$effect(() => {
+		if (innerWidth) {
+			tick().then(render);
+		}
+	});
 	function render() {
 		let currentPageIndex: number;
 		let totalVisiblePage: number;
@@ -38,30 +42,35 @@
 		} else {
 			isBackNextButtonAllowed = true;
 		}
-
-		if (totalPage - 2 > page) {
-			currentPageIndex = page >= MAX_VISIBLE_PAGES ? page - 2 : 1;
-			totalVisiblePage =
-				page >= MAX_VISIBLE_PAGES ? currentPageIndex + 4 : MAX_VISIBLE_PAGES;
-		} else {
-			currentPageIndex = totalPage - (MAX_VISIBLE_PAGES - 1);
-			totalVisiblePage = totalPage;
-		}
-
 		visiblePages = [];
 
-		for (
-			let currentPage = currentPageIndex;
-			currentPage <= totalVisiblePage;
-			currentPage++
-		) {
-			if (currentPage <= 0) {
-				continue;
+		if (innerWidth >= 1024) {
+			if (totalPage - 2 > page) {
+				currentPageIndex = page >= MAX_VISIBLE_PAGES ? page - 2 : 1;
+				totalVisiblePage =
+					page >= MAX_VISIBLE_PAGES ? currentPageIndex + 4 : MAX_VISIBLE_PAGES;
+			} else {
+				currentPageIndex = totalPage - (MAX_VISIBLE_PAGES - 1);
+				totalVisiblePage = totalPage;
 			}
-			visiblePages.push(currentPage);
+
+			for (
+				let currentPage = currentPageIndex;
+				currentPage <= totalVisiblePage;
+				currentPage++
+			) {
+				if (currentPage <= 0) {
+					continue;
+				}
+				visiblePages.push(currentPage);
+			}
+		} else {
+			currentPageIndex = page;
+			visiblePages.push(currentPageIndex);
 		}
 	}
 
+	$effect(() => {});
 	$effect(() => {
 		if (oldPage === page && oldTotalPage === totalPage) {
 			return;
@@ -74,6 +83,7 @@
 	render();
 </script>
 
+<svelte:window bind:innerWidth />
 <div class="page-selector">
 	{#if isBackNextButtonAllowed}
 		<Button type="link" preloadDataPolicy="tap" link={backButtonLink}
@@ -82,11 +92,8 @@
 		<div class="page-selector-scollable">
 			{#if isFirstPageNumberMustVisible}
 				<a href="1" data-sveltekit-preload-data="tap" class="selected">
-					<span>1</span>
+					<span>1 ...</span>
 				</a>
-				<div class="inactive">
-					<span>...</span>
-				</div>
 			{/if}
 			{#each visiblePages as visiblePage (visiblePage)}
 				{#if visiblePage == page}
@@ -100,15 +107,12 @@
 				{/if}
 			{/each}
 			{#if isLastPageNumberMustVisible}
-				<div class="inactive">
-					<span>...</span>
-				</div>
 				<a
 					href={totalPage.toString()}
 					data-sveltekit-preload-data="tap"
 					class="selected"
 				>
-					<span>{totalPage.toString()}</span>
+					<span>... {totalPage.toString()}</span>
 				</a>
 			{/if}
 		</div>

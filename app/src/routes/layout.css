@@ -4,6 +4,7 @@
 body {
 	font-family: 'IBM Plex Sans';
 	font-display: swap;
+	@apply bg-black text-white;
 }
 
 * {

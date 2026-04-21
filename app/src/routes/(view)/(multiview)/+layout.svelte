@@ -35,27 +35,29 @@
 	});
 </script>
 
-<Multiview>
+<Multiview floating>
 	<div id="multiview-container">
-		{#each info.instances as instance (instance.name)}
-			<div class="item">
-				{#if viewState.action !== 'none'}
-					<div class="item-overlay">
-						<Button onclick={() => selectToAction(instance.name)}
-							>{viewState.action.toUpperCase()}?</Button
-						>
-					</div>
-				{/if}
-				<Viewer
-					path={instance.name}
-					muted={true}
-					online={instance.online}
-					visible={config.showVideoMultiView}
-					status={instance.statusText}
-					{indicatorStatus}
-					{indicatorStatusText}
-				></Viewer>
-			</div>
+		{#each { length: 1 }}
+			{#each info.instances as instance (instance.name)}
+				<div class="item">
+					{#if viewState.action !== 'none'}
+						<div class="item-overlay">
+							<Button onclick={() => selectToAction(instance.name)}
+								>{viewState.action.toUpperCase()}?</Button
+							>
+						</div>
+					{/if}
+					<Viewer
+						path={instance.name}
+						muted={true}
+						online={instance.online}
+						visible={config.showVideoMultiView}
+						status={instance.statusText}
+						{indicatorStatus}
+						{indicatorStatusText}
+					></Viewer>
+				</div>
+			{/each}
 		{/each}
 	</div>
 	{#snippet controls()}
@@ -65,12 +67,17 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
+
 	#multiview-container {
-		@apply grid h-full w-full grow grid-cols-2 grid-rows-8 md:grid-cols-4 md:grid-rows-4 xl:grid-cols-4 xl:grid-rows-4;
+		@apply grid w-full grow grid-cols-1 md:grid-cols-2 xl:grid-cols-4;
 	}
 
 	.item {
-		@apply relative border-2 border-white;
+		@apply relative aspect-video;
+	}
+
+	.item {
+		@apply border-2 border-white;
 	}
 
 	.item-overlay {

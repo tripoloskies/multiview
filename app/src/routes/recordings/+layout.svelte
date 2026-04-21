@@ -6,51 +6,78 @@
 	import PlatformTag from '$lib/components/PlatformTag.svelte';
 
 	let { data, children } = $props();
-
-	let isSidebarOpen: boolean = $state(true);
+	let isSidebarOpen: boolean = $state(false);
 	let invalidationIntervalId: NodeJS.Timeout | undefined = $state();
-
+	let innerWidth: number = $state(0);
 	onMount(() => {
+		if (innerWidth >= 1024) {
+			isSidebarOpen = true;
+		}
 		invalidationIntervalId = setInterval(async () => {
 			await tick();
 			await invalidateAll();
 		}, data.invalidateDataDuration);
 	});
 
+	function closeSidebar() {
+		if (innerWidth >= 1024) {
+			return;
+		}
+		isSidebarOpen = false;
+	}
+
 	onDestroy(() => {
 		clearInterval(invalidationIntervalId);
 	});
 </script>
 
+<svelte:window bind:innerWidth />
+
 <svelte:head>
 	<title>Recordings</title>
 </svelte:head>
+
 <div id="recordings">
 	<nav>
 		<div class="nav-items">
 			<Button type="button" onclick={() => (isSidebarOpen = !isSidebarOpen)}>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke-width="1.5"
-					stroke="currentColor"
-					class="size-6"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M3.75 9h16.5m-16.5 6.75h16.5"
-					/>
-				</svg>
+				{#if isSidebarOpen}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor"
+						class="size-6"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M6 18 18 6M6 6l12 12"
+						/>
+					</svg>
+				{:else}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor"
+						class="size-6"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M3.75 9h16.5m-16.5 6.75h16.5"
+						/>
+					</svg>
+				{/if}
 			</Button>
-			<a href={resolve('/recordings')}>
+			<a href={resolve('/recordings')} onclick={closeSidebar}>
 				<h2>Recordings</h2>
 			</a>
 		</div>
-		<Button type="link" link={resolve('/(view)/(multiview)')}
-			>Back to Multiview</Button
-		>
+		<Button type="link" link={resolve('/(view)/(multiview)')}>Multiview</Button>
 	</nav>
 	<main>
 		{#if isSidebarOpen}
@@ -59,6 +86,7 @@
 				<div id="aside-path-lists">
 					{#each data.paths as { name, items } (name)}
 						<a
+							onclick={closeSidebar}
 							href={resolve('/recordings/path/[...path]/videos/[page]', {
 								path: name,
 								page: '1'
@@ -84,7 +112,7 @@
 	}
 
 	aside {
-		@apply absolute h-full w-full min-w-sm space-y-4 overflow-y-auto bg-neutral-700 p-4 lg:relative lg:w-auto;
+		@apply absolute z-50 h-full w-full min-w-sm space-y-4 overflow-y-auto bg-neutral-700 p-4 lg:relative lg:w-auto;
 	}
 
 	#aside-path-lists {
@@ -92,11 +120,11 @@
 	}
 
 	#recordings {
-		@apply flex h-screen max-h-screen w-full flex-col;
+		@apply flex h-dvh w-full flex-col;
 	}
 
 	main {
-		@apply flex grow overflow-x-hidden overflow-y-auto bg-black text-white;
+		@apply flex grow overflow-x-hidden overflow-y-auto text-white;
 	}
 
 	nav {

@@ -64,7 +64,7 @@
 							execute(data.path);
 						}}
 					>
-						<div id="inspect-field">
+						<div id="field">
 							<label for="path">Path Name</label>
 							<select name="path" class="w-full">
 								{#each info.instances as list (list.name)}
@@ -89,14 +89,14 @@
 	@reference "tailwindcss";
 
 	form {
-		@apply flex justify-between space-x-4;
+		@apply flex flex-col space-y-2 space-x-4 md:flex-row md:space-y-0;
 	}
 
-	#inspect-field {
-		@apply flex w-full space-x-4;
+	#field {
+		@apply flex w-full flex-col space-y-2 space-x-4 md:flex-row md:items-center;
 	}
 
-	#inspect-field > *:first-child {
-		@apply grow;
+	label {
+		@apply block w-24;
 	}
 </style>

@@ -375,7 +375,7 @@
 	}
 
 	button {
-		@apply flex h-full w-full flex-1 cursor-pointer;
+		@apply flex min-h-full w-full flex-1 cursor-pointer;
 	}
 
 	.viewer-player-notice > * {

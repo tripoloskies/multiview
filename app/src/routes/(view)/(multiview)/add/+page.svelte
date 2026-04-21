@@ -23,7 +23,6 @@
 	let eventSrc: string = $state('');
 	let customLog: string = $state('');
 	let streamInputs: streamInputs[] = $state([]);
-	let streamInputsCount: number = $derived(streamInputs.length);
 	let component: HTMLElement | undefined = $state();
 
 	onMount(() => {
@@ -31,11 +30,11 @@
 	});
 
 	$effect(() => {
-		if (targetInput) {
-			targetInput.focus();
-		}
 		if (streamInputs.length && component) {
 			component.scrollTop = component.scrollHeight;
+		}
+		if (targetInput) {
+			targetInput.focus();
 		}
 	});
 
@@ -49,14 +48,14 @@
 	}
 
 	function removeLastInput() {
-		if (streamInputsCount > 1) {
+		if (streamInputs.length > 1) {
 			streamInputs.pop();
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>Add {streamInputsCount > 1 ? 'Multiple ' : ''}| Multiview</title>
+	<title>Add {streamInputs.length > 1 ? 'Multiple ' : ''}| Multiview</title>
 </svelte:head>
 
 <Container>
@@ -66,145 +65,149 @@
 				<h2>Add</h2>
 			{/snippet}
 			{#if !isCreated}
-				<div class="control">
-					<form
-						bind:this={component}
-						onsubmit={async (event) => {
-							let isSuccess: boolean = true;
+				<form
+					class="control"
+					bind:this={component}
+					onsubmit={async (event) => {
+						let isSuccess: boolean = true;
 
-							event.preventDefault();
-							if (!(event.target instanceof HTMLFormElement)) {
-								return;
+						event.preventDefault();
+						if (!(event.target instanceof HTMLFormElement)) {
+							return;
+						}
+
+						let filteredStreamInputs =
+							streamInputs.length > 1
+								? streamInputs.filter(
+										({ path, url }) => path.length > 0 || url.length > 0
+									)
+								: streamInputs;
+
+						if (!filteredStreamInputs.length) {
+							customLog =
+								'Please complete the field for at least 1 stream input.';
+							return;
+						}
+
+						let failedStreamInputs: streamInputs[] = [];
+						let eventUrlFromLastInput: string = '';
+
+						isCreated = true;
+						for (const { path, url, lowLatency, log } of filteredStreamInputs) {
+							await tick();
+							customLog = `Adding.... (Path: ${path || `blank`} | URL: ${ellipsisGenerator(url, 20) || 'blank'})`;
+							const response = await sendCommand('createInstance', {
+								url: url,
+								path: path,
+								lowLatency: lowLatency,
+								log: log
+							});
+							customLog = response.message;
+
+							if (!response.success) {
+								failedStreamInputs.push({ path, url, lowLatency, log });
+								isSuccess = false;
+								continue;
 							}
 
-							let filteredStreamInputs =
-								streamInputs.length > 1
-									? streamInputs.filter(
-											({ path, url }) => path.length > 0 || url.length > 0
-										)
-									: streamInputs;
-
-							if (!filteredStreamInputs.length) {
+							const { eventUrl } = response.data as streamEventResponseSchema;
+							if (!eventUrl) {
 								customLog =
-									'Please complete the field for at least 1 stream input.';
-								return;
+									"No event URL? There's something wrong with the server.";
+								eventUrlFromLastInput = '';
+								failedStreamInputs.push({ path, url, lowLatency, log });
+								isSuccess = false;
+								continue;
 							}
 
-							let failedStreamInputs: streamInputs[] = [];
-							let eventUrlFromLastInput: string = '';
+							eventUrlFromLastInput = eventUrl;
+						}
 
-							isCreated = true;
-							for (const {
-								path,
-								url,
-								lowLatency,
-								log
-							} of filteredStreamInputs) {
-								await tick();
-								customLog = `Adding.... (Path: ${path || `blank`} | URL: ${ellipsisGenerator(url, 20) || 'blank'})`;
-								const response = await sendCommand('createInstance', {
-									url: url,
-									path: path,
-									lowLatency: lowLatency,
-									log: log
-								});
-								customLog = response.message;
-
-								if (!response.success) {
-									failedStreamInputs.push({ path, url, lowLatency, log });
-									isSuccess = false;
-									continue;
-								}
-
-								const { eventUrl } = response.data as streamEventResponseSchema;
-								if (!eventUrl) {
-									customLog =
-										"No event URL? There's something wrong with the server.";
-									eventUrlFromLastInput = '';
-									failedStreamInputs.push({ path, url, lowLatency, log });
-									isSuccess = false;
-									continue;
-								}
-
-								eventUrlFromLastInput = eventUrl;
-							}
-
-							if (streamInputs.length == 1 && isSuccess) {
-								eventSrc = `${data.eventRootUrl}${eventUrlFromLastInput}`;
+						if (streamInputs.length == 1 && isSuccess) {
+							eventSrc = `${data.eventRootUrl}${eventUrlFromLastInput}`;
+						} else {
+							isCreated = false;
+							if (isSuccess) {
+								streamInputs = [];
+								addAnotherInput();
 							} else {
-								isCreated = false;
-								if (isSuccess) {
-									streamInputs = [];
-									addAnotherInput();
-								} else {
-									streamInputs = failedStreamInputs;
-								}
+								streamInputs = failedStreamInputs;
 							}
-						}}
-					>
-						<div class="control-input-container">
-							{#each streamInputs as streamInput, index (index)}
-								<div class="control-input">
-									{#if streamInputsCount > 1}
-										<b>Stream {index + 1}</b>
-									{/if}
-									<div class="control-input-body">
-										{#if streamInputsCount - 1 == index}
-											<span>
-												<label for={`url${index}`}>Stream URL</label>
-												<input
-													bind:value={streamInput.url}
-													name={`url${index}`}
-													bind:this={targetInput}
-													placeholder="Stream URL"
-												/>
-											</span>
-										{:else}
-											<span>
-												<label for={`url${index}`}>Stream URL</label>
-												<input
-													bind:value={streamInput.url}
-													name={`url${index}`}
-													placeholder="Stream URL"
-												/>
-											</span>
-										{/if}
-
-										<span>
-											<label for={`path${index}`}>Path Name</label>
+						}
+					}}
+				>
+					<div class="control-input-container">
+						{#each streamInputs as streamInput, index (index)}
+							<div class="control-input">
+								{#if streamInputs.length > 1}
+									<b>Stream {index + 1}</b>
+								{/if}
+								<div class="control-input-body">
+									{#if streamInputs.length - 1 == index}
+										<div class="control-input-field">
+											<label for={`url${index}`}>Stream URL</label>
 											<input
-												bind:value={streamInput.path}
-												name={`path${index}`}
+												bind:value={streamInput.url}
+												name={`url${index}`}
+												bind:this={targetInput}
+												placeholder="Stream URL"
+											/>
+										</div>
+									{:else}
+										<div class="control-input-field">
+											<label for={`url${index}`}>Stream URL</label>
+											<input
+												bind:value={streamInput.url}
+												name={`url${index}`}
+												placeholder="Stream URL"
+											/>
+										</div>
+									{/if}
+
+									<div class="control-input-field">
+										<label for={`path${index}`}>Path Name</label>
+										<input
+											bind:value={streamInput.path}
+											name={`path${index}`}
+											placeholder="Path Name"
+										/>
+									</div>
+									<div class="control-input-advanced-field">
+										<div>
+											<label for={`lls${index}`}>Low Latency</label>
+											<input
+												bind:checked={streamInput.lowLatency}
+												name={`lls${index}`}
+												type="checkbox"
 												placeholder="Path Name"
 											/>
-											<label for={`lls${index}`}>Low Latency</label>
-											<div>
-												<input
-													bind:checked={streamInput.lowLatency}
-													name={`lls${index}`}
-													type="checkbox"
-													placeholder="Path Name"
-												/>
-											</div>
+										</div>
+										<div>
 											<label for={`log${index}`}>Enable Logging</label>
-											<div>
-												<input
-													bind:checked={streamInput.log}
-													name={`log${index}`}
-													type="checkbox"
-													placeholder="Enable Logging"
-												/>
-											</div>
-										</span>
-										<span> </span>
+											<input
+												bind:checked={streamInput.log}
+												name={`log${index}`}
+												type="checkbox"
+												placeholder="Enable Logging"
+											/>
+										</div>
 									</div>
 								</div>
-							{/each}
-						</div>
-						<div class="control-buttons">
+								{#if streamInputs.length > 1 && index < streamInputs.length - 1}
+									<hr />
+								{/if}
+							</div>
+						{/each}
+					</div>
+					<div class="control-buttons">
+						<div class="control-primary-actions">
 							<Button type="submit">Add Stream</Button>
-							<div class="control-input-action">
-								<p>Input(s): {streamInputsCount}</p>
+						</div>
+						<div class="control-secondary-actions">
+							<div>
+								<p>Input(s): {streamInputs.length}</p>
+							</div>
+							<div class="stream-inputs-modifier">
 								<Button
 									type="button"
 									onclick={(event) => {
@@ -249,8 +252,8 @@
 								</Button>
 							</div>
 						</div>
-					</form>
-				</div>
+					</div>
+				</form>
 			{/if}
 			<ConsoleLog eventUrl={eventSrc} {customLog} />
 		</Prompt>
@@ -259,41 +262,57 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
-	span {
-		@apply flex w-full flex-row items-center space-x-4;
-	}
-
-	span > label {
-		@apply w-24;
-	}
-	span > input {
-		@apply grow;
-	}
 
 	form {
-		@apply max-h-60 space-y-4 overflow-y-auto;
+		@apply max-h-96 grow overflow-y-auto;
 	}
 
-	.control {
-		@apply relative flex w-full flex-col justify-between space-y-4;
-	}
-
-	.control-buttons {
-		@apply sticky bottom-0 flex w-full justify-between space-x-4 bg-white pt-2;
-	}
-
-	.control-input-action {
-		@apply flex items-center space-x-4;
-	}
 	.control-input {
-		@apply space-y-4;
-	}
-
-	.control-input-body {
-		@apply flex w-full flex-col space-y-4;
+		@apply flex flex-col space-y-2;
 	}
 
 	.control-input-container {
-		@apply grid grid-cols-1 gap-y-2;
+		@apply space-y-2;
+	}
+
+	.control-input-body {
+		@apply flex flex-col space-y-2;
+	}
+
+	.control-input-field {
+		@apply flex items-center;
+	}
+
+	.control-input-advanced-field {
+		@apply grid grid-cols-2 gap-2;
+	}
+
+	.control-input-advanced-field > div {
+		@apply flex items-center;
+	}
+
+	label {
+		@apply block w-24;
+	}
+
+	input:not([type='checkbox']),
+	.control-input-advanced-field > div > label {
+		@apply flex-1;
+	}
+
+	.control-buttons {
+		@apply sticky bottom-0 flex w-full flex-col-reverse justify-between bg-neutral-100 py-2 md:flex-row;
+	}
+
+	.control-primary-actions {
+		@apply grid md:flex;
+	}
+
+	.control-secondary-actions {
+		@apply flex items-center justify-between space-x-2;
+	}
+
+	.stream-inputs-modifier {
+		@apply flex;
 	}
 </style>

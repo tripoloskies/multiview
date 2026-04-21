@@ -100,11 +100,11 @@
 	}
 
 	.video-card-image {
-		@apply flex aspect-video items-center justify-center;
+		@apply flex aspect-video items-center justify-center overflow-hidden;
 	}
 
 	.video-card-context {
-		@apply flex grow items-center space-x-4 p-4;
+		@apply flex w-full grow items-center space-x-4 p-4;
 	}
 
 	.movie-icon {
@@ -125,6 +125,6 @@
 	}
 
 	.video-card-option-toggle {
-		@apply z-10 cursor-pointer px-2;
+		@apply cursor-pointer px-2;
 	}
 </style>

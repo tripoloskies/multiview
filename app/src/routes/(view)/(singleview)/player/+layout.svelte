@@ -15,6 +15,8 @@
 	import { onDestroy, onMount } from 'svelte';
 	import Controls from '$lib/layouts/Controls.svelte';
 	import { info } from '$lib/stores/info.svelte.js';
+	import { state as playerState } from '$lib/stores/player.svelte';
+	import SidePlayer from '$lib/components/SidePlayer.svelte';
 
 	let { data, children } = $props();
 
@@ -25,7 +27,11 @@
 	let transactionId: string = $state('');
 	let indicatorStatus: ViewerIndicatorStatus = $state('ok');
 	let indicatorStatusText: string = $state('');
+	let isSidebarVisible: boolean = $derived(playerState.isActionPageActive);
 
+	$effect(() => {
+		console.log(isSidebarVisible);
+	});
 	onMount(async () => {
 		transactionId = await sendPersistCommand({
 			cmdName: 'getInstance',
@@ -72,22 +78,24 @@
 </script>
 
 <Multiview>
-	<div class="contain">
+	<div class={`player-container ${isSidebarVisible ? 'expand' : ''}`}>
 		{#if url?.length > 0}
-			{#if children?.length > 0}
-				<div class="side-contain">
+			<div class={`side-player-container ${!isSidebarVisible ? 'hidden' : ''}`}>
+				<SidePlayer>
 					{@render children()}
-				</div>
-			{/if}
-			<Viewer
-				path={data.path}
-				online={online || false}
-				{status}
-				muted={false}
-				visible={true}
-				{indicatorStatus}
-				{indicatorStatusText}
-			></Viewer>
+				</SidePlayer>
+			</div>
+			<div class="player-content">
+				<Viewer
+					path={data.path}
+					online={online || false}
+					{status}
+					muted={false}
+					visible={true}
+					{indicatorStatus}
+					{indicatorStatusText}
+				></Viewer>
+			</div>
 		{/if}
 	</div>
 
@@ -172,7 +180,19 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 
-	.contain {
-		@apply flex flex-1 flex-col md:flex-row;
+	.player-container {
+		@apply min-h-full flex-1;
+	}
+
+	.player-container.expand {
+		@apply grid grid-rows-2 lg:grid-cols-4 lg:grid-rows-1;
+	}
+
+	form {
+		@apply grid;
+	}
+
+	.player-content {
+		@apply h-full w-full lg:col-span-3;
 	}
 </style>
