@@ -245,7 +245,13 @@ publish() {
             echo "The publisher was dead. Skipping..."
             break
         fi
-        ffmpeg -loglevel quiet -i "$A_DIR/segments/segment1.ts" -frames:v 1 -update true -y "$A_DIR/thumbnail.jpg"
+        
+        ffmpeg -loglevel quiet -i "$A_DIR/segments/segment1.ts" -frames:v 1 -update true \
+        -vf "scale=iw*sar:ih,setsar=1,\
+        scale=1920:1080:force_original_aspect_ratio=decrease,\
+        pad=1920:1080:(ow-iw)/2:(oh-ih)/2" \
+        -y "$A_DIR/thumbnail.jpg"
+
         if [ -f "$A_DIR/thumbnail.jpg" ]; then
             echo "Thumbnail successfully created."
             if [[ "$METADATA" == "yes" ]]; then
