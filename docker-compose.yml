@@ -2,10 +2,20 @@ services:
   cache:
     hostname: cache
     image: valkey/valkey:9-alpine
+    healthcheck:
+      test: ['CMD-SHELL', 'valkey-cli -p 6379 ping | grep PONG']
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    networks:
+      - internal_network
 
   potoken:
     hostname: potoken
     image: brainicism/bgutil-ytdlp-pot-provider:latest
+    networks:
+      - internal_network
+      - external_network
 
   nginx:
     hostname: nginx
@@ -15,30 +25,54 @@ services:
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/default.conf
     restart: always
+    depends_on:
+      streaming:
+        condition: service_healthy
+    networks:
+      - internal_network
+      - external_network
 
   streaming:
     hostname: streaming
     build: ./streaming
-    ports:
-      - 9999:9999
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:9997/v3/info || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     volumes:
       - ./config/mediamtx.yml:/mediamtx.yml
+    networks:
+      - internal_network
 
   database:
     hostname: database
     image: postgres:18.3
     ports:
       - 5132:5132
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=engineeredPassword
       - POSTGRES_DB=multiview
     volumes:
       - ./database/data:/var/lib/postgresql
+    networks:
+      - internal_network
 
   web:
     hostname: web
     build: .
+    depends_on:
+      cache:
+        condition: service_healthy
+      database:
+        condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:engineeredPassword@database:5432/multiview
       - STREAMING_HOST=streaming
@@ -47,3 +81,11 @@ services:
     volumes:
       - ./config/cookies.txt:/app/services/config/cookies.txt
       - ./recordings:/recordings
+    networks:
+      - internal_network
+      - external_network
+
+networks:
+  internal_network:
+    internal: true
+  external_network:
