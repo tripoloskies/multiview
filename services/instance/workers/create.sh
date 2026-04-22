@@ -142,7 +142,8 @@ publish() {
     local BUFFER_SIZE=$2
     local ARGS=$3
     local METADATA=$4
-    
+    local STREAM_PROTOCOL=$5
+
     RECORD_ID=$(getrecordId)
 
     if [[ "$URL" == "" ]]; then
@@ -212,7 +213,7 @@ publish() {
     $STREAMLINK_PATH --loglevel none \
     --http-cookies-file "$WORK_DIR/config/cookies.txt" $STREAMLINK_LOG_ARGS \
     --stream-segment-threads "$SEGMENT_THREADS" $ARGS --ringbuffer-size "$RINGBUFFER_SIZE" \
-    --stdout "$URL" best | \
+    --stdout "$STREAM_PROTOCOL$URL" best | \
     "${BUFFER_CMD[@]}" | \
     FFREPORT=file="$FFREPORT_PATH":level="$FFREPORT_LVL" ffmpeg -hide_banner -loglevel quiet -stats -stats_period 5 \
     -thread_queue_size 2048 $FFLAGS -tag 0 -re \
@@ -404,10 +405,51 @@ kickGetStreamManifest() {
     $YTDLP_PATH -q --print "url" "$SOURCE_URL" >&1
 }
 
+tiktokCheckStatus() {
+    local STATUS
+
+    STATUS=$($YTDLP_PATH --no-warnings --print "live_status" "$SOURCE_URL" 2>&1)
+
+    if [[ "$STATUS" == "is_live" ]]; then
+        inform_update "Live Detected"
+        return 0
+    elif [[ "$STATUS" == *"not currently live"* ]]; then
+        inform_update "Offline"
+        echo "Stream has ended. Exiting...."
+        return 2
+    elif [[ "$STATUS" == "NA" || "$STATUS" == *"not a valid URL"* ]]; then
+        inform_update "Unknown URL"
+        echo "Unknown URL. Exiting..."
+        return 2
+    else
+        inform_update "$STATUS"
+        echo "Unknown ($STATUS). Retrying in 15s..."
+        sleep 15
+        return 1
+    fi
+}
+
+tiktokGetStreamManifest() {
+    $STREAMLINK_PATH "$SOURCE_URL" best --stream-url --loglevel none >&1
+}
+
+tiktokCheckManifestHttpStatus() {
+    local STATUS
+    local URL=$1
+
+    STATUS=$(curl -s -I -o /dev/null -w "%{http_code}\\n" "$URL")
+
+    if [[ "$STATUS" == "200" ]]; then
+        return 0
+    else 
+        return 1
+    fi
+}
+
 othersCheckStatus() {
     local STATUS
 
-    STATUS=$(curl -s -L -o /dev/null -w "%{http_code}\\n" "$SOURCE_URL")
+    STATUS=$(curl -s -I -o /dev/null -w "%{http_code}\\n" "$SOURCE_URL")
 
     if [[ "$STATUS" == "200" ]]; then
         inform_update "Live Detected"
@@ -537,6 +579,42 @@ main() {
                 local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge $LLS_LIVE_EDGE --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
                 local ADD_METADATA="yes"
 
+            # TikTok
+            elif [[ "$SOURCE_URL" =~ ^(https?:\/\/)?(www\.)?tiktok\.com ]]; then
+                echo "TikTok URL detected."
+
+                tiktokCheckStatus
+                local CHECK_STATUS=$?
+                if [[ $CHECK_STATUS == 1 ]]; then
+                    continue
+                elif [[ $CHECK_STATUS == 2 ]]; then
+                    break
+                fi 
+
+                inform_update "Get Manifest URL"
+                echo "Get Manifest URL."
+                
+                if [[ "$LOW_LATENCY_STREAM" == "1" ]]; then
+                    local LLS_LIVE_EDGE="1"
+                else
+                    local LLS_LIVE_EDGE="3"
+                fi
+
+                local MANIFEST=$(tiktokGetStreamManifest)
+                tiktokCheckManifestHttpStatus "$MANIFEST"
+                local CHECK_STATUS=$?
+                if [[ $CHECK_STATUS == 1 ]]; then
+                    inform_update "Broken Manifest URL"
+                    echo "Broken Manifest URL. Exiting..."
+                    sleep 1
+                    break
+                fi 
+
+                local STREAM_PROTOCOL="httpstream://"
+                local BUFFER="5M"
+                local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge $LLS_LIVE_EDGE --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
+                local ADD_METADATA="yes"
+
             # Others
             else
                 inform_update "Please wait."
@@ -564,7 +642,7 @@ main() {
 
         echo "Starting."
         inform_update "Starting"
-        publish "$MANIFEST" "$BUFFER" "$ADD_ARGS" "$ADD_METADATA"
+        publish "$MANIFEST" "$BUFFER" "$ADD_ARGS" "$ADD_METADATA" "$STREAM_PROTOCOL"
         inform_update "Stopped"
 
         echo "Ended. Checking once again..."

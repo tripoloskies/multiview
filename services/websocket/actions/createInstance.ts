@@ -9,7 +9,9 @@ import {
 	YT_URL_REGEX,
 	PATH_REGEX,
 	TRIM_LEAD_TRAIL_SLASH_REGEX,
-	KICK_URL_REGEX
+	KICK_URL_REGEX,
+	TIKTOK_URL_REGEX,
+	LIVE_PATH_REGEX
 } from '@shared/utils/regex';
 
 export const actions: wsActions = async (data) => {
@@ -25,12 +27,20 @@ export const actions: wsActions = async (data) => {
 		newData.path = decodeURIComponent(newData.path)
 			.replace(TRIM_LEAD_TRAIL_SLASH_REGEX, '')
 			.replace(PATH_REGEX, '_');
+		newData.url = newData.url.replace(/\/$/, '');
+
 		if (YT_URL_REGEX.test(newData.url)) {
 			newData.path = 'yt/' + newData.path;
 		} else if (TWITCH_URL_REGEX.test(newData.url)) {
 			newData.path = 'twitch/' + newData.path;
 		} else if (KICK_URL_REGEX.test(newData.url)) {
 			newData.path = 'kick/' + newData.path;
+		} else if (TIKTOK_URL_REGEX.test(newData.url)) {
+			if (!LIVE_PATH_REGEX.test(newData.url)) {
+				newData.url = newData.url + '/live';
+			}
+
+			newData.path = 'tiktok/' + newData.path;
 		} else {
 			newData.path = 'others/' + newData.path;
 		}
