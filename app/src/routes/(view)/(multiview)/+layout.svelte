@@ -69,7 +69,7 @@
 	@reference "tailwindcss";
 
 	#multiview-container {
-		@apply grid w-full grow grid-cols-1 md:grid-cols-2 xl:grid-cols-4;
+		@apply grid w-full grow grid-cols-1 place-content-start md:grid-cols-2 xl:grid-cols-4;
 	}
 
 	.item {
