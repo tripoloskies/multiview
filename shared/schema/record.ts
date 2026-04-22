@@ -16,7 +16,8 @@ export const recordGetSchema = z.object({
 	}),
 	metadata: z
 		.object({
-			recordId: z.string(),
+			id: z.string(),
+			uploaderId: z.string(),
 			title: z.string(),
 			uploader: z.string(),
 			dateUploaded: z.date(),

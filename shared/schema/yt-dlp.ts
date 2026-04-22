@@ -2,6 +2,7 @@ import z from 'zod';
 
 export const ytdlpMetadataSchema = z.object({
 	id: z.string().min(1),
+	channel_id: z.string().optional(),
 	fulltitle: z.string().min(1),
 	uploader: z.string().min(1),
 	timestamp: z.number(),

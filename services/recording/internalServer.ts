@@ -324,7 +324,7 @@ const _server = Bun.serve({
 					const recordSourceMetadata = record.sourceMetadataId
 						? await prisma.recordSourceMetadata.findFirst({
 								where: {
-									recordId: record.sourceMetadataId
+									id: record.sourceMetadataId
 								}
 							})
 						: null;
@@ -481,12 +481,31 @@ const _server = Bun.serve({
 
 				const metadata = resultMetadata.data;
 
+				const extractor =
+					metadata.extractor.split(':')[0]?.toLowerCase() || 'others';
+				let uploaderId: string;
+
+				switch (extractor) {
+					case 'youtube':
+						uploaderId = metadata.channel_id || 'unknown';
+						break;
+					case 'twitch':
+						metadata.fulltitle = metadata.description;
+						uploaderId = metadata.uploader.toLowerCase();
+						break;
+					case 'kick':
+						uploaderId = metadata.uploader.toLowerCase();
+						break;
+					default:
+						uploaderId = metadata.channel_id || 'unknown';
+				}
+
 				const recordSourceMetadata = await prisma.recordSourceMetadata.upsert({
 					select: {
-						recordId: true
+						id: true
 					},
 					where: {
-						recordId: `${metadata.extractor}:${metadata.id}`
+						id: `${extractor}:${metadata.id}`
 					},
 					update: {
 						title: metadata.fulltitle,
@@ -494,7 +513,9 @@ const _server = Bun.serve({
 						webpageUrl: metadata.webpage_url
 					},
 					create: {
-						recordId: `${metadata.extractor}:${metadata.id}`,
+						id: `${extractor}:${metadata.id}`,
+						sourceId: metadata.id,
+						uploaderId: uploaderId,
 						title: metadata.fulltitle,
 						description: metadata.description,
 						dateUploaded: new Date(metadata.timestamp * 1000).toISOString(),
@@ -508,7 +529,7 @@ const _server = Bun.serve({
 						id: newData.recordId
 					},
 					data: {
-						sourceMetadataId: recordSourceMetadata.recordId
+						sourceMetadataId: recordSourceMetadata.id
 					}
 				});
 				console.log(

@@ -19,14 +19,17 @@ model Instance {
 
 model Path {
   name        String    @id
+  platform    String
   dateCreated DateTime  @default(now())
   record      Record[]
   instance    Instance?
 }
 
 model RecordSourceMetadata {
-  recordId     String   @id
+  id           String   @id
   record       Record[]
+  sourceId     String?
+  uploaderId   String
   title        String
   uploader     String
   dateUploaded DateTime
@@ -38,7 +41,7 @@ model Record {
   id               String                @id
   path             Path                  @relation(fields: [pathName], references: [name])
   pathName         String
-  sourceMetadata   RecordSourceMetadata? @relation(fields: [sourceMetadataId], references: [recordId], onDelete: SetNull, onUpdate: Cascade)
+  sourceMetadata   RecordSourceMetadata? @relation(fields: [sourceMetadataId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   sourceMetadataId String?
   manifestPath     String
   datePublished    DateTime              @default(now())

@@ -121,7 +121,7 @@ parseStreamMetadata() {
     echo "Metadata extraction starting..."
 
     # shellcheck disable=SC2046
-    METADATA=$($YTDLP_PATH $(getytdlpCookieArgs) -O "%(.{id,fulltitle,uploader,timestamp,description,extractor,webpage_url})#j" --no-warnings --skip-download "$SOURCE_URL" 1>&1 | base64)    
+    METADATA=$($YTDLP_PATH $(getytdlpCookieArgs) -O "%(.{id,channel_id,fulltitle,uploader,timestamp,description,extractor,webpage_url})#j" --no-warnings --skip-download "$SOURCE_URL" 1>&1 | base64)    
     
     if [[ "$METADATA" == "" ]]; then
         echo "Metadata extraction failed."

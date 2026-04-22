@@ -3,6 +3,7 @@ import pm2 from 'pm2';
 import { type instanceSchema } from '@shared/schema/instance';
 import { prisma } from '@shared/database';
 import { PrismaClientKnownRequestError } from '@shared/database/generated/prisma/internal/prismaNamespace';
+import { getPlatformByPath } from '@shared/utils/regex';
 
 let isConnected: boolean = false;
 
@@ -465,6 +466,12 @@ export async function deleteStreamInstance(
 	}
 
 	for (const _path of paths) {
+		const platform = getPlatformByPath(_path);
+
+		if (platform === null) {
+			continue;
+		}
+
 		await prisma.instance.upsert({
 			where: {
 				pathName: _path
@@ -479,7 +486,8 @@ export async function deleteStreamInstance(
 							name: _path
 						},
 						create: {
-							name: _path
+							name: _path,
+							platform: platform
 						}
 					}
 				},
@@ -539,6 +547,12 @@ export async function updateInstanceStatus(
 	action: string,
 	status: string
 ): Promise<boolean> {
+	const platform = getPlatformByPath(name);
+
+	if (platform === null) {
+		return false;
+	}
+
 	try {
 		switch (action) {
 			case 'Update':
@@ -556,7 +570,8 @@ export async function updateInstanceStatus(
 									name: name
 								},
 								create: {
-									name: name
+									name: name,
+									platform: platform
 								}
 							}
 						},
