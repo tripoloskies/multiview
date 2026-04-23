@@ -14,7 +14,7 @@ export function getPlatformByPath(path: string): string | null {
 		return null;
 	}
 
-	let firstPath = path.split('/')[0]?.toLowerCase();
+	const firstPath = path.split('/')[0]?.toLowerCase();
 
 	if (!firstPath?.length) {
 		return null;

@@ -16,5 +16,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	event.locals.sessionId = sessionId;
+	event.locals.host = event.url.hostname;
+
 	return resolve(event);
 };

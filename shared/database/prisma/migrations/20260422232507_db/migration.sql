@@ -2,6 +2,7 @@
 CREATE TABLE "Instance" (
     "status" TEXT NOT NULL,
     "pathName" TEXT NOT NULL,
+    "lowLatency" BOOLEAN NOT NULL DEFAULT false,
     "dateCreated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Instance_pkey" PRIMARY KEY ("pathName")
@@ -34,6 +35,7 @@ CREATE TABLE "RecordSourceMetadata" (
 CREATE TABLE "Record" (
     "id" TEXT NOT NULL,
     "pathName" TEXT NOT NULL,
+    "instanceId" TEXT,
     "sourceMetadataId" TEXT,
     "manifestPath" TEXT NOT NULL,
     "datePublished" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -41,11 +43,17 @@ CREATE TABLE "Record" (
     CONSTRAINT "Record_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Record_instanceId_key" ON "Record"("instanceId");
+
 -- AddForeignKey
 ALTER TABLE "Instance" ADD CONSTRAINT "Instance_pathName_fkey" FOREIGN KEY ("pathName") REFERENCES "Path"("name") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Record" ADD CONSTRAINT "Record_pathName_fkey" FOREIGN KEY ("pathName") REFERENCES "Path"("name") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Record" ADD CONSTRAINT "Record_instanceId_fkey" FOREIGN KEY ("instanceId") REFERENCES "Instance"("pathName") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Record" ADD CONSTRAINT "Record_sourceMetadataId_fkey" FOREIGN KEY ("sourceMetadataId") REFERENCES "RecordSourceMetadata"("id") ON DELETE SET NULL ON UPDATE CASCADE;

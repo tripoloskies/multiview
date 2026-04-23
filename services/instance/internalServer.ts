@@ -1,5 +1,5 @@
 import z from 'zod';
-import { updateInstanceStatus } from './client';
+import { updateInstanceState, updateInstanceStatus } from './client';
 
 const _server = Bun.serve({
 	port: 3001,
@@ -23,6 +23,36 @@ const _server = Bun.serve({
 
 				if (
 					!(await updateInstanceStatus(data.path, data.action, data.status))
+				) {
+					return new Response('2');
+				}
+
+				return new Response('0');
+			}
+		},
+		'/updateState': {
+			POST: async (request: Bun.BunRequest) => {
+				const requestData = Object.fromEntries(
+					(await request.formData()).entries()
+				);
+				const schema = z.object({
+					path: z.string().min(1),
+					lowLatency: z.string(),
+					recordId: z.string()
+				});
+
+				const { data, success } = await schema.safeParseAsync(requestData);
+
+				if (!success) {
+					return new Response('1');
+				}
+
+				if (
+					!(await updateInstanceState(
+						data.path,
+						data.lowLatency === '1' ? true : false,
+						data.recordId
+					))
 				) {
 					return new Response('2');
 				}

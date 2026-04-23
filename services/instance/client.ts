@@ -266,27 +266,49 @@ export async function invalidateInstanceCache(
 		return null;
 	}
 
-	if (await redis.hexists(INSTANCE_CACHE_KEY, name)) {
-		await redis.hdel(INSTANCE_CACHE_KEY, name);
-	}
-
-	const instances = await prisma.instance.findFirst({
-		select: {
-			status: true,
-			dateCreated: true
-		},
+	const info = await prisma.path.findFirst({
 		where: {
-			pathName: name
+			name: name
+		},
+		select: {
+			platform: true,
+			instance: {
+				select: {
+					status: true,
+					lowLatency: true,
+					dateCreated: true,
+					record: {
+						select: {
+							sourceMetadata: {
+								select: {
+									sourceId: true
+								}
+							}
+						}
+					}
+				}
+			},
+			record: {}
 		}
 	});
 
+	if (!info) {
+		return null;
+	}
+
+	if (await redis.hexists(INSTANCE_CACHE_KEY, name)) {
+		await redis.hdel(INSTANCE_CACHE_KEY, name);
+	}
 	const instanceInfo = {
 		name: name,
 		labelName: `${name} ${selectedInstance?.pm2_env?.status}`,
-		online: instances?.status.toLowerCase() === 'online',
+		lowLatency: info.instance?.lowLatency || false,
+		platform: info.platform,
+		streamSourceId: info.instance?.record?.sourceMetadata?.sourceId || null,
+		online: info.instance?.status.toLowerCase() === 'online',
 		active: selectedInstance?.pm2_env?.status !== 'stopped',
-		statusText: instances ? instances?.status : 'No Report',
-		dateCreated: instances?.dateCreated.getTime() || 0,
+		statusText: info.instance ? info.instance?.status : 'No Report',
+		dateCreated: info.instance?.dateCreated.getTime() || 0,
 		mediaUrl: name
 	};
 
@@ -422,7 +444,6 @@ export async function addStreamInstance(
 		});
 
 		await updateInstanceStatus(path, 'Update', 'Added');
-
 		return status;
 	} catch (error) {
 		console.warn(
@@ -540,6 +561,54 @@ export async function restartStreamInstance(
 	}
 
 	return isSuccess;
+}
+
+export async function updateInstanceState(
+	name: string,
+	lowLatency: boolean,
+	recordId: string
+): Promise<boolean> {
+	const platform = getPlatformByPath(name);
+
+	if (platform === null) {
+		return false;
+	}
+
+	try {
+		const instanceCount = await prisma.instance.count({
+			where: {
+				pathName: name
+			}
+		});
+
+		if (!instanceCount || instanceCount > 1) {
+			return false;
+		}
+
+		await prisma.$transaction([
+			prisma.instance.updateMany({
+				where: {
+					pathName: name
+				},
+				data: {
+					lowLatency: lowLatency
+				}
+			}),
+			prisma.record.updateMany({
+				where: {
+					id: recordId
+				},
+				data: {
+					instanceId: name
+				}
+			})
+		]);
+	} catch {
+		console.error(`[updateInstanceStatus:error] Internal Server Error.`);
+		return false;
+	}
+	await invalidateInstanceCache(name);
+	return true;
 }
 
 export async function updateInstanceStatus(

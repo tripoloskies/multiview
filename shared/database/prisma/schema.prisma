@@ -14,7 +14,9 @@ model Instance {
   status      String
   path        Path     @relation(fields: [pathName], references: [name])
   pathName    String   @id
+  lowLatency  Boolean  @default(false)
   dateCreated DateTime @default(now())
+  record      Record?
 }
 
 model Path {
@@ -41,6 +43,8 @@ model Record {
   id               String                @id
   path             Path                  @relation(fields: [pathName], references: [name])
   pathName         String
+  instanceId       String?               @unique
+  instance         Instance?             @relation(fields: [instanceId], references: [pathName], onDelete: SetNull, onUpdate: Cascade)
   sourceMetadata   RecordSourceMetadata? @relation(fields: [sourceMetadataId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   sourceMetadataId String?
   manifestPath     String

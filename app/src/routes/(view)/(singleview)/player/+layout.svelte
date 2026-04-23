@@ -15,7 +15,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import Controls from '$lib/layouts/Controls.svelte';
 	import { info } from '$lib/stores/info.svelte.js';
-	import { state as playerState } from '$lib/stores/player.svelte';
+	import { state as playerState, reset } from '$lib/stores/player.svelte';
 	import SidePlayer from '$lib/components/SidePlayer.svelte';
 
 	let { data, children } = $props();
@@ -24,15 +24,14 @@
 	let url: string = $state('');
 	let online: boolean | null = $state(null);
 	let status: string = $state('');
+	let isChatAvailable: boolean = $state(false);
 	let transactionId: string = $state('');
 	let indicatorStatus: ViewerIndicatorStatus = $state('ok');
 	let indicatorStatusText: string = $state('');
 	let isSidebarVisible: boolean = $derived(playerState.isActionPageActive);
 
-	$effect(() => {
-		console.log(isSidebarVisible);
-	});
 	onMount(async () => {
+		reset();
 		transactionId = await sendPersistCommand({
 			cmdName: 'getInstance',
 			data: { path: data.path },
@@ -47,9 +46,36 @@
 				url = streamData.mediaUrl || '';
 				online = streamData.online;
 				status = streamData.statusText;
+
+				playerState.online = streamData.online;
+				playerState.platform = streamData.platform;
+				playerState.sourceId = streamData.streamSourceId;
+				playerState.lowLatency = streamData.lowLatency;
+
+				if (
+					streamData.lowLatency &&
+					streamData.online &&
+					streamData.streamSourceId !== null
+				) {
+					switch (streamData.platform) {
+						case 'youtube':
+						case 'twitch':
+						case 'kick':
+							isChatAvailable = true;
+							break;
+						default:
+							isChatAvailable = false;
+					}
+				} else {
+					isChatAvailable = false;
+				}
 			}
 		});
 		serverMessage = 'Ready';
+	});
+
+	onDestroy(() => {
+		reset();
 	});
 
 	$effect(() => {
@@ -167,6 +193,17 @@
 				<input type="hidden" name="path" value={data?.path} />
 				<Button type="submit">Restart</Button>
 			</form>
+			{#if isChatAvailable}
+				<Button
+					onclick={async () => {
+						await goto(
+							resolve('/(view)/(singleview)/player/chat/[...path]', {
+								path: data?.path
+							})
+						);
+					}}>Chat</Button
+				>
+			{/if}
 			{#snippet footer()}
 				<div>
 					<b>Message: </b>

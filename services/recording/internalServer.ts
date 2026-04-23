@@ -483,6 +483,7 @@ const _server = Bun.serve({
 
 				const extractor =
 					metadata.extractor.split(':')[0]?.toLowerCase() || 'others';
+				let sourceId: string | undefined;
 				let uploaderId: string;
 
 				switch (extractor) {
@@ -491,9 +492,11 @@ const _server = Bun.serve({
 						break;
 					case 'twitch':
 						metadata.fulltitle = metadata.description;
+						sourceId = metadata.uploader.toLowerCase();
 						uploaderId = metadata.uploader.toLowerCase();
 						break;
 					case 'kick':
+						sourceId = metadata.uploader.toLowerCase();
 						uploaderId = metadata.uploader.toLowerCase();
 						break;
 					default:
@@ -514,7 +517,7 @@ const _server = Bun.serve({
 					},
 					create: {
 						id: `${extractor}:${metadata.id}`,
-						sourceId: metadata.id,
+						sourceId: sourceId || metadata.id,
 						uploaderId: uploaderId,
 						title: metadata.fulltitle,
 						description: metadata.description,
@@ -548,12 +551,12 @@ const _server = Bun.serve({
 				try {
 					const newData = await schema.parseAsync(data);
 
-					const pathData = await prisma.path.findFirst({
+					const pathData = await prisma.instance.findFirst({
 						select: {
-							name: true
+							pathName: true
 						},
 						where: {
-							name: newData.path
+							pathName: newData.path
 						}
 					});
 
@@ -586,11 +589,11 @@ const _server = Bun.serve({
 						break;
 					}
 
-					const manifestPath = `${pathData.name}/${recordId}`;
+					const manifestPath = `${pathData.pathName}/${recordId}`;
 					await prisma.record.create({
 						data: {
 							id: recordId,
-							pathName: pathData.name,
+							pathName: pathData.pathName,
 							manifestPath: manifestPath,
 							datePublished: new Date().toISOString()
 						}

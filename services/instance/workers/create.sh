@@ -210,6 +210,12 @@ publish() {
         local RINGBUFFER_SIZE="64M"
     fi
 
+    state_update "$RECORD_ID"
+    
+    if [[ "$METADATA" == "yes" ]]; then
+        parseStreamMetadata &
+    fi
+
     $STREAMLINK_PATH --loglevel none \
     --http-cookies-file "$WORK_DIR/config/cookies.txt" $STREAMLINK_LOG_ARGS \
     --stream-segment-threads "$SEGMENT_THREADS" $ARGS --ringbuffer-size "$RINGBUFFER_SIZE" \
@@ -255,9 +261,6 @@ publish() {
 
         if [ -f "$A_DIR/thumbnail.jpg" ]; then
             echo "Thumbnail successfully created."
-            if [[ "$METADATA" == "yes" ]]; then
-                parseStreamMetadata
-            fi
             break
         else
             echo "Thumbnail failed. Retrying...."
@@ -286,6 +289,16 @@ inform_delete() {
     INFORM_STATUS=$(curl -s -X POST http://$HOST:3001/inform -F "path=$STREAM_PATH" -F "status=$MESSAGE" -F "action=Delete" 1>&1)
     if [[ "$INFORM_STATUS" != "0" ]]; then
         echo "Error inform_delete code $INFORM_STATUS"
+    fi
+}
+
+state_update() {
+    local RECORD_ID=$1
+    local INFORM_STATUS
+    
+    INFORM_STATUS=$(curl -s -X POST http://$HOST:3001/updateState -F "path=$STREAM_PATH" -F "recordId=$RECORD_ID" -F "lowLatency=$LOW_LATENCY_STREAM" 1>&1)
+    if [[ "$INFORM_STATUS" != "0" ]]; then
+        echo "Error inform_update code $INFORM_STATUS"
     fi
 }
 
@@ -613,7 +626,7 @@ main() {
                 local STREAM_PROTOCOL="httpstream://"
                 local BUFFER="5M"
                 local ADD_ARGS="--hls-playlist-reload-time playlist --hls-live-edge $LLS_LIVE_EDGE --stream-segmented-queue-deadline 6 --stream-segment-timeout 2 --stream-segment-attempts 20"
-                local ADD_METADATA="yes"
+                local ADD_METADATA="no"
 
             # Others
             else
