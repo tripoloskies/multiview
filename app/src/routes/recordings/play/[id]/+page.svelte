@@ -7,6 +7,12 @@
 	let { data } = $props();
 	let player: HTMLVideoElement | undefined = $state();
 	let hls: Hls = $state(new Hls());
+	let description = $derived.by(() => {
+		if (!data.description) {
+			return [];
+		}
+		return data.description.split('\n');
+	});
 
 	onMount(() => {
 		switch (data.mediaType) {
@@ -16,6 +22,11 @@
 		}
 	});
 
+	onDestroy(() => {
+		hls.detachMedia();
+		hls.destroy();
+	});
+	
 	async function playHls() {
 		if (!player || !Hls.isSupported()) {
 			return;
@@ -28,11 +39,6 @@
 			hls.loadSource(data.mediaUrl);
 		});
 	}
-
-	onDestroy(() => {
-		hls.detachMedia();
-		hls.destroy();
-	});
 </script>
 
 <svelte:head>
@@ -77,7 +83,10 @@
 					{#snippet header()}
 						<b>Description</b>
 					{/snippet}
-					<p>{data.description}</p>
+					{#each description as text, index (index)}
+						{text}
+						<br />
+					{/each}
 				</Accordion>
 			</div>
 		{:else}
