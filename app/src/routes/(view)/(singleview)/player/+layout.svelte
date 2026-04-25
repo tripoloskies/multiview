@@ -106,11 +106,6 @@
 <Multiview>
 	<div class={`player-container ${isSidebarVisible ? 'expand' : ''}`}>
 		{#if url?.length > 0}
-			<div class={`side-player-container ${!isSidebarVisible ? 'hidden' : ''}`}>
-				<SidePlayer>
-					{@render children()}
-				</SidePlayer>
-			</div>
 			<div class="player-content">
 				<Viewer
 					path={data.path}
@@ -121,6 +116,11 @@
 					{indicatorStatus}
 					{indicatorStatusText}
 				></Viewer>
+			</div>
+			<div class={`side-player-container ${!isSidebarVisible ? 'hidden' : ''}`}>
+				<SidePlayer>
+					{@render children()}
+				</SidePlayer>
 			</div>
 		{/if}
 	</div>
@@ -222,11 +222,15 @@
 	}
 
 	.player-container.expand {
-		@apply grid grid-rows-2 lg:grid-cols-4 lg:grid-rows-1;
+		@apply grid grid-rows-3 lg:grid-cols-4 lg:grid-rows-1;
 	}
 
 	form {
 		@apply grid;
+	}
+
+	.side-player-container {
+		@apply row-span-2 lg:row-span-1;
 	}
 
 	.player-content {

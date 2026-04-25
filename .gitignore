@@ -1,4 +1,6 @@
 config/cookies.txt
+config/ssl/*
+!config/ssl/README.md
 database/data/*
 !database/data/README.md
 node_modules

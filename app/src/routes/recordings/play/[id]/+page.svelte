@@ -26,7 +26,7 @@
 		hls.detachMedia();
 		hls.destroy();
 	});
-	
+
 	async function playHls() {
 		if (!player || !Hls.isSupported()) {
 			return;

@@ -5,6 +5,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		eventRootUrl: ``,
 		wsRootUrl: `/ws`,
 		hostname: locals.host,
-		invalidateDataDuration: 2000
+		invalidateDataDuration: 2000,
+		isHttps: locals.isHttps,
+		isHostIp: locals.isHostIp
 	};
 };

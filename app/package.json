@@ -32,6 +32,7 @@
 		"eslint-plugin-svelte": "^3.14.0",
 		"globals": "^17.3.0",
 		"hls.js": "^1.6.15",
+		"ipaddr.js": "^2.3.0",
 		"postcss": "^8.5.8",
 		"prettier": "^3.8.1",
 		"prettier-plugin-svelte": "^3.4.1",

@@ -29,14 +29,26 @@
 				title="Youtube Chat"
 			></iframe>
 		{:else if playerState.platform === 'twitch'}
-			<iframe
-				src={`https://www.twitch.tv/embed/${playerState.sourceId}/chat?parent=${data.hostname}`}
-				height="100%"
-				width="100%"
-				frameborder="0"
-				title="Twitch Chat"
-			>
-			</iframe>
+			{#if data.isHttps && !data.isHostIp}
+				<iframe
+					src={`https://www.twitch.tv/embed/${playerState.sourceId}/chat?parent=${data.hostname}`}
+					height="100%"
+					width="100%"
+					frameborder="0"
+					title="Twitch Chat"
+				>
+				</iframe>
+			{:else if !data.isHttps && !data.isHostIp}
+				<h3>To use twitch chat, use HTTPS.</h3>
+			{:else if data.isHttps && data.isHostIp}
+				<h3>To use twitch chat, don't use Local IP address.</h3>
+			{:else if !data.isHttps && data.isHostIp}
+				<h3>
+					To use twitch chat, use domain name/hostname with HTTPS support.
+				</h3>
+			{:else}
+				<h3>To use twitch chat, please check site hosting configuration.</h3>
+			{/if}
 		{:else}
 			<h3>Unsupported Platform</h3>
 		{/if}
