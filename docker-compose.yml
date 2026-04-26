@@ -79,7 +79,8 @@ services:
       - DATABASE_URL=postgresql://postgres:engineeredPassword@database:5432/multiview
       - STREAMING_HOST=streaming
       - VALKEY_URL=valkey://cache:6379
-      - HOSTNAME=testing.net;fedora-1.tailf6ec12.ts.net
+      # Supports multiple hostnames to allow visiting the site seperated by semicolon.
+      - HOSTNAME=testing.net;fedora-1.tailf6ec12.ts.net;using-fedora1-as-dev.ngrok.io
     command: sh -c "bun turbo telemetry status && bun run db:migrate && bun run build && bun run preview"
     volumes:
       - ./config/cookies.txt:/app/services/config/cookies.txt
