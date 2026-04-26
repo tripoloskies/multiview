@@ -450,7 +450,7 @@ tiktokCheckManifestHttpStatus() {
     local STATUS
     local URL=$1
 
-    STATUS=$(curl -s -I -o /dev/null -w "%{http_code}\\n" "$URL")
+    STATUS=$(curl -X GET -s -I -L -o /dev/null -w "%{http_code}\\n" "$URL")
 
     if [[ "$STATUS" == "200" ]]; then
         return 0
@@ -462,7 +462,7 @@ tiktokCheckManifestHttpStatus() {
 othersCheckStatus() {
     local STATUS
 
-    STATUS=$(curl -s -I -o /dev/null -w "%{http_code}\\n" "$SOURCE_URL")
+    STATUS=$(curl -X GET -s -I -L -o /dev/null -w "%{http_code}\\n" "$SOURCE_URL")
 
     if [[ "$STATUS" == "200" ]]; then
         inform_update "Live Detected"
