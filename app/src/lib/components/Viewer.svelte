@@ -47,7 +47,7 @@
 	let manifestUrl: string = $state('');
 	let isReady: boolean = $state(false);
 	let meterPercent: number = $state(0);
-	let meterLabel: number = $state(-40);
+	let meterLabel: number = $state(-99);
 	let meterColorIndicator: string = $state('');
 
 	let playerWidth: number = $state(0);
@@ -176,11 +176,11 @@
 			);
 
 			// 5. Use roundedDB as a label for audio meter.
-			meterLabel = roundedDB;
+			meterLabel = roundedDB + 6;
 
 			// 6. Convert DB to percentage for audio meter height.
 			// (<=-40 dB is 0% to 0 dB is 100%)
-			meterPercent = (1 - Math.abs(roundedDB) / 40) * 100;
+			meterPercent = (1 - Math.abs(roundedDB + 6) / 40) * 100;
 
 			// 7. Update audio meter indicator based on dB threshold.
 			if (meterLabel >= -6) {
@@ -357,11 +357,11 @@
 		}
 	}
 
-	.danger {
+	.player-info.danger {
 		animation: danger 0.5s infinite;
 	}
 
-	.warning {
+	.player-info.warning {
 		animation: warning 1s infinite;
 	}
 
@@ -404,6 +404,10 @@
 
 	.audio-meter-label {
 		@apply rotate-180 text-white;
+	}
+
+	.audio-meter-content {
+		@apply transition-none;
 	}
 
 	.audio-meter-content.safe {
